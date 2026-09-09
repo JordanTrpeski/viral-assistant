@@ -1,0 +1,8 @@
+{
+  "verificationCommands": [
+    { "name": "typecheck", "command": "pnpm run typecheck" },
+    { "name": "tests", "command": "pnpm run test" },
+    { "name": "lint", "command": "pnpm run lint" }
+  ]
+}
+

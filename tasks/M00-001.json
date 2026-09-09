@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "M00-001",
+  "milestone": "M00_BOOTSTRAP",
+  "objective": "Implement and objectively verify the Bootstrap Self-Development Core.",
+  "status": "in_progress",
+  "acceptanceCriteria": [
+    "Load and validate all required repository context.",
+    "Create, read, and update validated development tasks and state.",
+    "Run configured verification commands and retain structured results.",
+    "Generate a checkpoint from actual Git state.",
+    "Expose scriptable status, verify, checkpoint, and context CLI commands.",
+    "Pass the M00 automated acceptance checks."
+  ],
+  "dependencies": [],
+  "relevantFiles": ["src/", "tests/", "STATE.json", "STATE.md", "CHECKPOINT.md"],
+  "notes": ["Keep M00 small and free of cloud AI, UI, scheduling, voice, browser, and OS automation."],
+  "nextAction": "Complete implementation and run verification.",
+  "verificationResult": null
+}
+

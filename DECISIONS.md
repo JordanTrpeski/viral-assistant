@@ -51,3 +51,8 @@ Reuse mature compatible open-source code/components where it provides a real adv
 **Status:** accepted
 
 Jarvis should combine deterministic algorithms/software with AI rather than using an LLM for operations that conventional software can perform reliably.
+
+## D009 — Dependency-Light Bootstrap Controller
+**Status:** accepted
+
+M00 uses Node.js, TypeScript, built-in runtime modules, and repository-visible JSON/Markdown files. Runtime schema checks are implemented locally rather than adding a schema framework. This keeps the replaceable bootstrap controller small while still failing clearly on malformed input.
