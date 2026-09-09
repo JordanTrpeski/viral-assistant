@@ -1,16 +1,19 @@
 {
   "schemaVersion": 1,
   "project": "Jarvis",
-  "currentMilestone": "M00_BOOTSTRAP",
-  "milestoneStatus": "complete",
-  "activeTask": null,
+  "currentMilestone": "M01_MULTI_HARNESS",
+  "milestoneStatus": "in_progress",
+  "activeTask": "M01-001",
   "completedTasks": [
     "M00-001"
   ],
-  "blockers": [],
+  "blockers": [
+    "Claude Code is not installed or discoverable; the final live cross-provider acceptance test cannot run until it is installed and authenticated."
+  ],
   "lastVerifiedCommit": "aca9d3768fccb88434d188addeeca132c7669930",
   "lastCheckpoint": "CHECKPOINT.md",
-  "nextAction": "Await owner approval before merging dev/m00-bootstrap into main or beginning M01.",
+  "lastHarnessRun": null,
+  "nextAction": "Implement and verify the M01 multi-harness infrastructure; then run the live portability test if both authenticated CLIs are available.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later."
   ]

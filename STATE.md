@@ -1,10 +1,10 @@
 # Jarvis — Current Development State
 
 ## Current Milestone
-M00 — Bootstrap Self-Development Core
+M01 — Codex ↔ Claude Code Development Portability
 
 ## Status
-Complete and verified on `dev/m00-bootstrap`; awaiting owner approval before merge.
+In progress on `dev/m01-multi-harness`.
 
 ## Completed
 - Product direction defined.
@@ -20,13 +20,13 @@ Complete and verified on `dev/m00-bootstrap`; awaiting owner approval before mer
 - Clean install/build, 7 automated tests, type checking, and lint all pass.
 
 ## Current Work
-M00 implementation is complete. No M01 work has begun.
+Implementing provider-neutral Codex CLI and Claude Code harnesses, concise task packets, structured process results, and repository-based handoff continuity.
 
 ## Next Action
-Await owner approval before merging `dev/m00-bootstrap` into `main` or beginning M01.
+Implement the M01 specification and automated portability tests. Run the live Codex-to-Claude handoff when both authenticated CLIs are usable.
 
 ## Blockers
-None currently known.
+- Claude Code is not installed or discoverable. This blocks only the final live cross-provider acceptance test; adapter implementation can continue with controlled test executables.
 
 ## Last Verified Commit
 `aca9d3768fccb88434d188addeeca132c7669930`

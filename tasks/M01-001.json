@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "M01-001",
+  "milestone": "M01_MULTI_HARNESS",
+  "objective": "Implement and verify provider-neutral Codex CLI and Claude Code development harnesses with repository-based handoff continuity.",
+  "status": "in_progress",
+  "acceptanceCriteria": [
+    "Both CLI adapters implement one provider-neutral contract.",
+    "Safe bounded probes report installation and usability where determinable.",
+    "A concise packet is generated from task, state, checkpoint, verification, and Git context.",
+    "Selected harness launches capture structured exit, output, timeout, and diagnostic data.",
+    "Run state and checkpoints allow another harness to continue without chat history.",
+    "Automated Codex-to-Claude continuity simulation and all project verification pass.",
+    "A live Codex-to-Claude handoff is demonstrated with the owner's authenticated CLIs."
+  ],
+  "dependencies": ["M00-001"],
+  "relevantFiles": [
+    "milestones/M01_MULTI_HARNESS.md",
+    "src/harness/",
+    "src/packet.ts",
+    "src/cli.ts",
+    "src/checkpoint.ts",
+    "tests/",
+    "runs/",
+    "packets/"
+  ],
+  "notes": [
+    "Codex CLI 0.153.4 is installed; its auth status cannot be checked in the sandbox because the sandbox has no home directory.",
+    "Claude Code was not found on PATH or in common installation locations at M01 start.",
+    "Do not use direct provider APIs, API keys, dangerous bypass flags, or automatic model selection."
+  ],
+  "nextAction": "Implement adapters, packet generation, run persistence, CLI commands, and automated portability tests.",
+  "verificationResult": null
+}
+
