@@ -2,13 +2,15 @@
   "schemaVersion": 1,
   "project": "Jarvis",
   "currentMilestone": "M00_BOOTSTRAP",
-  "milestoneStatus": "in_progress",
-  "activeTask": "M00-001",
-  "completedTasks": [],
+  "milestoneStatus": "complete",
+  "activeTask": null,
+  "completedTasks": [
+    "M00-001"
+  ],
   "blockers": [],
-  "lastVerifiedCommit": null,
-  "lastCheckpoint": null,
-  "nextAction": "Complete M00 implementation and run the objective acceptance checks.",
+  "lastVerifiedCommit": "aca9d3768fccb88434d188addeeca132c7669930",
+  "lastCheckpoint": "CHECKPOINT.md",
+  "nextAction": "Await owner approval before merging dev/m00-bootstrap into main or beginning M01.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later."
   ]

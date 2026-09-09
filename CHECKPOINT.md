@@ -1,26 +1,16 @@
 # Development Checkpoint
 
-- Milestone: M00_BOOTSTRAP (in_progress)
-- Active task: M00-001 — Implement and objectively verify the Bootstrap Self-Development Core.
+- Milestone: M00_BOOTSTRAP (complete)
+- Active task: None
 - Branch: dev/m00-bootstrap
-- HEAD: b5bd02924b10eaf3253d0fd843e3586f3d292e29
+- HEAD: aca9d3768fccb88434d188addeeca132c7669930
 - Working tree: dirty
 
 ## Files Changed
-- DECISIONS.md
-- README.md
 - STATE.json
-- .gitignore
-- CHECKPOINT.md
-- jarvis-dev.config.json
-- package.json
-- pnpm-lock.yaml
-- scripts/
-- src/
-- tasks/
-- tests/
-- tsconfig.json
-- verification/
+- STATE.md
+- tasks/M00-001.json
+- verification/latest.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -31,4 +21,4 @@
 - None
 
 ## Next Action
-Complete M00 implementation and run the objective acceptance checks.
+Await owner approval before merging dev/m00-bootstrap into main or beginning M01.

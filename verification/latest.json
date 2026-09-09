@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executedAt": "2026-09-09T15:19:25.984Z",
+  "executedAt": "2026-09-09T15:20:52.523Z",
   "passed": true,
   "results": [
     {
@@ -10,16 +10,16 @@
       "exitCode": 0,
       "stdout": "",
       "stderr": "$ tsc --noEmit",
-      "durationMs": 1354
+      "durationMs": 1335
     },
     {
       "name": "tests",
       "command": "pnpm run test",
       "passed": true,
       "exitCode": 0,
-      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (484.6048ms)\n✔ loads every required context file and validates state (19.7861ms)\n✔ reports a missing context file clearly (10.9053ms)\n✔ reports malformed and invalid state clearly (17.3318ms)\n✔ creates, reads, and updates a validated development task (18.3181ms)\n✔ rejects an invalid task (9.6254ms)\n✔ captures structured pass and fail verification results (193.2732ms)\nℹ tests 7\nℹ suites 0\nℹ pass 7\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 572.2384",
+      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (494.3666ms)\n✔ loads every required context file and validates state (16.2687ms)\n✔ reports a missing context file clearly (11.1077ms)\n✔ reports malformed and invalid state clearly (10.8094ms)\n✔ creates, reads, and updates a validated development task (19.2317ms)\n✔ rejects an invalid task (9.3042ms)\n✔ captures structured pass and fail verification results (191.0181ms)\nℹ tests 7\nℹ suites 0\nℹ pass 7\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 585.6369",
       "stderr": "$ pnpm run build && node --test dist/tests/*.test.js\n$ tsc",
-      "durationMs": 2527
+      "durationMs": 2538
     },
     {
       "name": "lint",
@@ -28,7 +28,7 @@
       "exitCode": 0,
       "stdout": "Lint passed.",
       "stderr": "$ node scripts/lint.mjs",
-      "durationMs": 580
+      "durationMs": 570
     }
   ]
 }
