@@ -14,6 +14,7 @@ export interface DevelopmentState {
   blockers: string[];
   lastVerifiedCommit: string | null;
   lastCheckpoint: string | null;
+  lastHarnessRun?: string | null;
   nextAction: string;
   notes: string[];
 }
@@ -55,4 +56,3 @@ export interface GitState {
   workingTreeStatus: "clean" | "dirty";
   changedFiles: string[];
 }
-

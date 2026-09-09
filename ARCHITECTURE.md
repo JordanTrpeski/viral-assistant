@@ -50,6 +50,8 @@ Do not use OpenAI or Anthropic API billing as the default development path.
 
 The first abstraction should be intentionally small. Do not attempt to normalize every vendor-specific feature.
 
+M01 implements this boundary in `src/harness/`. Provider adapters depend on an injectable process runner and expose only probe and launch operations. Task packets contain repository paths and concise state rather than conversation history. Each run is recorded under `runs/`, linked from `STATE.json`, and summarized in `CHECKPOINT.md`. Provider API-key environment variables are removed from harness child processes; authentication remains owned by the installed CLI.
+
 ### 5. Verification Runner
 Normal software executes:
 - unit tests,

@@ -36,6 +36,7 @@ export function validateState(value: unknown): DevelopmentState {
     blockers: strings(data.blockers, "STATE.json.blockers"),
     lastVerifiedCommit: nullableString(data.lastVerifiedCommit, "STATE.json.lastVerifiedCommit"),
     lastCheckpoint: nullableString(data.lastCheckpoint, "STATE.json.lastCheckpoint"),
+    ...(data.lastHarnessRun === undefined ? {} : { lastHarnessRun: nullableString(data.lastHarnessRun, "STATE.json.lastHarnessRun") }),
     nextAction: string(data.nextAction, "STATE.json.nextAction"),
     notes: strings(data.notes, "STATE.json.notes")
   };
@@ -60,4 +61,3 @@ export function validateTask(value: unknown, label = "task"): DevelopmentTask {
     verificationResult: data.verificationResult === null ? null : object(data.verificationResult, `${label}.verificationResult`) as unknown as DevelopmentTask["verificationResult"]
   };
 }
-

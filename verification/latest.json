@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executedAt": "2026-09-09T15:20:52.523Z",
+  "executedAt": "2026-09-09T15:42:17.059Z",
   "passed": true,
   "results": [
     {
@@ -10,16 +10,16 @@
       "exitCode": 0,
       "stdout": "",
       "stderr": "$ tsc --noEmit",
-      "durationMs": 1335
+      "durationMs": 1372
     },
     {
       "name": "tests",
       "command": "pnpm run test",
       "passed": true,
       "exitCode": 0,
-      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (494.3666ms)\n✔ loads every required context file and validates state (16.2687ms)\n✔ reports a missing context file clearly (11.1077ms)\n✔ reports malformed and invalid state clearly (10.8094ms)\n✔ creates, reads, and updates a validated development task (19.2317ms)\n✔ rejects an invalid task (9.3042ms)\n✔ captures structured pass and fail verification results (191.0181ms)\nℹ tests 7\nℹ suites 0\nℹ pass 7\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 585.6369",
+      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (595.9569ms)\n✔ loads every required context file and validates state (19.9051ms)\n✔ reports a missing context file clearly (13.0367ms)\n✔ reports malformed and invalid state clearly (12.3536ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (15.2062ms)\n✔ Claude adapter uses print mode with stdin and structured output (8.857ms)\n✔ process runner captures missing executables and timeouts (1049.3739ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (875.794ms)\n✔ creates, reads, and updates a validated development task (25.0898ms)\n✔ rejects an invalid task (8.4987ms)\n✔ captures structured pass and fail verification results (217.9992ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1204.2424",
       "stderr": "$ pnpm run build && node --test dist/tests/*.test.js\n$ tsc",
-      "durationMs": 2538
+      "durationMs": 3212
     },
     {
       "name": "lint",
@@ -28,7 +28,7 @@
       "exitCode": 0,
       "stdout": "Lint passed.",
       "stderr": "$ node scripts/lint.mjs",
-      "durationMs": 570
+      "durationMs": 567
     }
   ]
 }
