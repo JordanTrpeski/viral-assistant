@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "project": "Jarvis",
+  "currentMilestone": "M00_BOOTSTRAP",
+  "milestoneStatus": "not_started",
+  "activeTask": null,
+  "completedTasks": [],
+  "blockers": [],
+  "lastVerifiedCommit": null,
+  "lastCheckpoint": null,
+  "nextAction": "Create the M00 development branch and implement milestones/M00_BOOTSTRAP.md.",
+  "notes": [
+    "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later."
+  ]
+}
