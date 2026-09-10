@@ -3,7 +3,7 @@
   "id": "M01-001",
   "milestone": "M01_MULTI_HARNESS",
   "objective": "Implement and verify provider-neutral Codex CLI and Claude Code development harnesses with repository-based handoff continuity.",
-  "status": "blocked",
+  "status": "complete",
   "acceptanceCriteria": [
     "Both CLI adapters implement one provider-neutral contract.",
     "Safe bounded probes report installation and usability where determinable.",
@@ -11,7 +11,7 @@
     "Selected harness launches capture structured exit, output, timeout, and diagnostic data.",
     "Run state and checkpoints allow another harness to continue without chat history.",
     "Automated Codex-to-Claude continuity simulation and all project verification pass.",
-    "A live Codex-to-Claude handoff is demonstrated with the owner's authenticated CLIs."
+    "A live Codex harness run succeeds from a repository-generated packet; Claude continuation is covered by separate-process simulation and deferred as optional live validation."
   ],
   "dependencies": [
     "M00-001"
@@ -33,9 +33,10 @@
     "Separate fake Codex and Claude processes prove the receiver reads Codex work, checkpoint, task acceptance criteria, state, and Git-derived packet without chat history.",
     "The outer live Codex run succeeded through ChatGPT subscription authentication and produced runs/20260910082604189-codex-M01-001.json without receiving prior conversation history.",
     "The live Codex worker reviewed the implementation, added context preflight and safer authentication-state detection, and expanded the verified suite to 13 tests.",
-    "Claude Code 2.1.266 is installed from Anthropic's official Windows package; owner subscription authentication is pending."
+    "Claude Code 2.1.266 is installed from Anthropic's official Windows package.",
+    "Per owner direction, live Claude authentication and continuation are deferred optional validation because a Claude Code subscription is not currently available."
   ],
-  "nextAction": "Complete Claude subscription authentication, then launch Claude on M01-001 using only the generated repository packet and verify its understanding of the Codex handoff.",
+  "nextAction": "Await owner direction; do not start M02 or merge into main.",
   "verificationResult": {
     "schemaVersion": 1,
     "executedAt": "2026-09-10T08:28:13.668Z",

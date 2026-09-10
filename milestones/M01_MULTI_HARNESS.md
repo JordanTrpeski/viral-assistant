@@ -91,17 +91,21 @@ Existing M00 commands remain supported.
 11. Type checking, all tests, and lint pass.
 12. Scriptable CLI commands return non-zero on genuine launch/probe failures.
 
-## Live Acceptance Test
+## Live Validation
 
-With both locally installed CLIs authenticated to the owner's subscription accounts:
+The required live validation for M01 is:
 
-1. `harnesses` reports Codex and Claude installed and usable.
-2. Start a small repository development task through the Codex adapter.
-3. Persist its run result and generate a checkpoint/handoff.
-4. Launch Claude on the same task using only the repository state and newly generated packet.
-5. Confirm Claude correctly identifies the completed work, current Git state, acceptance criteria, and next action without any manual explanation of the Codex conversation.
+1. `harnesses` reports Codex installed and usable through ChatGPT subscription authentication.
+2. Start a repository development task through the Codex adapter using only its generated packet.
+3. Persist the Codex result and generate a checkpoint/handoff.
 
-If a CLI is missing or requires owner authentication, implementation may be completed and verified with fake executables, but M01 remains blocked rather than complete until the live test can run.
+The following Claude continuation is useful future validation when the owner has a Claude Code subscription, but it does not block M01 completion:
+
+1. Authenticate Claude Code with the owner's subscription.
+2. Launch Claude on the same task using only the repository state and newly generated packet.
+3. Confirm Claude correctly identifies the completed work, current Git state, acceptance criteria, and next action without any manual explanation of the Codex conversation.
+
+Per owner direction on 2026-09-10, the implemented Claude adapter plus the separate-process simulated Codex-to-Claude continuity test objectively cover the implementation requirement until subscription access is available.
 
 ## Completion Output
 
@@ -110,4 +114,3 @@ If a CLI is missing or requires owner authentication, implementation may be comp
 - Generate a concise checkpoint.
 - Create verified commits and push `dev/m01-multi-harness` using the owner's GitHub identity.
 - Do not merge into `main` and do not begin M02.
-

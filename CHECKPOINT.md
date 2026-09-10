@@ -1,25 +1,19 @@
 # Development Checkpoint
 
-- Milestone: M01_MULTI_HARNESS (blocked)
-- Active task: M01-001 — Implement and verify provider-neutral Codex CLI and Claude Code development harnesses with repository-based handoff continuity.
+- Milestone: M01_MULTI_HARNESS (complete)
+- Active task: None
 - Branch: dev/m01-multi-harness
-- HEAD: aeb2d29df3ca03fa4392295becab5cc1a4dc4b66
+- HEAD: dd839409b2ae48ec879aeaaecbf69abf84e3ff4d
 - Working tree: dirty
 
 ## Files Changed
-- CHECKPOINT.md
 - DECISIONS.md
 - STATE.json
 - STATE.md
+- milestones/M01_MULTI_HARNESS.md
 - packets/M01-001.md
-- src/harness/codex.ts
-- src/harness/coordinator.ts
-- src/harness/shared.ts
 - tasks/M01-001.json
-- tests/harness.test.ts
-- tests/portability.test.ts
 - verification/latest.json
-- runs/
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -32,7 +26,7 @@
 - Exit: 0; timed out: false
 
 ## Blockers
-- Claude Code is not installed or discoverable; live cross-provider acceptance requires its installation and owner subscription authentication.
+- None
 
 ## Next Action
-Install and authenticate Claude Code with the owner's subscription, then run the Claude continuation using the repository packet and complete the live portability acceptance test.
+Await owner direction. Do not begin M02 or merge into main without owner approval.

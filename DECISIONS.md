@@ -65,4 +65,9 @@ Codex CLI and Claude Code are integrated through one small process-based interfa
 Subscription use is enforced defensively by removing common OpenAI and Anthropic API-key and alternate-endpoint environment variables from harness child processes. The installed CLIs retain responsibility for their own secure OAuth/subscription credentials.
 
 ### D010 implementation clarification
-Authentication status remains unknown when the CLI cannot access its home, times out, or returns unsupported status output. A successful version probe alone does not establish subscription usability. Required project context is loaded before launching a selected harness. Live acceptance remains mandatory even when simulated continuity passes.
+Authentication status remains unknown when the CLI cannot access its home, times out, or returns unsupported status output. A successful version probe alone does not establish subscription usability. Required project context is loaded before launching a selected harness. Live validation requirements follow the active milestone and later explicit owner decisions.
+
+## D011 — Defer Live Claude Validation
+**Status:** accepted by owner on 2026-09-10
+
+M01 completion requires the implemented Claude adapter, separate-process simulated Codex-to-Claude continuity, and a successful owner-authenticated live Codex run. Live Claude authentication and continuation are deferred optional validation because a Claude Code subscription is not currently available. This deferral does not weaken the adapter or automated continuity acceptance criteria and does not authorize M02 work.

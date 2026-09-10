@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "project": "Jarvis",
   "currentMilestone": "M01_MULTI_HARNESS",
-  "milestoneStatus": "blocked",
-  "activeTask": "M01-001",
+  "milestoneStatus": "complete",
+  "activeTask": null,
   "completedTasks": [
-    "M00-001"
+    "M00-001",
+    "M01-001"
   ],
-  "blockers": [
-    "Claude Code 2.1.266 is installed, but owner subscription authentication is still pending for the live continuation test."
-  ],
-  "lastVerifiedCommit": "aeb2d29df3ca03fa4392295becab5cc1a4dc4b66",
+  "blockers": [],
+  "lastVerifiedCommit": "dd839409b2ae48ec879aeaaecbf69abf84e3ff4d",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
-  "nextAction": "Complete the open Claude subscription login, then run the Claude continuation using the repository packet and finish the live portability acceptance test.",
+  "nextAction": "Await owner direction. Do not begin M02 or merge into main without owner approval.",
   "notes": [
-    "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later."
+    "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
+    "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription."
   ]
 }
