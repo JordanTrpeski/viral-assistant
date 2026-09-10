@@ -1,19 +1,26 @@
 # Jarvis — Current Development State
 
-M02 is in progress on `dev/m02-local-brain`. Active task: `M02-001`.
+M02 is complete and verified on `dev/m02-local-brain`. No task is active.
 
-## Starting point
-- M00 and M01 are complete and remain protected by their existing automated tests.
-- The authenticated Codex harness and simulated Codex-to-Claude continuity are verified.
-- Live Claude continuation remains optional validation when a subscription becomes available.
+## Verified work
+- A provider-neutral local-model contract and injectable Ollama adapter support installation/runtime/model probes and structured inference.
+- Loopback validation prevents remote model endpoints; no cloud SDK or API path was added.
+- Model choice is configurable through repository configuration, `JARVIS_LOCAL_MODEL`, or a request override.
+- Inference handles structured context, timeout, cancellation, unavailable service, HTTP failure, and malformed responses without changing project state.
+- Local classification, summarization, context relevance selection, and routing recommendation tasks are available.
+- Deterministic policy produces all four escalation results and prevents model output from launching a coding harness or controlling state transitions.
+- The synthetic context acceptance test reduces more than 50,000 characters to a relevant packet under 8,000 characters without a cloud or coding-harness call.
+- Typecheck, lint, all 23 tests, and the 10-test M02 acceptance command pass. M00 and M01 coverage remains green.
 
-## M02 scope
-Implement a provider-neutral local reasoning layer with an Ollama adapter, configurable model choice, safe local probes and inference, deterministic escalation policy, and controlled local tasks for classification, summarization, context selection, and routing advice.
+## Live probe
+The safe probe found no Ollama CLI, running loopback service, or installed models. Available installed model options: none. This is the documented non-blocking setup case for M02.
+
+Optional setup: install Ollama, choose and manually pull a suitably small model, then set `localBrain.preferredModel` in `jarvis-dev.config.json` or set `JARVIS_LOCAL_MODEL`. Run `pnpm jarvis-dev local-status`, followed by a bounded `local-infer` request. Viral does not install Ollama or download models automatically.
 
 ## Blockers
-None. Missing Ollama or a suitable installed model is an optional local setup step rather than an implementation blocker.
+None.
 
 ## Next action
-Implement M02, run controlled acceptance tests, safely probe local Ollama availability, and record the verified result. Do not merge into main or begin M03.
+Await owner direction. Do not merge into main or begin M03 without owner approval.
 
-Last verified prior-milestone commit: dd839409b2ae48ec879aeaaecbf69abf84e3ff4d. Repository state is the temporary Bootstrap continuity mechanism.
+Last verified implementation commit: b63cb75426e5b634ab3b155aed1f7c8986bd8d13. Repository state is the temporary Bootstrap continuity mechanism.

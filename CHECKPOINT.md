@@ -1,27 +1,17 @@
 # Development Checkpoint
 
-- Milestone: M02_LOCAL_BRAIN (in_progress)
-- Active task: M02-001 — Implement and verify a replaceable local reasoning layer using Ollama, with deterministic escalation policy and no cloud or automatic harness execution.
+- Milestone: M02_LOCAL_BRAIN (complete)
+- Active task: None
 - Branch: dev/m02-local-brain
-- HEAD: 86ca7613683a7bf4cc05e55b66e6f01fcd5b7d69
+- HEAD: b63cb75426e5b634ab3b155aed1f7c8986bd8d13
 - Working tree: dirty
 
 ## Files Changed
-- ARCHITECTURE.md
-- DECISIONS.md
-- README.md
-- ROADMAP.md
 - STATE.json
 - STATE.md
-- jarvis-dev.config.json
-- package.json
-- src/cli.ts
-- verification/latest.json
 - milestones/M02_LOCAL_BRAIN.md
-- src/local/
 - tasks/M02-001.json
-- tests/local-model.test.ts
-- tests/local-tasks.test.ts
+- verification/latest.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -38,4 +28,4 @@
 - None
 
 ## Next Action
-Implement and verify the provider-neutral local model interface, Ollama adapter, deterministic local tasks, and safe live probe.
+Await owner direction. Optionally install Ollama and a chosen small model for live inference validation; do not begin M03 or merge into main without owner approval.

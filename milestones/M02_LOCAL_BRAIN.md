@@ -104,3 +104,11 @@ If Ollama or a suitable model is unavailable, report detected models and a clear
 - Record live probe evidence or the exact optional setup step.
 - Commit and push verified work on `dev/m02-local-brain` with the owner's GitHub identity.
 - Do not merge into `main` and do not begin M03.
+
+## Validation Record — 2026-09-10
+
+- Typecheck, lint, all 23 automated tests, and the focused 10-test M02 acceptance command pass.
+- Controlled Ollama responses demonstrate successful local abstraction queries, model selection, context use, failure handling, cancellation, and timeout behavior.
+- Representative classification examples produce the required deterministic escalation categories.
+- A synthetic context exceeding 50,000 characters is reduced to a relevant packet under 8,000 characters without invoking a development harness or cloud API.
+- The safe live probe found no Ollama CLI, running loopback service, or installed models. Per the milestone rules, optional manual installation and a future live inference do not block implementation completion.

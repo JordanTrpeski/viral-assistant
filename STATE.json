@@ -2,20 +2,22 @@
   "schemaVersion": 1,
   "project": "Jarvis",
   "currentMilestone": "M02_LOCAL_BRAIN",
-  "milestoneStatus": "in_progress",
-  "activeTask": "M02-001",
+  "milestoneStatus": "complete",
+  "activeTask": null,
   "completedTasks": [
     "M00-001",
-    "M01-001"
+    "M01-001",
+    "M02-001"
   ],
   "blockers": [],
-  "lastVerifiedCommit": "dd839409b2ae48ec879aeaaecbf69abf84e3ff4d",
+  "lastVerifiedCommit": "b63cb75426e5b634ab3b155aed1f7c8986bd8d13",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
-  "nextAction": "Implement and verify the provider-neutral local model interface, Ollama adapter, deterministic local tasks, and safe live probe.",
+  "nextAction": "Await owner direction. Optionally install Ollama and a chosen small model for live inference validation; do not begin M03 or merge into main without owner approval.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
-    "M02 must not launch a coding harness or directly enforce infrastructure decisions from model output."
+    "M02 must not launch a coding harness or directly enforce infrastructure decisions from model output.",
+    "The safe live probe found no Ollama CLI, running service, or installed models. Optional setup: install Ollama, manually pull a chosen small model, and configure localBrain.preferredModel or JARVIS_LOCAL_MODEL."
   ]
 }
