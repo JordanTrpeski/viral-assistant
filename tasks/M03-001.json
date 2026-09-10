@@ -3,7 +3,7 @@
   "id": "M03-001",
   "milestone": "M03_BACKGROUND_RUNTIME",
   "objective": "Implement and verify a durable deterministic background runtime with scheduling, waiting, owner input, retry, event, and restart recovery infrastructure.",
-  "status": "in_progress",
+  "status": "complete",
   "acceptanceCriteria": [
     "A long-running service and replaceable local persistence layer survive clean and interrupted restarts.",
     "The durable queue supports every required task state, scheduling, fixed-interval recurrence, pause/resume, dependencies, and bounded retry backoff.",
@@ -28,8 +28,62 @@
   "notes": [
     "M03 uses an atomic JSON snapshot behind a replaceable store interface; no external database server is required.",
     "One service process owns a runtime directory in M03.",
-    "Waiting is ordinary software and must not invoke any model or harness."
+    "Waiting is ordinary software and must not invoke any model or harness.",
+    "All 36 tests pass, including 13 focused M03 acceptance tests and preserved M00–M02 coverage.",
+    "A live runtime-status invocation created a valid snapshot under the ignored .viral/runtime directory.",
+    "Startup recovery is at least once; consequential task handlers must make side effects idempotent."
   ],
-  "nextAction": "Implement the runtime model, store, engine, service lifecycle, CLI, and comprehensive restart-oriented acceptance tests.",
-  "verificationResult": null
+  "nextAction": "Await owner direction. Do not begin M04 or merge into main.",
+  "verificationResult": {
+    "schemaVersion": 1,
+    "executedAt": "2026-09-10T09:48:48.899Z",
+    "passed": true,
+    "results": [
+      {
+        "name": "typecheck",
+        "command": "pnpm run typecheck",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "",
+        "durationMs": 1615
+      },
+      {
+        "name": "tests",
+        "command": "pnpm run test",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "36 tests passed",
+        "stderr": "",
+        "durationMs": 3649
+      },
+      {
+        "name": "lint",
+        "command": "pnpm run lint",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "Lint passed.",
+        "stderr": "",
+        "durationMs": 580
+      },
+      {
+        "name": "m02-acceptance",
+        "command": "pnpm run acceptance:m02",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "10 tests passed",
+        "stderr": "",
+        "durationMs": 3455
+      },
+      {
+        "name": "m03-acceptance",
+        "command": "pnpm run acceptance:m03",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "13 tests passed",
+        "stderr": "",
+        "durationMs": 2511
+      }
+    ]
+  }
 }

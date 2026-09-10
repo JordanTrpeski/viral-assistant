@@ -107,3 +107,12 @@ Programmatic queue methods cover enqueue, pause, resume, owner response, ticking
 - Update architecture, decisions, state, task, verification evidence, and checkpoint.
 - Commit and push verified work on `dev/m03-background-runtime` using the owner's GitHub identity.
 - Do not merge into `main` and do not begin M04.
+
+## Validation Record — 2026-09-10
+
+- Typecheck, lint, all 36 tests, preserved M02 acceptance, and the focused 13-test M03 acceptance command pass.
+- A future one-time task persists through runtime reconstruction and emits scheduled-start and completion events when executed.
+- Recurrence, owner waits, model and generic conditions, pause/resume, dependencies, verification, bounded retries, failure events, and interrupted-state recovery are objectively exercised.
+- Waiting model tasks perform no inference until a simulated availability condition becomes true; the actual M02 integration calls only the availability probe.
+- `runtime-status` created and read a valid local snapshot under `.viral/runtime/`, and Git ignore verification confirms that runtime data is not tracked.
+- The service lifecycle test proves that shutdown releases its wait and leaves no active timer.

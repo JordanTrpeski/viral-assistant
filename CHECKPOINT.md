@@ -1,29 +1,17 @@
 # Development Checkpoint
 
-- Milestone: M03_BACKGROUND_RUNTIME (in_progress)
-- Active task: M03-001 — Implement and verify a durable deterministic background runtime with scheduling, waiting, owner input, retry, event, and restart recovery infrastructure.
+- Milestone: M03_BACKGROUND_RUNTIME (complete)
+- Active task: None
 - Branch: dev/m03-background-runtime
-- HEAD: 1ecc70aaf63329bd72acc05e7b707bd6a361d1f2
+- HEAD: 741cd486c64c74dcdc84dd7740c872af733d8bbd
 - Working tree: dirty
 
 ## Files Changed
-- .gitignore
-- ARCHITECTURE.md
-- DECISIONS.md
-- README.md
-- ROADMAP.md
 - STATE.json
 - STATE.md
-- jarvis-dev.config.json
-- package.json
-- src/cli.ts
-- verification/latest.json
 - milestones/M03_BACKGROUND_RUNTIME.md
-- src/runtime/
 - tasks/M03-001.json
-- tests/runtime-helpers.ts
-- tests/runtime-service.test.ts
-- tests/runtime.test.ts
+- verification/latest.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -41,4 +29,4 @@
 - None
 
 ## Next Action
-Implement and verify the durable deterministic background runtime, queue, scheduler, conditions, owner waits, retries, events, and restart recovery.
+Await owner direction. Do not begin M04 or merge into main without owner approval.

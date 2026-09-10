@@ -1,19 +1,26 @@
 # Jarvis — Current Development State
 
-M03 is in progress on `dev/m03-background-runtime`. Active task: `M03-001`.
+M03 is complete and verified on `dev/m03-background-runtime`. No task is active.
 
-## Starting point
-- M00–M02 are complete and protected by their automated tests.
-- The local-brain layer remains optional at runtime; Ollama is not installed on this machine.
-- The repository working tree was clean at M03 start.
+## Verified work
+- A long-running service drives bounded deterministic ticks and stops through an explicit shutdown controller.
+- A replaceable store persists validated atomic JSON snapshots under the Git-ignored `.viral/runtime/` directory.
+- The durable task model includes every required state, explicit `ownerInputRequired`, schedules, recurrence, conditions, owner responses, pause/resume, dependencies, verification, and bounded retry data.
+- One-time tasks survive runtime reconstruction and execute when due; recurring tasks execute only at fixed due times.
+- Owner-dependent tasks remain paused until explicit input is supplied.
+- Model and general condition waits resume through modular condition adapters. The M02 model integration probes availability without running inference.
+- Failed work uses bounded exponential backoff and reaches `FAILED`; dependency failures propagate without an unbounded loop.
+- Important completion, failure, owner-input, model-wait, scheduled-start, retry, pause/resume, and recovery events are persisted and exposed to internal listeners.
+- Interrupted `RUNNING` and `VERIFYING` tasks recover to `QUEUED` with at-least-once semantics and a recovery event.
+- Typecheck, lint, all 36 tests, the 10-test M02 suite, and the 13-test M03 acceptance suite pass.
 
-## M03 scope
-Implement a durable deterministic background service with an embedded replaceable store, task queue, one-time and recurring schedules, condition/model/owner waits, pause/resume, bounded retries, simple dependencies, internal events, and safe restart recovery.
+## Live evidence
+`runtime-status` created and read a valid empty local snapshot at `.viral/runtime/state.json`; Git confirmed the directory is ignored. The service process started and polled without an LLM session. Clean shutdown and timer release are covered by the controlled service lifecycle test.
 
 ## Blockers
 None.
 
 ## Next action
-Implement M03 and its restart-oriented acceptance tests. Do not merge into main or begin M04.
+Await owner direction. Do not merge into main or begin M04 without owner approval.
 
-Last verified prior-milestone commit: b63cb75426e5b634ab3b155aed1f7c8986bd8d13. Repository state is the temporary Bootstrap continuity mechanism.
+Last verified implementation commit: 741cd486c64c74dcdc84dd7740c872af733d8bbd. Runtime persistence and repository development state are separate replaceable Bootstrap mechanisms.
