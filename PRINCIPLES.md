@@ -38,3 +38,9 @@
 
 13. **Prefer understandable systems**
     Avoid unnecessary framework complexity. Bootstrap components should remain small enough that another coding agent can understand and repair them.
+
+14. **Efficiency serves verified completion**
+    Follow `EFFICIENCY.md` for model, context, reasoning-effort, escalation, session-compaction, and token/compute decisions. Use deterministic tools before local models and local models before cloud capability when each can complete the work reliably. Escalate when evidence warrants it, and never trade away correctness, safety, privacy, or verification merely to reduce usage.
+
+15. **Connector-first integration**
+    Independent applications and major subsystems should communicate through explicit, versioned connectors or interfaces. Avoid direct database coupling, shared mutable state, and importing another application's internals unless a strong reason is documented. Viral applies this principle to its own architecture and to software it develops in the future.

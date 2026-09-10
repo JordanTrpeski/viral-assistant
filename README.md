@@ -45,6 +45,8 @@ The local commands use only the loopback Ollama endpoint configured in `jarvis-d
 
 Development tasks live in `tasks/*.json`. `STATE.json` and `STATE.md` describe current progress. A different coding agent should read `AGENTS.md`, the ordered context listed there, the active task, and `CHECKPOINT.md` before continuing.
 
+`EFFICIENCY.md` is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute choices. Independent applications and major subsystems integrate through explicit, versioned connectors rather than shared databases, mutable state, or internal imports by default.
+
 ## Direct project checks
 
 ```sh
@@ -55,4 +57,4 @@ pnpm run acceptance:m02
 pnpm run acceptance:m03
 ```
 
-Bootstrap V0 remains limited to development continuity and the M02 local brain. It contains no cloud model API integration, voice, browser automation, scheduler, desktop UI, personal data, or OS control.
+Bootstrap V0 currently includes development continuity, the M02 local brain, and the M03 deterministic background runtime. It contains no cloud model API integration, voice, browser automation, desktop UI, personal data, or OS control.

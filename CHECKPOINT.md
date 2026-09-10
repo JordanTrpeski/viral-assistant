@@ -2,12 +2,22 @@
 
 - Milestone: M03_BACKGROUND_RUNTIME (complete)
 - Active task: None
-- Branch: dev/m03-background-runtime
-- HEAD: 8f5a88cf14b99373372274f044dee4188ea01026
-- Working tree: clean
+- Branch: dev/efficiency-policy
+- HEAD: 5e7a0192a72f7c8c6409bb59035f1221608d6ed0
+- Working tree: dirty
 
 ## Files Changed
-- None
+- AGENTS.md
+- ARCHITECTURE.md
+- DECISIONS.md
+- PRINCIPLES.md
+- README.md
+- ROADMAP.md
+- RULES.md
+- STATE.json
+- STATE.md
+- verification/latest.json
+- EFFICIENCY.md
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`

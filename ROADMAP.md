@@ -22,19 +22,22 @@ Run Jarvis continuously as a background process with durable scheduled tasks, co
 
 Detailed specification: `milestones/M03_BACKGROUND_RUNTIME.md`
 
-## M04 — Voice Interface
+## M04 — Efficiency Governor
+Implement the first simple, observable, owner-overridable policy layer for autonomous development. Apply `EFFICIENCY.md` to capability and reasoning-effort selection, progressive context loading, bounded escalation, fresh-session/checkpoint decisions, local context compression, model-availability waits, and local efficiency telemetry. Do not optimize past correctness, safety, privacy, or verification.
+
+## M05 — Voice Interface
 Add local-first speech recognition and text-to-speech, plus push-to-talk/hotkey interaction. Wake-word support may follow if justified.
 
-## M05 — Desktop Control
+## M06 — Desktop Control
 Add safe Windows/OS automation through a permissioned tool layer.
 
-## M06 — Browser Automation
+## M07 — Browser Automation
 Add isolated autonomous browsing and, where safe, controlled use of the owner's authenticated browser session.
 
-## M07 — Persistent Personal Memory
+## M08 — Persistent Personal Memory
 Introduce a local, structured memory system for goals, projects, routines, tasks, preferences, and relevant history. Revisit/replace Bootstrap repository state where appropriate.
 
-## M08 — Life Modules
+## M09 — Life Modules
 Incrementally add owner-approved modules such as:
 - calendar,
 - workout planning,
@@ -44,10 +47,10 @@ Incrementally add owner-approved modules such as:
 - shopping,
 - communication.
 
-## M09 — Desktop Experience
+## M10 — Desktop Experience
 Create the full desktop control center, overlay, system tray experience, token/quota visibility, progress views, permissions, and settings.
 
-## M10 — Remote/Mobile Interface
+## M11 — Remote/Mobile Interface
 Provide a limited mobile/remote interface while the PC remains the primary execution environment. Optional relay/server components may be evaluated later.
 
 ## Roadmap Rule

@@ -21,6 +21,9 @@
     "M02 must not launch a coding harness or directly enforce infrastructure decisions from model output.",
     "The safe live probe found no Ollama CLI, running service, or installed models. Optional setup: install Ollama, manually pull a chosen small model, and configure localBrain.preferredModel or JARVIS_LOCAL_MODEL.",
     "M03 runtime infrastructure must remain deterministic; waiting must not keep or repeatedly prompt an LLM session.",
-    "Private runtime snapshots default to the Git-ignored .viral/runtime directory. Interrupted work uses at-least-once recovery, so consequential handlers must be idempotent."
+    "Private runtime snapshots default to the Git-ignored .viral/runtime directory. Interrupted work uses at-least-once recovery, so consequential handlers must be idempotent.",
+    "EFFICIENCY.md is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute efficiency behavior.",
+    "Connector-first architecture applies to Viral and independent software it develops; cross-application contracts should be explicit and versioned.",
+    "The canonical repository root is C:\\Users\\jorda\\Desktop\\viral-bootstrap; the accidental nested repository was consolidated with full Git history and local runtime state preserved."
   ]
 }

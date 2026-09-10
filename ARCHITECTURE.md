@@ -15,6 +15,7 @@ Human-readable authoritative product and engineering documents:
 - PRODUCT.md
 - PRINCIPLES.md
 - RULES.md
+- EFFICIENCY.md
 - ROADMAP.md
 - DECISIONS.md
 - milestone specifications
@@ -25,6 +26,12 @@ Bootstrap continuity is represented by:
 - STATE.md — concise human-readable summary
 
 This mechanism is explicitly temporary/replaceable.
+
+### 2a. Efficiency Policy
+
+`EFFICIENCY.md` is the authoritative policy for model and reasoning-effort selection, context budgeting and progressive retrieval, failure-aware escalation, session compaction, model-switch handoffs, and token/compute efficiency. It separates stable rules, semi-stable project context, and dynamic task state, while keeping authoritative constraints as deterministic inclusions.
+
+M00–M03 provide foundations used by that policy, but do not implement an Efficiency Governor. M04 is reserved for the first practical governor. Until then, agents and explicit callers apply the policy directly.
 
 ### 3. Task Model
 A small task representation should track:
@@ -72,6 +79,12 @@ M03 adds a long-running deterministic service under `src/runtime/`. A replaceabl
 
 The engine owns scheduling, fixed-interval recurrence, condition checks, owner-input gates, pause/resume, dependencies, bounded retry backoff, verification transitions, and event generation. Work and condition adapters are injectable. The provided model-availability condition calls only the M02 availability probe while waiting; it does not run inference. The runtime has no direct dependency on a coding harness and never keeps an LLM session alive merely to wait.
 
+### 5c. Connector-First Boundary
+
+Independent applications and major subsystems integrate through explicit, versioned connectors or interfaces. Connectors own their request/response contracts, versioning, error semantics, and permission boundaries. Implementations should avoid direct access to another application's database, shared mutable state, or internal modules unless a strong reason and migration impact are recorded in `DECISIONS.md`.
+
+This boundary applies to Viral's own model, harness, runtime, storage, and future tool integrations. It also applies by default to independent software Viral develops: cross-application behavior belongs behind a connector rather than relying on internal representation or database layout.
+
 ### 6. Git Checkpoint Controller
 Normal software should be able to:
 - inspect working-tree state,
@@ -103,6 +116,7 @@ The coding agent is a worker inside the development loop. It is not the sole man
 ## Future Architecture
 
 Future modules may include:
+- efficiency governor,
 - voice input/output,
 - desktop overlay/full UI,
 - OS automation,

@@ -1,6 +1,12 @@
 # Jarvis — Current Development State
 
-M03 is complete and verified on `dev/m03-background-runtime`. No task is active.
+M03 remains complete and verified. Policy and repository-root maintenance are complete on `dev/efficiency-policy`; no task is active.
+
+## Permanent policy guidance
+`EFFICIENCY.md` is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute behavior. The connector-first boundary requires explicit, versioned interfaces between independent applications and major subsystems, including software Viral develops in the future. This integration changes policy documentation only; no Efficiency Governor or M04 functionality has been implemented.
+
+## Repository root
+The canonical Git repository root is `C:\Users\jorda\Desktop\viral-bootstrap`. The former nested repository under the outer `milestones` directory was consolidated upward with Git history, branches, remotes, tracked files, and ignored `.viral/` runtime data preserved. The final `milestones/` directory contains milestone specifications only.
 
 ## Verified work
 - A long-running service drives bounded deterministic ticks and stops through an explicit shutdown controller.

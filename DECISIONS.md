@@ -90,3 +90,22 @@ One background service owns a runtime directory in M03. Startup requeues interru
 **Status:** accepted for M03
 
 The runtime engine, rather than an LLM, owns task states, scheduling, fixed-interval recurrence, dependencies, retry limits, owner-input gates, and event generation. Conditions and task handlers are modular adapters. A waiting task invokes neither a handler nor model inference until an ordinary software condition or explicit owner response makes it runnable. The model-availability condition uses only the M02 probe and cannot launch a model or coding harness.
+
+## D015 — Authoritative Efficiency Policy
+**Status:** accepted by owner on 2026-09-10
+
+`EFFICIENCY.md` is authoritative for model selection, context management, reasoning effort, escalation, session compaction, and token/compute efficiency. The default order is deterministic tools, then a suitable local model, then an authenticated coding harness or cloud model when required. Capability, effort, and context should increase when evidence justifies them; efficiency remains subordinate to correctness, safety, privacy, verification, and explicit owner instructions.
+
+This decision records policy only. The existing M02 local brain and M03 deterministic runtime remain unchanged, and no Efficiency Governor is implemented by this integration.
+
+## D016 — Versioned Connector-First Integration
+**Status:** accepted by owner on 2026-09-10
+
+Independent applications and major subsystems should communicate through explicit, versioned connectors or interfaces. Direct database coupling, shared mutable state, and imports of another application's internals are disallowed by default because they make ownership, versioning, permissions, testing, and replacement unclear. An exception requires a strong documented technical reason and an explicit migration/compatibility plan.
+
+This principle applies to Viral's internal and external integrations and to independent software Viral develops in the future.
+
+## D017 — M04 Reserved for the Efficiency Governor
+**Status:** accepted by owner on 2026-09-10
+
+The authoritative efficiency policy assigns M04 to the first practical Efficiency Governor. The prior future milestones are renumbered without changing their approved scope: voice begins at M05 and remote/mobile becomes M11. This policy integration does not start or implement M04.

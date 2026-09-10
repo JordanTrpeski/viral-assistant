@@ -7,12 +7,13 @@ These rules apply to every coding agent working in this repository.
 - The human owner is the final authority.
 - PRODUCT.md defines what Jarvis is intended to become.
 - ROADMAP.md defines owner-approved milestone direction.
+- EFFICIENCY.md is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute efficiency behavior.
 - The active milestone defines current scope.
 - Agents may propose changes to product direction or milestones but may not silently redefine them.
 
 ## Development Behavior
 
-- Read AGENTS.md, PRODUCT.md, PRINCIPLES.md, RULES.md, ARCHITECTURE.md, ROADMAP.md, DECISIONS.md, STATE.json, STATE.md, and the active milestone before substantial work.
+- Read AGENTS.md, PRODUCT.md, PRINCIPLES.md, RULES.md, EFFICIENCY.md, ARCHITECTURE.md, ROADMAP.md, DECISIONS.md, STATE.json, STATE.md, and the active milestone before substantial work.
 - Inspect existing code before modifying it.
 - Prefer the smallest coherent implementation that satisfies the active acceptance criteria.
 - Do not implement future milestones opportunistically.
@@ -21,6 +22,15 @@ These rules apply to every coding agent working in this repository.
 - Run relevant tests before marking work complete.
 - Do not claim completion when acceptance criteria are unverified.
 - Record meaningful architectural decisions in DECISIONS.md.
+- Use the least expensive capability reasonably expected to finish reliably, load context progressively, compact resolved work into durable state, and bound retries and escalation according to EFFICIENCY.md.
+- Keep authoritative rules and explicit owner instructions as deterministic context inclusions; a summarizer may not silently remove them.
+
+## Integration Boundaries
+
+- Connect independent applications and major subsystems through explicit, versioned connectors or interfaces.
+- Avoid direct database coupling, shared mutable state, and importing another application's internals.
+- Document a strong technical reason in DECISIONS.md before making an exception.
+- Apply these rules both to Viral integrations and to software Viral develops in the future.
 
 ## Git
 

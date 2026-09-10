@@ -10,14 +10,17 @@ Read:
 1. PRODUCT.md
 2. PRINCIPLES.md
 3. RULES.md
-4. ARCHITECTURE.md
-5. ROADMAP.md
-6. DECISIONS.md
-7. STATE.json
-8. STATE.md
-9. the active milestone under `milestones/`
+4. EFFICIENCY.md
+5. ARCHITECTURE.md
+6. ROADMAP.md
+7. DECISIONS.md
+8. STATE.json
+9. STATE.md
+10. the active milestone under `milestones/`
 
 Inspect the existing source tree and Git state.
+
+`EFFICIENCY.md` is authoritative for model choice, context selection, reasoning effort, escalation, session compaction, and token/compute efficiency. Apply it without weakening correctness, safety, privacy, verification, or explicit owner instructions.
 
 ## Working Method
 
@@ -57,6 +60,12 @@ Do not build voice, browser control, calendar, finance, desktop UI, local LLM su
 For substantial subsystems, prefer evaluating existing compatible open-source implementations before rebuilding them.
 
 Do not import unnecessary frameworks or large repositories merely because they exist.
+
+## Connector-First Architecture
+
+Independent applications and major subsystems communicate through explicit, versioned connectors or interfaces. Avoid direct database coupling, shared mutable state, and importing another application's internals unless a strong reason is documented in `DECISIONS.md`.
+
+Apply this boundary both inside Viral and to software Viral develops for the owner.
 
 ## Architecture Changes
 
