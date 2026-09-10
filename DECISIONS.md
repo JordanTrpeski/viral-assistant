@@ -71,3 +71,10 @@ Authentication status remains unknown when the CLI cannot access its home, times
 **Status:** accepted by owner on 2026-09-10
 
 M01 completion requires the implemented Claude adapter, separate-process simulated Codex-to-Claude continuity, and a successful owner-authenticated live Codex run. Live Claude authentication and continuation are deferred optional validation because a Claude Code subscription is not currently available. This deferral does not weaken the adapter or automated continuity acceptance criteria and does not authorize M02 work.
+
+## D012 — Loopback Ollama Local-Brain Boundary
+**Status:** accepted for M02
+
+M02 uses Ollama through a small provider-neutral local-model interface. The initial adapter accepts only loopback HTTP(S) endpoints, uses a configurable preferred model, and never downloads a model automatically. This keeps inference local and makes the runtime replaceable without introducing a cloud SDK or API billing path.
+
+Local inference may classify, summarize, select context, and recommend routing. Deterministic software validates and bounds its output, owns escalation policy and state transitions, and must separately authorize any action. The M02 local brain cannot launch Codex, Claude Code, or another development harness.

@@ -15,6 +15,8 @@ Detailed specification will be refined after M00.
 ## M02 — Local Brain
 Integrate a small local LLM runtime, initially likely through Ollama, for cheap classification, summarization, routing support, context selection, and simple planning.
 
+Detailed specification: `milestones/M02_LOCAL_BRAIN.md`
+
 ## M03 — Background Runtime and Scheduler
 Run Jarvis continuously as a background process with durable scheduled tasks, condition waits, resumable work, notifications, and owner-input states.
 

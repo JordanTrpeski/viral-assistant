@@ -1,6 +1,6 @@
 # Jarvis
 
-Jarvis is a local-first personal AI operating layer. The current implementation is limited to the M00 development controller that preserves project continuity across coding-agent sessions.
+Jarvis is a local-first personal AI operating layer. Bootstrap V0 currently includes repository continuity, portable Codex/Claude development harnesses, and a replaceable local reasoning layer.
 
 ## Requirements
 
@@ -28,11 +28,16 @@ pnpm jarvis-dev harnesses
 pnpm jarvis-dev packet M01-001
 pnpm jarvis-dev run codex M01-001 --timeout-ms 900000
 pnpm jarvis-dev run claude M01-001 --timeout-ms 900000
+pnpm jarvis-dev local-status
+pnpm jarvis-dev local-infer "Summarize this text" --model <installed-model>
+pnpm jarvis-dev local-classify "Summarize the current project state."
 ```
 
 Add `--json` to any command for script-friendly JSON output. Genuine errors return a non-zero exit code. `verify` executes the commands in `jarvis-dev.config.json` and writes structured results to `verification/latest.json`. `checkpoint` writes `CHECKPOINT.md` from current state, task, verification, and read-only Git inspection.
 
 `harnesses` safely probes the installed Codex CLI and Claude Code. `packet` writes a concise repository-derived task packet under `packets/`. `run` launches only the explicitly selected authenticated CLI, captures bounded output and timeout diagnostics under `runs/`, links the run from `STATE.json`, and refreshes the checkpoint. Provider API-key environment variables are removed from child processes so these adapters use the CLIs' existing subscription authentication. Harness selection remains manual.
+
+The local commands use only the loopback Ollama endpoint configured in `jarvis-dev.config.json`. Configure `localBrain.preferredModel`, set the local `JARVIS_LOCAL_MODEL` environment variable, or pass `--model`. Jarvis reports missing runtime or model setup and never downloads a model automatically. Deterministic policy owns escalation decisions; local inference cannot launch a coding harness.
 
 Development tasks live in `tasks/*.json`. `STATE.json` and `STATE.md` describe current progress. A different coding agent should read `AGENTS.md`, the ordered context listed there, the active task, and `CHECKPOINT.md` before continuing.
 
@@ -42,6 +47,7 @@ Development tasks live in `tasks/*.json`. `STATE.json` and `STATE.md` describe c
 pnpm run typecheck
 pnpm run test
 pnpm run lint
+pnpm run acceptance:m02
 ```
 
-M00 is intentionally limited to development continuity. It contains no AI provider integration, local model, voice, browser automation, scheduler, desktop UI, personal data, or OS control.
+Bootstrap V0 remains limited to development continuity and the M02 local brain. It contains no cloud model API integration, voice, browser automation, scheduler, desktop UI, personal data, or OS control.

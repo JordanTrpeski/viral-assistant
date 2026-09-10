@@ -60,6 +60,12 @@ Normal software executes:
 - linting if configured,
 - milestone-specific acceptance commands.
 
+### 5a. Local Brain
+
+M02 adds a provider-neutral local-model boundary under `src/local/`. Ollama is the first adapter and is accessed only through a validated loopback HTTP endpoint. Its CLI probe, HTTP transport, model choice, timeout, and cancellation behavior remain injectable and replaceable.
+
+The local brain supports cheap request classification, concise summarization, relevant-context selection, and routing recommendations. Model output is parsed and bounded before use. A deterministic policy layer owns escalation categories and takes precedence for development work and consequential owner actions. The local brain never changes project state or launches a development harness; callers must separately decide and execute any permitted action.
+
 ### 6. Git Checkpoint Controller
 Normal software should be able to:
 - inspect working-tree state,
@@ -91,7 +97,6 @@ The coding agent is a worker inside the development loop. It is not the sole man
 ## Future Architecture
 
 Future modules may include:
-- local LLM/router,
 - scheduler/background service,
 - voice input/output,
 - desktop overlay/full UI,

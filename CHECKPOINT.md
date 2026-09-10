@@ -1,18 +1,33 @@
 # Development Checkpoint
 
-- Milestone: M01_MULTI_HARNESS (complete)
-- Active task: None
-- Branch: dev/m01-multi-harness
-- HEAD: f4a2da52a97a686bffc51fee279bf4ff8fc8c911
-- Working tree: clean
+- Milestone: M02_LOCAL_BRAIN (in_progress)
+- Active task: M02-001 — Implement and verify a replaceable local reasoning layer using Ollama, with deterministic escalation policy and no cloud or automatic harness execution.
+- Branch: dev/m02-local-brain
+- HEAD: 86ca7613683a7bf4cc05e55b66e6f01fcd5b7d69
+- Working tree: dirty
 
 ## Files Changed
-- None
+- ARCHITECTURE.md
+- DECISIONS.md
+- README.md
+- ROADMAP.md
+- STATE.json
+- STATE.md
+- jarvis-dev.config.json
+- package.json
+- src/cli.ts
+- verification/latest.json
+- milestones/M02_LOCAL_BRAIN.md
+- src/local/
+- tasks/M02-001.json
+- tests/local-model.test.ts
+- tests/local-tasks.test.ts
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
 - PASS — tests: `pnpm run test`
 - PASS — lint: `pnpm run lint`
+- PASS — m02-acceptance: `pnpm run acceptance:m02`
 
 ## Latest Harness Run
 - Codex CLI: succeeded
@@ -23,4 +38,4 @@
 - None
 
 ## Next Action
-Await owner direction. Do not begin M02 or merge into main without owner approval.
+Implement and verify the provider-neutral local model interface, Ollama adapter, deterministic local tasks, and safe live probe.

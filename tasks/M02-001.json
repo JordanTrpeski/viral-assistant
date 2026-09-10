@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "M02-001",
+  "milestone": "M02_LOCAL_BRAIN",
+  "objective": "Implement and verify a replaceable local reasoning layer using Ollama, with deterministic escalation policy and no cloud or automatic harness execution.",
+  "status": "in_progress",
+  "acceptanceCriteria": [
+    "A provider-neutral local-model interface and Ollama adapter support safe probing and structured inference.",
+    "Installed models and a configurable preferred model are detected without automatic model downloads.",
+    "Inference supports structured context, timeout, cancellation, and structured failure results over loopback only.",
+    "Classification, summarization, context relevance selection, and routing recommendation tasks are available.",
+    "Deterministic policy enforces LOCAL_OK, CODING_HARNESS_REQUIRED, OWNER_INPUT_REQUIRED, and UNSURE outcomes without launching a harness.",
+    "Controlled tests prove useful context reduction and representative request classification without cloud calls.",
+    "Unavailable Ollama, failure, timeout, cancellation, and malformed output leave project state intact.",
+    "Typecheck, lint, all existing tests, and M02 acceptance tests pass."
+  ],
+  "dependencies": [
+    "M01-001"
+  ],
+  "relevantFiles": [
+    "milestones/M02_LOCAL_BRAIN.md",
+    "src/local/",
+    "src/cli.ts",
+    "jarvis-dev.config.json",
+    "tests/local-model.test.ts",
+    "tests/local-tasks.test.ts"
+  ],
+  "notes": [
+    "Ollama is the initial runtime unless implementation investigation reveals a strong reason to change.",
+    "The local model recommends; deterministic software owns policy and state transitions.",
+    "No model will be downloaded automatically."
+  ],
+  "nextAction": "Implement the local-model boundary, Ollama adapter, local reasoning tasks, policy, CLI commands, and controlled acceptance tests.",
+  "verificationResult": null
+}

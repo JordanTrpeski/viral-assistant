@@ -1,8 +1,14 @@
 {
+  "localBrain": {
+    "provider": "ollama",
+    "baseUrl": "http://127.0.0.1:11434",
+    "preferredModel": null,
+    "defaultTimeoutMs": 120000
+  },
   "verificationCommands": [
     { "name": "typecheck", "command": "pnpm run typecheck" },
     { "name": "tests", "command": "pnpm run test" },
-    { "name": "lint", "command": "pnpm run lint" }
+    { "name": "lint", "command": "pnpm run lint" },
+    { "name": "m02-acceptance", "command": "pnpm run acceptance:m02" }
   ]
 }
-

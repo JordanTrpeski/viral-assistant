@@ -9,10 +9,25 @@ import { createHarnesses } from "./harness/registry.js";
 import { launchTask } from "./harness/coordinator.js";
 import type { HarnessId } from "./harness/types.js";
 import { prepareTaskPacket } from "./packet.js";
+import { createLocalModel } from "./local/registry.js";
+import { LocalBrain } from "./local/tasks.js";
 
 const root = resolve(process.env.JARVIS_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
+
+function option(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? undefined : process.argv[index + 1];
+}
+
+function timeout(defaultValue?: number): number | undefined {
+  const value = option("--timeout-ms");
+  if (value === undefined) return defaultValue;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1_000) throw new Error("--timeout-ms must be an integer of at least 1000");
+  return parsed;
+}
 
 async function selectedTask(explicit?: string): Promise<string> {
   if (explicit && !explicit.startsWith("--")) return explicit;
@@ -56,8 +71,34 @@ async function main(): Promise<void> {
     const record = await launchTask(root, createHarnesses(root)[harnessId], taskId, timeoutMs);
     console.log(json ? JSON.stringify(record, null, 2) : `${record.displayName} ${record.succeeded ? "completed" : "failed"}; run record: runs/${record.runId}.json`);
     if (!record.succeeded) process.exitCode = 1;
+  } else if (command === "local-status") {
+    const probe = await (await createLocalModel(root)).probe();
+    console.log(json ? JSON.stringify(probe, null, 2) : [
+      `Ollama CLI installed: ${probe.installed}`,
+      `Ollama service running: ${probe.running}`,
+      `Available models: ${probe.models.length ? probe.models.join(", ") : "None"}`,
+      `Preferred model: ${probe.preferredModel ?? "Not configured"}`,
+      ...probe.diagnostics.map((item) => `Diagnostic: ${item}`)
+    ].join("\n"));
+    if (!probe.usable) process.exitCode = 1;
+  } else if (command === "local-infer") {
+    const input = process.argv[3];
+    if (!input || input.startsWith("--")) throw new Error("local-infer requires input text");
+    const model = await createLocalModel(root);
+    const requestedModel = option("--model");
+    const requestedTimeout = timeout();
+    const result = await model.infer({ input, ...(requestedModel ? { model: requestedModel } : {}), ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }) });
+    console.log(json ? JSON.stringify(result, null, 2) : result.succeeded ? result.output : `${result.error ?? "Local inference failed"}${result.diagnostics.length ? `\n${result.diagnostics.join("\n")}` : ""}`);
+    if (!result.succeeded) process.exitCode = 1;
+  } else if (command === "local-classify") {
+    const input = process.argv[3];
+    if (!input || input.startsWith("--")) throw new Error("local-classify requires input text");
+    const requestedTimeout = timeout();
+    const result = await new LocalBrain(await createLocalModel(root)).classify(input, requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout });
+    console.log(json ? JSON.stringify(result, null, 2) : `${result.escalation}: ${result.value?.rationale ?? result.diagnostics.join(" ")}`);
+    if (!result.succeeded) process.exitCode = 1;
   } else {
-    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run> [options]");
+    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify> [options]");
     process.exitCode = 2;
   }
 }
