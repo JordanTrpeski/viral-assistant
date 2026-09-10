@@ -3,7 +3,7 @@
   "id": "M01-001",
   "milestone": "M01_MULTI_HARNESS",
   "objective": "Implement and verify provider-neutral Codex CLI and Claude Code development harnesses with repository-based handoff continuity.",
-  "status": "in_progress",
+  "status": "blocked",
   "acceptanceCriteria": [
     "Both CLI adapters implement one provider-neutral contract.",
     "Safe bounded probes report installation and usability where determinable.",
@@ -13,7 +13,9 @@
     "Automated Codex-to-Claude continuity simulation and all project verification pass.",
     "A live Codex-to-Claude handoff is demonstrated with the owner's authenticated CLIs."
   ],
-  "dependencies": ["M00-001"],
+  "dependencies": [
+    "M00-001"
+  ],
   "relevantFiles": [
     "milestones/M01_MULTI_HARNESS.md",
     "src/harness/",
@@ -25,11 +27,47 @@
     "packets/"
   ],
   "notes": [
-    "Codex CLI 0.153.4 is installed; its auth status cannot be checked in the sandbox because the sandbox has no home directory.",
-    "Claude Code was not found on PATH or in common installation locations at M01 start.",
-    "Do not use direct provider APIs, API keys, dangerous bypass flags, or automatic model selection."
+    "Provider-neutral adapters, packet generation, structured run persistence, checkpoint continuity, and automated portability simulation are implemented.",
+    "Corrected Codex global approval argument placement; the installed CLI accepts the command.",
+    "Authentication probes preserve unknown status for inaccessible/unsupported authentication and timeouts; explicit logout is false. Launch validates required project context before invoking a harness.",
+    "Separate fake Codex and Claude processes prove the receiver reads Codex work, checkpoint, task acceptance criteria, state, and Git-derived packet without chat history.",
+    "The outer live Codex run succeeded through ChatGPT subscription authentication and produced runs/20260910082604189-codex-M01-001.json without receiving prior conversation history.",
+    "The live Codex worker reviewed the implementation, added context preflight and safer authentication-state detection, and expanded the verified suite to 13 tests.",
+    "Claude Code 2.1.266 is installed from Anthropic's official Windows package; owner subscription authentication is pending."
   ],
-  "nextAction": "Implement adapters, packet generation, run persistence, CLI commands, and automated portability tests.",
-  "verificationResult": null
+  "nextAction": "Complete Claude subscription authentication, then launch Claude on M01-001 using only the generated repository packet and verify its understanding of the Codex handoff.",
+  "verificationResult": {
+    "schemaVersion": 1,
+    "executedAt": "2026-09-10T08:28:13.668Z",
+    "passed": true,
+    "results": [
+      {
+        "name": "typecheck",
+        "command": "pnpm run typecheck",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "$ tsc --noEmit",
+        "durationMs": 1450
+      },
+      {
+        "name": "tests",
+        "command": "pnpm run test",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (510.9827ms)\n✔ loads every required context file and validates state (19.929ms)\n✔ reports a missing context file clearly (21.0866ms)\n✔ reports malformed and invalid state clearly (19.8607ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (16.9314ms)\n✔ Claude adapter uses print mode with stdin and structured output (10.0901ms)\n✔ process runner captures missing executables and timeouts (1055.935ms)\n✔ authentication probes distinguish subscription login, logout, and unknown status (5.4115ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (785.718ms)\n✔ launch rejects missing required context before invoking the harness (254.2979ms)\n✔ creates, reads, and updates a validated development task (31.1637ms)\n✔ rejects an invalid task (10.7111ms)\n✔ captures structured pass and fail verification results (235.6075ms)\nℹ tests 13\nℹ suites 0\nℹ pass 13\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1208.8363",
+        "stderr": "$ pnpm run build && node --test dist/tests/*.test.js\n$ tsc",
+        "durationMs": 3333
+      },
+      {
+        "name": "lint",
+        "command": "pnpm run lint",
+        "passed": true,
+        "exitCode": 0,
+        "stdout": "Lint passed.",
+        "stderr": "$ node scripts/lint.mjs",
+        "durationMs": 588
+      }
+    ]
+  }
 }
-

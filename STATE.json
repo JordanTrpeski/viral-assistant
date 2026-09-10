@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "project": "Jarvis",
   "currentMilestone": "M01_MULTI_HARNESS",
-  "milestoneStatus": "in_progress",
+  "milestoneStatus": "blocked",
   "activeTask": "M01-001",
   "completedTasks": [
     "M00-001"
   ],
   "blockers": [
-    "Claude Code is not installed or discoverable; the final live cross-provider acceptance test cannot run until it is installed and authenticated."
+    "Claude Code 2.1.266 is installed, but owner subscription authentication is still pending for the live continuation test."
   ],
-  "lastVerifiedCommit": "aca9d3768fccb88434d188addeeca132c7669930",
+  "lastVerifiedCommit": "aeb2d29df3ca03fa4392295becab5cc1a4dc4b66",
   "lastCheckpoint": "CHECKPOINT.md",
-  "lastHarnessRun": null,
-  "nextAction": "Implement and verify the M01 multi-harness infrastructure; then run the live portability test if both authenticated CLIs are available.",
+  "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
+  "nextAction": "Complete the open Claude subscription login, then run the Claude continuation using the repository packet and finish the live portability acceptance test.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later."
   ]

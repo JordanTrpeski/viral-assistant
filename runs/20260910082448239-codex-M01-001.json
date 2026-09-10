@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260910082448239-codex-M01-001",
+  "taskId": "M01-001",
+  "packetPath": "packets/M01-001.md",
+  "startedAt": "2026-09-10T08:24:48.239Z",
+  "finishedAt": "2026-09-10T08:24:48.287Z",
+  "durationMs": 48,
+  "exitCode": 2,
+  "signal": null,
+  "timedOut": false,
+  "stdout": "",
+  "stderr": "error: unexpected argument '--ask-for-approval' found\n\n  tip: to pass '--ask-for-approval' as a value, use '-- --ask-for-approval'\n\nUsage: codex exec [OPTIONS] [PROMPT]\n       codex exec [OPTIONS] <COMMAND> [ARGS]\n\nFor more information, try '--help'.",
+  "error": null,
+  "harness": "codex",
+  "displayName": "Codex CLI",
+  "command": [
+    "codex",
+    "exec",
+    "--json",
+    "--color",
+    "never",
+    "-C",
+    "C:\\Users\\jorda\\Desktop\\viral-bootstrap\\milestones",
+    "--sandbox",
+    "workspace-write",
+    "--ask-for-approval",
+    "never",
+    "-"
+  ],
+  "succeeded": false,
+  "diagnostics": [
+    "Codex run failed.",
+    "Exit code: 2.",
+    "error: unexpected argument '--ask-for-approval' found"
+  ]
+}

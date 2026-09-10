@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260910082750681-codex-M01-001",
+  "taskId": "M01-001",
+  "packetPath": "packets/M01-001.md",
+  "startedAt": "2026-09-10T08:27:50.681Z",
+  "finishedAt": "2026-09-10T08:27:50.722Z",
+  "durationMs": 41,
+  "exitCode": 1,
+  "signal": null,
+  "timedOut": false,
+  "stdout": "",
+  "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Could not find home directory\nError finding codex home: Could not find home directory",
+  "error": null,
+  "harness": "codex",
+  "displayName": "Codex CLI",
+  "command": [
+    "codex",
+    "--ask-for-approval",
+    "never",
+    "exec",
+    "--json",
+    "--color",
+    "never",
+    "-C",
+    "C:\\Users\\jorda\\Desktop\\viral-bootstrap\\milestones",
+    "--sandbox",
+    "workspace-write",
+    "-"
+  ],
+  "succeeded": false,
+  "diagnostics": [
+    "Codex run failed.",
+    "Exit code: 1.",
+    "WARNING: proceeding, even though we could not create PATH aliases: Could not find home directory"
+  ]
+}

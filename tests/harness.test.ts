@@ -25,7 +25,7 @@ class RecordingRunner implements ProcessRunner {
 
 test("Codex adapter probes auth and launches a stdin packet in workspace sandbox", async () => {
   const root = await fixture();
-  const runner = new RecordingRunner([result({ stdout: "codex-cli 1.0" }), result({ stdout: "Logged in" }), result()]);
+  const runner = new RecordingRunner([result({ stdout: "codex-cli 1.0" }), result({ stdout: "Logged in using ChatGPT" }), result()]);
   const harness = new CodexHarness(runner, { executable: "codex-test" }, root);
   const probe = await harness.probe();
   assert.equal(probe.installed, true);
@@ -33,7 +33,7 @@ test("Codex adapter probes auth and launches a stdin packet in workspace sandbox
   const launch = await harness.launch({ root, packet: "packet-body", timeoutMs: 12_000 });
   const call = runner.calls[2];
   assert.equal(call?.stdin, "packet-body");
-  assert.equal(call?.args[0], "exec");
+  assert.deepEqual(call?.args.slice(0, 3), ["--ask-for-approval", "never", "exec"]);
   assert.equal(call?.args.at(-1), "-");
   assert.ok(call?.args.includes("workspace-write"));
   assert.ok(!call?.args.some((value) => value.includes("dangerously")));
@@ -61,4 +61,24 @@ test("process runner captures missing executables and timeouts", async () => {
   const timeout = await runner.run({ executable: process.execPath, args: ["-e", "setTimeout(() => {}, 10000)"], cwd: root, stdin: "", timeoutMs: 1_000 });
   assert.equal(timeout.timedOut, true);
   assert.notEqual(timeout.exitCode, 0);
+});
+
+test("authentication probes distinguish subscription login, logout, and unknown status", async () => {
+  const root = await fixture();
+  for (const [auth, expected] of [
+    [result({ exitCode: 1, stderr: "Could not find home directory" }), null],
+    [result({ exitCode: 1, stderr: "Not logged in" }), false],
+    [result({ timedOut: true, exitCode: null }), null],
+    [result({ stdout: "Logged in using an API key" }), false]
+  ] as const) {
+    const probe = await new CodexHarness(new RecordingRunner([result(), auth]), undefined, root).probe();
+    assert.equal(probe.installed, true);
+    assert.equal(probe.usable, expected);
+  }
+  for (const [stdout, expected] of [
+    ['{"loggedIn":true}', true], ['{"loggedIn":false}', false], ['unsupported status', null]
+  ] as const) {
+    const probe = await new ClaudeHarness(new RecordingRunner([result(), result({ stdout })]), undefined, root).probe();
+    assert.equal(probe.usable, expected);
+  }
 });

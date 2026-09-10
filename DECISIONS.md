@@ -63,3 +63,6 @@ M00 uses Node.js, TypeScript, built-in runtime modules, and repository-visible J
 Codex CLI and Claude Code are integrated through one small process-based interface with provider-specific arguments isolated in adapters. Viral passes concise repository-derived packets over standard input and persists bounded, redacted run results. It does not copy chat history, select models automatically, bypass permission controls, or use provider APIs.
 
 Subscription use is enforced defensively by removing common OpenAI and Anthropic API-key and alternate-endpoint environment variables from harness child processes. The installed CLIs retain responsibility for their own secure OAuth/subscription credentials.
+
+### D010 implementation clarification
+Authentication status remains unknown when the CLI cannot access its home, times out, or returns unsupported status output. A successful version probe alone does not establish subscription usability. Required project context is loaded before launching a selected harness. Live acceptance remains mandatory even when simulated continuity passes.

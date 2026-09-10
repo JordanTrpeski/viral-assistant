@@ -34,8 +34,15 @@ test("a fake Codex start is understandable to a separate fake Claude process wit
     console.log(JSON.stringify({ type: "result", session_id: "fake-codex", result: "started" }));
   `, "utf8");
   await writeFile(claudeScript, `
+    import { readFile } from "node:fs/promises";
     const packet = await new Promise((resolve) => { let value = ""; process.stdin.on("data", c => value += c); process.stdin.on("end", () => resolve(value)); });
-    const understood = packet.includes("Previous Harness Run") && packet.includes("Codex CLI") && packet.includes("codex-handoff.txt") && packet.includes("tasks/M01-001.json");
+    const handoff = await readFile("codex-handoff.txt", "utf8");
+    const checkpoint = await readFile("CHECKPOINT.md", "utf8");
+    const state = JSON.parse(await readFile("STATE.json", "utf8"));
+    const task = JSON.parse(await readFile("tasks/M01-001.json", "utf8"));
+    const understood = packet.includes("Previous Harness Run") && packet.includes("Codex CLI") && packet.includes("codex-handoff.txt") && packet.includes("tasks/M01-001.json")
+      && handoff.includes("Codex began M01") && checkpoint.includes("Codex CLI: succeeded")
+      && state.lastHarnessRun.includes("codex-M01-001") && packet.includes(task.acceptanceCriteria[0]) && packet.includes(state.nextAction);
     console.log(JSON.stringify({ type: "result", session_id: "fake-claude", understood }));
     if (!understood) process.exit(3);
   `, "utf8");
@@ -56,4 +63,13 @@ test("a fake Codex start is understandable to a separate fake Claude process wit
   assert.equal(second.succeeded, true);
   assert.match(second.stdout, /"understood":true/);
   assert.match((await loadState(root)).lastHarnessRun ?? "", /claude-M01-001\.json$/);
+});
+
+test("launch rejects missing required context before invoking the harness", async () => {
+  const root = await fixture({ git: true });
+  await writeFile(join(root, "RULES.md"), "");
+  let launched = false;
+  const harness = new CodexHarness({ run: async () => { launched = true; throw new Error("must not launch"); } });
+  await assert.rejects(launchTask(root, harness, "M01-001", 1000), /required context RULES.md/);
+  assert.equal(launched, false);
 });

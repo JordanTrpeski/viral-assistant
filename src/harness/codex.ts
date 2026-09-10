@@ -11,8 +11,8 @@ export class CodexHarness implements DevelopmentHarness {
 
   async launch(request: HarnessLaunchRequest): Promise<HarnessRunResult> {
     const command = commandParts(this.command, [
-      "exec", "--json", "--color", "never", "-C", request.root,
-      "--sandbox", "workspace-write", "--ask-for-approval", "never", "-"
+      "--ask-for-approval", "never", "exec", "--json", "--color", "never", "-C", request.root,
+      "--sandbox", "workspace-write", "-"
     ]);
     const result = await this.runner.run({ ...command, cwd: request.root, stdin: request.packet, timeoutMs: request.timeoutMs });
     const succeeded = result.exitCode === 0 && !result.error && !result.timedOut;

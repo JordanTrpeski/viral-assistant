@@ -22,14 +22,25 @@ export async function probeHarness(
   }
   const authCommand = commandParts(command, authArgs);
   const auth = await runner.run({ ...authCommand, cwd: root, stdin: "", timeoutMs: 10_000 });
+  const output = `${auth.stdout}\n${auth.stderr}`;
+  let usable: boolean | null = null;
+  if (!auth.error && !auth.timedOut) {
+    if (id === "claude") {
+      try {
+        const status = JSON.parse(auth.stdout) as { loggedIn?: boolean };
+        if (typeof status.loggedIn === "boolean") usable = status.loggedIn && auth.exitCode === 0;
+      } catch { /* Unsupported or unreadable status leaves authentication unknown. */ }
+    } else if (auth.exitCode === 0 && /logged in using ChatGPT/i.test(output)) usable = true;
+    else if (/not logged in|logged in using an? API key/i.test(output)) usable = false;
+  }
   return {
     id,
     displayName,
     executable: command.executable,
     installed: true,
-    usable: auth.exitCode === 0 && !auth.error && !auth.timedOut,
+    usable,
     version: firstLine(version.stdout || version.stderr),
-    diagnostics: diagnostics(auth, auth.exitCode === 0 ? "Authentication probe passed" : "Authentication probe failed")
+    diagnostics: diagnostics(auth, usable === null ? "Authentication could not be determined safely" : usable ? "Authentication probe passed" : "Subscription authentication unavailable")
   };
 }
 
@@ -46,4 +57,3 @@ export function diagnostics(result: ProcessResult, summary: string): string[] {
 function firstLine(value: string): string {
   return value.split(/\r?\n/, 1)[0]?.slice(0, 500) ?? "";
 }
-

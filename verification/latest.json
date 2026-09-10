@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executedAt": "2026-09-09T15:42:17.059Z",
+  "executedAt": "2026-09-10T08:31:26.098Z",
   "passed": true,
   "results": [
     {
@@ -10,16 +10,16 @@
       "exitCode": 0,
       "stdout": "",
       "stderr": "$ tsc --noEmit",
-      "durationMs": 1372
+      "durationMs": 1461
     },
     {
       "name": "tests",
       "command": "pnpm run test",
       "passed": true,
       "exitCode": 0,
-      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (595.9569ms)\n✔ loads every required context file and validates state (19.9051ms)\n✔ reports a missing context file clearly (13.0367ms)\n✔ reports malformed and invalid state clearly (12.3536ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (15.2062ms)\n✔ Claude adapter uses print mode with stdin and structured output (8.857ms)\n✔ process runner captures missing executables and timeouts (1049.3739ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (875.794ms)\n✔ creates, reads, and updates a validated development task (25.0898ms)\n✔ rejects an invalid task (8.4987ms)\n✔ captures structured pass and fail verification results (217.9992ms)\nℹ tests 11\nℹ suites 0\nℹ pass 11\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1204.2424",
+      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (500.4188ms)\n✔ loads every required context file and validates state (21.0147ms)\n✔ reports a missing context file clearly (12.166ms)\n✔ reports malformed and invalid state clearly (12.6975ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (18.6577ms)\n✔ Claude adapter uses print mode with stdin and structured output (8.9689ms)\n✔ process runner captures missing executables and timeouts (1049.8461ms)\n✔ authentication probes distinguish subscription login, logout, and unknown status (6.592ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (792.1575ms)\n✔ launch rejects missing required context before invoking the harness (255.9588ms)\n✔ creates, reads, and updates a validated development task (22.3074ms)\n✔ rejects an invalid task (8.7024ms)\n✔ captures structured pass and fail verification results (220.7624ms)\nℹ tests 13\nℹ suites 0\nℹ pass 13\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1202.1551",
       "stderr": "$ pnpm run build && node --test dist/tests/*.test.js\n$ tsc",
-      "durationMs": 3212
+      "durationMs": 3264
     },
     {
       "name": "lint",
@@ -28,7 +28,7 @@
       "exitCode": 0,
       "stdout": "Lint passed.",
       "stderr": "$ node scripts/lint.mjs",
-      "durationMs": 567
+      "durationMs": 589
     }
   ]
 }
