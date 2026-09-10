@@ -78,3 +78,15 @@ M01 completion requires the implemented Claude adapter, separate-process simulat
 M02 uses Ollama through a small provider-neutral local-model interface. The initial adapter accepts only loopback HTTP(S) endpoints, uses a configurable preferred model, and never downloads a model automatically. This keeps inference local and makes the runtime replaceable without introducing a cloud SDK or API billing path.
 
 Local inference may classify, summarize, select context, and recommend routing. Deterministic software validates and bounds its output, owns escalation policy and state transitions, and must separately authorize any action. The M02 local brain cannot launch Codex, Claude Code, or another development harness.
+
+## D013 — Atomic Local Runtime Snapshots
+**Status:** accepted for M03
+
+M03 persists its queue and internal event history through a replaceable `RuntimeStore`. The initial store is an atomic JSON snapshot under `.viral/runtime/`, which is local and excluded from Git. This avoids an external database service and new runtime dependencies for the small Bootstrap queue. A later persistence adapter may replace it without changing scheduling or handler contracts.
+
+One background service owns a runtime directory in M03. Startup requeues interrupted `RUNNING` and `VERIFYING` tasks, so execution after an interruption is at least once. Handlers that perform consequential side effects must be idempotent. Multi-process coordination, exactly-once distributed execution, cron/calendar semantics, and the future personal-memory store remain outside M03.
+
+## D014 — Deterministic Runtime Owns Waiting and State
+**Status:** accepted for M03
+
+The runtime engine, rather than an LLM, owns task states, scheduling, fixed-interval recurrence, dependencies, retry limits, owner-input gates, and event generation. Conditions and task handlers are modular adapters. A waiting task invokes neither a handler nor model inference until an ordinary software condition or explicit owner response makes it runnable. The model-availability condition uses only the M02 probe and cannot launch a model or coding harness.

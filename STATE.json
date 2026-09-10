@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "project": "Jarvis",
-  "currentMilestone": "M02_LOCAL_BRAIN",
-  "milestoneStatus": "complete",
-  "activeTask": null,
+  "currentMilestone": "M03_BACKGROUND_RUNTIME",
+  "milestoneStatus": "in_progress",
+  "activeTask": "M03-001",
   "completedTasks": [
     "M00-001",
     "M01-001",
@@ -13,11 +13,12 @@
   "lastVerifiedCommit": "b63cb75426e5b634ab3b155aed1f7c8986bd8d13",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
-  "nextAction": "Await owner direction. Optionally install Ollama and a chosen small model for live inference validation; do not begin M03 or merge into main without owner approval.",
+  "nextAction": "Implement and verify the durable deterministic background runtime, queue, scheduler, conditions, owner waits, retries, events, and restart recovery.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
     "M02 must not launch a coding harness or directly enforce infrastructure decisions from model output.",
-    "The safe live probe found no Ollama CLI, running service, or installed models. Optional setup: install Ollama, manually pull a chosen small model, and configure localBrain.preferredModel or JARVIS_LOCAL_MODEL."
+    "The safe live probe found no Ollama CLI, running service, or installed models. Optional setup: install Ollama, manually pull a chosen small model, and configure localBrain.preferredModel or JARVIS_LOCAL_MODEL.",
+    "M03 runtime infrastructure must remain deterministic; waiting must not keep or repeatedly prompt an LLM session."
   ]
 }

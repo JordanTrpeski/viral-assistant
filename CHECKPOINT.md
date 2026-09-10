@@ -1,19 +1,36 @@
 # Development Checkpoint
 
-- Milestone: M02_LOCAL_BRAIN (complete)
-- Active task: None
-- Branch: dev/m02-local-brain
-- HEAD: f738683e7861dbba4a4a52a77631fcd9892480e8
-- Working tree: clean
+- Milestone: M03_BACKGROUND_RUNTIME (in_progress)
+- Active task: M03-001 — Implement and verify a durable deterministic background runtime with scheduling, waiting, owner input, retry, event, and restart recovery infrastructure.
+- Branch: dev/m03-background-runtime
+- HEAD: 1ecc70aaf63329bd72acc05e7b707bd6a361d1f2
+- Working tree: dirty
 
 ## Files Changed
-- None
+- .gitignore
+- ARCHITECTURE.md
+- DECISIONS.md
+- README.md
+- ROADMAP.md
+- STATE.json
+- STATE.md
+- jarvis-dev.config.json
+- package.json
+- src/cli.ts
+- verification/latest.json
+- milestones/M03_BACKGROUND_RUNTIME.md
+- src/runtime/
+- tasks/M03-001.json
+- tests/runtime-helpers.ts
+- tests/runtime-service.test.ts
+- tests/runtime.test.ts
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
 - PASS — tests: `pnpm run test`
 - PASS — lint: `pnpm run lint`
 - PASS — m02-acceptance: `pnpm run acceptance:m02`
+- PASS — m03-acceptance: `pnpm run acceptance:m03`
 
 ## Latest Harness Run
 - Codex CLI: succeeded
@@ -24,4 +41,4 @@
 - None
 
 ## Next Action
-Await owner direction. Optionally install Ollama and a chosen small model for live inference validation; do not begin M03 or merge into main without owner approval.
+Implement and verify the durable deterministic background runtime, queue, scheduler, conditions, owner waits, retries, events, and restart recovery.

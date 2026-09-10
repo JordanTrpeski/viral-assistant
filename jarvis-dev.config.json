@@ -9,6 +9,7 @@
     { "name": "typecheck", "command": "pnpm run typecheck" },
     { "name": "tests", "command": "pnpm run test" },
     { "name": "lint", "command": "pnpm run lint" },
-    { "name": "m02-acceptance", "command": "pnpm run acceptance:m02" }
+    { "name": "m02-acceptance", "command": "pnpm run acceptance:m02" },
+    { "name": "m03-acceptance", "command": "pnpm run acceptance:m03" }
   ]
 }

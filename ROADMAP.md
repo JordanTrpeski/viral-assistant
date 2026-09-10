@@ -20,6 +20,8 @@ Detailed specification: `milestones/M02_LOCAL_BRAIN.md`
 ## M03 — Background Runtime and Scheduler
 Run Jarvis continuously as a background process with durable scheduled tasks, condition waits, resumable work, notifications, and owner-input states.
 
+Detailed specification: `milestones/M03_BACKGROUND_RUNTIME.md`
+
 ## M04 — Voice Interface
 Add local-first speech recognition and text-to-speech, plus push-to-talk/hotkey interaction. Wake-word support may follow if justified.
 

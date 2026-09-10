@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "M03-001",
+  "milestone": "M03_BACKGROUND_RUNTIME",
+  "objective": "Implement and verify a durable deterministic background runtime with scheduling, waiting, owner input, retry, event, and restart recovery infrastructure.",
+  "status": "in_progress",
+  "acceptanceCriteria": [
+    "A long-running service and replaceable local persistence layer survive clean and interrupted restarts.",
+    "The durable queue supports every required task state, scheduling, fixed-interval recurrence, pause/resume, dependencies, and bounded retry backoff.",
+    "Condition and model waits use modular deterministic checks without consuming LLM or coding-harness tokens while waiting.",
+    "Owner-dependent tasks persist an explicit ownerInputRequired value and cannot resume without supplied input.",
+    "Important runtime events are persisted and exposed through an internal listener interface.",
+    "Interrupted RUNNING and VERIFYING tasks recover safely without corrupting the runtime snapshot.",
+    "Private runtime data is local and excluded from Git.",
+    "M00–M02 tests, typecheck, lint, all runtime tests, and focused M03 acceptance checks pass."
+  ],
+  "dependencies": [
+    "M02-001"
+  ],
+  "relevantFiles": [
+    "milestones/M03_BACKGROUND_RUNTIME.md",
+    "src/runtime/",
+    "src/cli.ts",
+    ".gitignore",
+    "tests/runtime.test.ts",
+    "tests/runtime-service.test.ts"
+  ],
+  "notes": [
+    "M03 uses an atomic JSON snapshot behind a replaceable store interface; no external database server is required.",
+    "One service process owns a runtime directory in M03.",
+    "Waiting is ordinary software and must not invoke any model or harness."
+  ],
+  "nextAction": "Implement the runtime model, store, engine, service lifecycle, CLI, and comprehensive restart-oriented acceptance tests.",
+  "verificationResult": null
+}

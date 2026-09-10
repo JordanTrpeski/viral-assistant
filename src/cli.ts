@@ -11,6 +11,8 @@ import type { HarnessId } from "./harness/types.js";
 import { prepareTaskPacket } from "./packet.js";
 import { createLocalModel } from "./local/registry.js";
 import { LocalBrain } from "./local/tasks.js";
+import { createDefaultRuntime } from "./runtime/registry.js";
+import { RuntimeService } from "./runtime/service.js";
 
 const root = resolve(process.env.JARVIS_ROOT ?? process.cwd());
 const command = process.argv[2];
@@ -97,8 +99,22 @@ async function main(): Promise<void> {
     const result = await new LocalBrain(await createLocalModel(root)).classify(input, requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout });
     console.log(json ? JSON.stringify(result, null, 2) : `${result.escalation}: ${result.value?.rationale ?? result.diagnostics.join(" ")}`);
     if (!result.succeeded) process.exitCode = 1;
+  } else if (command === "runtime-status") {
+    const snapshot = await (await createDefaultRuntime(root, option("--data-dir"))).getSnapshot();
+    const counts = Object.fromEntries(snapshot.tasks.map((task) => task.state).filter((state, index, states) => states.indexOf(state) === index).map((state) => [state, snapshot.tasks.filter((task) => task.state === state).length]));
+    console.log(json ? JSON.stringify(snapshot, null, 2) : [`Runtime tasks: ${snapshot.tasks.length}`, `Events: ${snapshot.events.length}`, ...Object.entries(counts).map(([state, count]) => `${state}: ${count}`)].join("\n"));
+  } else if (command === "runtime-start") {
+    const pollValue = option("--poll-ms");
+    const pollMs = pollValue === undefined ? 1_000 : Number(pollValue);
+    const service = new RuntimeService(await createDefaultRuntime(root, option("--data-dir")), pollMs);
+    const shutdown = (): void => { void service.stop(); };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    console.log(`Viral runtime started; polling every ${pollMs}ms.`);
+    await service.start();
+    console.log("Viral runtime stopped cleanly.");
   } else {
-    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify> [options]");
+    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|runtime-status|runtime-start> [options]");
     process.exitCode = 2;
   }
 }

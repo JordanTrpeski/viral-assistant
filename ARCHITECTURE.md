@@ -66,6 +66,12 @@ M02 adds a provider-neutral local-model boundary under `src/local/`. Ollama is t
 
 The local brain supports cheap request classification, concise summarization, relevant-context selection, and routing recommendations. Model output is parsed and bounded before use. A deterministic policy layer owns escalation categories and takes precedence for development work and consequential owner actions. The local brain never changes project state or launches a development harness; callers must separately decide and execute any permitted action.
 
+### 5b. Background Runtime
+
+M03 adds a long-running deterministic service under `src/runtime/`. A replaceable `RuntimeStore` persists tasks and internal events; the initial implementation uses atomic JSON snapshots under the Git-ignored `.viral/runtime/` directory. One service process owns a runtime directory. Interrupted `RUNNING` and `VERIFYING` tasks are requeued on startup, giving at-least-once execution after a crash. Task handlers should therefore make consequential side effects idempotent.
+
+The engine owns scheduling, fixed-interval recurrence, condition checks, owner-input gates, pause/resume, dependencies, bounded retry backoff, verification transitions, and event generation. Work and condition adapters are injectable. The provided model-availability condition calls only the M02 availability probe while waiting; it does not run inference. The runtime has no direct dependency on a coding harness and never keeps an LLM session alive merely to wait.
+
 ### 6. Git Checkpoint Controller
 Normal software should be able to:
 - inspect working-tree state,
@@ -97,7 +103,6 @@ The coding agent is a worker inside the development loop. It is not the sole man
 ## Future Architecture
 
 Future modules may include:
-- scheduler/background service,
 - voice input/output,
 - desktop overlay/full UI,
 - OS automation,

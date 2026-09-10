@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executedAt": "2026-09-10T09:15:35.983Z",
+  "executedAt": "2026-09-10T09:46:15.831Z",
   "passed": true,
   "results": [
     {
@@ -10,16 +10,16 @@
       "exitCode": 0,
       "stdout": "",
       "stderr": "$ tsc --noEmit",
-      "durationMs": 1534
+      "durationMs": 1617
     },
     {
       "name": "tests",
       "command": "pnpm run test",
       "passed": true,
       "exitCode": 0,
-      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (491.7151ms)\n✔ loads every required context file and validates state (24.4327ms)\n✔ reports a missing context file clearly (15.9241ms)\n✔ reports malformed and invalid state clearly (13.2045ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (20.3811ms)\n✔ Claude adapter uses print mode with stdin and structured output (10.7178ms)\n✔ process runner captures missing executables and timeouts (1049.1181ms)\n✔ authentication probes distinguish subscription login, logout, and unknown status (7.0079ms)\n✔ local model configuration accepts only loopback and supports a configurable preferred model (4.7895ms)\n✔ Ollama probe distinguishes CLI, service, models, and preferred-model usability (1.1052ms)\n✔ Ollama inference uses an explicit model, structured context, and returns structured success (2.2777ms)\n✔ Ollama handles no model, unavailable service, HTTP errors, and malformed output cleanly (2.6709ms)\n✔ Ollama reports cancellation and timeout without throwing (1002.85ms)\n✔ deterministic policy classifies representative local and escalation requests without model execution (3.9513ms)\n✔ model classification and routing recommendations are validated and policy remains authoritative (0.8488ms)\n✔ local context selection produces a substantially smaller relevant packet without a harness (1.974ms)\n✔ summarization is bounded and malformed task output leaves repository state unchanged (19.5671ms)\n✔ local task inference failures become UNSURE (0.44ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (784.7232ms)\n✔ launch rejects missing required context before invoking the harness (269.0454ms)\n✔ creates, reads, and updates a validated development task (22.4067ms)\n✔ rejects an invalid task (8.6169ms)\n✔ captures structured pass and fail verification results (208.1595ms)\nℹ tests 23\nℹ suites 0\nℹ pass 23\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1227.6246",
+      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (517.3327ms)\n✔ loads every required context file and validates state (27.1672ms)\n✔ reports a missing context file clearly (14.6988ms)\n✔ reports malformed and invalid state clearly (13.9106ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (19.1021ms)\n✔ Claude adapter uses print mode with stdin and structured output (16.4003ms)\n✔ process runner captures missing executables and timeouts (1060.0392ms)\n✔ authentication probes distinguish subscription login, logout, and unknown status (8.8861ms)\n✔ local model configuration accepts only loopback and supports a configurable preferred model (6.9061ms)\n✔ Ollama probe distinguishes CLI, service, models, and preferred-model usability (2.2525ms)\n✔ Ollama inference uses an explicit model, structured context, and returns structured success (3.1843ms)\n✔ Ollama handles no model, unavailable service, HTTP errors, and malformed output cleanly (1.9164ms)\n✔ Ollama reports cancellation and timeout without throwing (1008.2656ms)\n✔ deterministic policy classifies representative local and escalation requests without model execution (4.6925ms)\n✔ model classification and routing recommendations are validated and policy remains authoritative (1.3785ms)\n✔ local context selection produces a substantially smaller relevant packet without a harness (2.8257ms)\n✔ summarization is bounded and malformed task output leaves repository state unchanged (22.0931ms)\n✔ local task inference failures become UNSURE (0.4798ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (787.1849ms)\n✔ launch rejects missing required context before invoking the harness (294.1414ms)\n✔ long-running service stops cleanly and releases its wait (7.4854ms)\n✔ runtime exposes every required durable task state (2.3158ms)\n✔ a scheduled task survives runtime reconstruction and executes after its due time (20.2819ms)\n✔ recurring scheduling runs at fixed due times without busy execution (1.8855ms)\n✔ owner-dependent task pauses until an explicit response is supplied (1.8662ms)\n✔ model waiting resumes on an injected availability condition and waiting spends no inference (2.823ms)\n✔ the M02 model-availability integration probes only and never runs inference while waiting (0.5832ms)\n✔ modular conditions hold and resume WAITING_FOR_CONDITION tasks (1.3961ms)\n✔ pause and resume preserve a scheduled task without executing while paused (1.2548ms)\n✔ bounded retry backoff eventually fails and never loops forever (1.4667ms)\n✔ dependencies run in order and failed dependencies stop dependants (1.6296ms)\n✔ successful tasks pass through deterministic verification before completion (0.5055ms)\n✔ startup safely recovers interrupted RUNNING and VERIFYING tasks (0.9851ms)\n✔ creates, reads, and updates a validated development task (18.7826ms)\n✔ rejects an invalid task (9.1649ms)\n✔ captures structured pass and fail verification results (201.1997ms)\nℹ tests 36\nℹ suites 0\nℹ pass 36\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1258.9374",
       "stderr": "$ pnpm run build && node --test dist/tests/*.test.js\n$ tsc",
-      "durationMs": 3450
+      "durationMs": 3640
     },
     {
       "name": "lint",
@@ -28,16 +28,25 @@
       "exitCode": 0,
       "stdout": "Lint passed.",
       "stderr": "$ node scripts/lint.mjs",
-      "durationMs": 593
+      "durationMs": 597
     },
     {
       "name": "m02-acceptance",
       "command": "pnpm run acceptance:m02",
       "passed": true,
       "exitCode": 0,
-      "stdout": "✔ local model configuration accepts only loopback and supports a configurable preferred model (2.6922ms)\n✔ Ollama probe distinguishes CLI, service, models, and preferred-model usability (0.7769ms)\n✔ Ollama inference uses an explicit model, structured context, and returns structured success (1.3766ms)\n✔ Ollama handles no model, unavailable service, HTTP errors, and malformed output cleanly (0.6327ms)\n✔ Ollama reports cancellation and timeout without throwing (1003.7696ms)\n✔ deterministic policy classifies representative local and escalation requests without model execution (1.9415ms)\n✔ model classification and routing recommendations are validated and policy remains authoritative (0.449ms)\n✔ local context selection produces a substantially smaller relevant packet without a harness (1.1449ms)\n✔ summarization is bounded and malformed task output leaves repository state unchanged (14.5045ms)\n✔ local task inference failures become UNSURE (0.2649ms)\nℹ tests 10\nℹ suites 0\nℹ pass 10\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1097.099",
+      "stdout": "✔ local model configuration accepts only loopback and supports a configurable preferred model (2.6333ms)\n✔ Ollama probe distinguishes CLI, service, models, and preferred-model usability (0.6626ms)\n✔ Ollama inference uses an explicit model, structured context, and returns structured success (1.2962ms)\n✔ Ollama handles no model, unavailable service, HTTP errors, and malformed output cleanly (0.6261ms)\n✔ Ollama reports cancellation and timeout without throwing (1009.2217ms)\n✔ deterministic policy classifies representative local and escalation requests without model execution (1.9628ms)\n✔ model classification and routing recommendations are validated and policy remains authoritative (0.4509ms)\n✔ local context selection produces a substantially smaller relevant packet without a harness (1.088ms)\n✔ summarization is bounded and malformed task output leaves repository state unchanged (12.3701ms)\n✔ local task inference failures become UNSURE (0.2982ms)\nℹ tests 10\nℹ suites 0\nℹ pass 10\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1094.0397",
       "stderr": "$ pnpm run build && node --test dist/tests/local-model.test.js dist/tests/local-tasks.test.js\n$ tsc",
-      "durationMs": 3330
+      "durationMs": 3438
+    },
+    {
+      "name": "m03-acceptance",
+      "command": "pnpm run acceptance:m03",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "✔ long-running service stops cleanly and releases its wait (4.3465ms)\n✔ runtime exposes every required durable task state (1.497ms)\n✔ a scheduled task survives runtime reconstruction and executes after its due time (16.945ms)\n✔ recurring scheduling runs at fixed due times without busy execution (0.7932ms)\n✔ owner-dependent task pauses until an explicit response is supplied (0.7517ms)\n✔ model waiting resumes on an injected availability condition and waiting spends no inference (0.6771ms)\n✔ the M02 model-availability integration probes only and never runs inference while waiting (0.2558ms)\n✔ modular conditions hold and resume WAITING_FOR_CONDITION tasks (0.5569ms)\n✔ pause and resume preserve a scheduled task without executing while paused (0.5782ms)\n✔ bounded retry backoff eventually fails and never loops forever (0.728ms)\n✔ dependencies run in order and failed dependencies stop dependants (1.1612ms)\n✔ successful tasks pass through deterministic verification before completion (0.3726ms)\n✔ startup safely recovers interrupted RUNNING and VERIFYING tasks (0.7041ms)\nℹ tests 13\nℹ suites 0\nℹ pass 13\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 121.9833",
+      "stderr": "$ pnpm run build && node --test dist/tests/runtime.test.js dist/tests/runtime-service.test.js\n$ tsc",
+      "durationMs": 2448
     }
   ]
 }
