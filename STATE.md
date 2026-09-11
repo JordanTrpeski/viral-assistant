@@ -19,19 +19,24 @@ Ollama 0.34.0 and `qwen3:4b-instruct` remain live-validated through the loopback
 Viral is the canonical product and project name. The package is `viral-development-controller`, the CLI is `viral-dev`, configuration is `viral-dev.config.json`, and supported environment variables use the `VIRAL_` prefix. D021 records the preserved historical-run exception.
 
 ## Owner development objectives
-The `viral-dev objective` command creates a durable `OBJ-…` task under the current approved milestone, returns its ID, applies the Efficiency Governor, and immediately uses the selected deterministic, local, or coding-harness path unless policy requires waiting or owner input. `--plan-only` persists the task and returns the selection without launching work.
+The `viral-dev objective` command creates a durable `OBJ-…` task under the current approved milestone, returns its ID, applies the Efficiency Governor, and immediately uses the selected deterministic, local, or coding-harness path unless policy requires waiting or owner input. A successful coding run now enters deterministic finalization in the normal owner process: Viral validates verification, branch, identity, remote, and push access; commits and pushes implementation; then commits and pushes completion state. `--plan-only` persists the task and returns the selection without launching work.
+
+Finalization recovery is journaled privately under `.viral/finalization/`. A failed push leaves the objective blocked with its exact diagnostic. `viral-dev finalize [task-id]` or the next normal objective finalization resumes the existing commit and never reruns the coding harness merely to recover publication.
 
 ## Policy and repository
 `EFFICIENCY.md` remains authoritative. D018 defines the owner-approved autonomy boundary and D020 records the implemented governor and private telemetry architecture. Independent applications and major subsystems continue to use explicit, versioned connector boundaries. The canonical Git root is `C:\Users\jorda\Desktop\viral-bootstrap`.
 
 ## Verification
-M04 focused tests cover selection, effort escalation, owner gates, context budgets and compression fallback, fresh-session handoff, governed launch propagation, runtime waits, telemetry privacy/bounds, CLI behavior, and adapter support. Owner-objective tests cover task creation, milestone association, planning-only behavior, deterministic/local/Codex execution paths, policy gates, and task-ID output. The complete 65-test repository suite and M02–M04 acceptance checks pass.
+M04 focused tests cover selection, effort escalation, owner gates, context budgets and compression fallback, fresh-session handoff, governed launch propagation, runtime waits, telemetry privacy/bounds, CLI behavior, and adapter support. Owner-objective and finalization tests cover task creation, milestone association, planning-only behavior, deterministic/local/Codex execution paths, policy gates, task-ID output, successful publication, push failure, dirty-state recovery, restart recovery, and idempotency. The complete 76-test repository suite and M02–M04 acceptance checks pass.
 
-## Pending owner objective
-`OBJ-20260911111434557` remains pending after the Windows Codex detection fix. Codex is now installed, versioned, and subscription-authenticated by the live probe; the doctor-command objective was not executed during this focused fix and can resume through governed execution when requested.
+## Doctor objective
 
-## Blockers
-None.
+`OBJ-20260911111434557` is implemented and verified. `viral-dev doctor [--json] [--data-dir <directory>]` reports six independent checks and exits nonzero when any is unhealthy. It reuses existing adapters and storage validation without inference or runtime recovery. All 71 tests, typecheck, build, lint, and M02-M04 acceptance checks pass. Follow-up verification also passed every configured pnpm command; pnpm is now available.
+
+Live checks passed for Git, the configured model, runtime storage, and configuration. Ollama CLI detection failed and Codex authentication remained unknown in this restricted environment.
+
+## Development finalization
+The cause of the incomplete doctor lifecycle was the objective service returning immediately after a successful Codex process. The new deterministic finalizer runs after that process in the normal Viral owner environment. It protects `main`, rejects the wrong identity or remote, uses only normal non-force Git operations, and marks work complete only after the implementation commit has reached the approved development branch. D023 records the two-phase publication and recovery contract.
 
 ## Next action
-Await owner direction. Do not merge into `main` or begin M05.
+Await the owner's next approved objective after finalization. Do not merge into `main` or begin M05.

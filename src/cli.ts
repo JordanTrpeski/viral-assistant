@@ -14,12 +14,15 @@ import { LocalBrain } from "./local/tasks.js";
 import { createDefaultRuntime } from "./runtime/registry.js";
 import { RuntimeService } from "./runtime/service.js";
 import { createEfficiencyServices } from "./efficiency/registry.js";
+import { formatHealthReport, runDoctor } from "./doctor.js";
+import { DevelopmentFinalizer } from "./finalization.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <objective|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]";
+const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]";
 const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--plan-only] [--timeout-ms <milliseconds>] [--json]';
+const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -44,6 +47,10 @@ async function selectedTask(explicit?: string): Promise<string> {
 async function main(): Promise<void> {
   if (command === "--help" || command === "-h" || command === "help") {
     console.log(usage);
+  } else if (command === "doctor") {
+    const report = await runDoctor(root, option("--data-dir"));
+    console.log(json ? JSON.stringify(report, null, 2) : formatHealthReport(report));
+    if (!report.healthy) process.exitCode = 1;
   } else if (command === "objective") {
     if (process.argv.includes("--help") || process.argv.includes("-h")) {
       console.log([objectiveUsage, "", 'Example: npm run viral-dev -- objective "Add a doctor command"', "", "Creates an OBJ task in the current approved milestone, applies the Efficiency Governor, and executes immediately unless --plan-only or policy blocks execution."].join("\n"));
@@ -60,6 +67,15 @@ async function main(): Promise<void> {
         ...(result.execution?.output ? [result.execution.output] : [])
       ].join("\n"));
       if (result.execution?.succeeded === false) process.exitCode = 1;
+    }
+  } else if (command === "finalize") {
+    if (process.argv.includes("--help") || process.argv.includes("-h")) {
+      console.log([finalizeUsage, "", "Publishes an already verified development task. A recovery journal resumes interrupted or failed pushes without rerunning the coding harness or duplicating commits."].join("\n"));
+    } else {
+      const taskId = await selectedTask(process.argv[3]);
+      const result = await new DevelopmentFinalizer(root).finalize(taskId);
+      console.log(json ? JSON.stringify(result, null, 2) : result.diagnostic);
+      if (!result.succeeded) process.exitCode = 1;
     }
   } else if (command === "context") {
     const context = await loadProjectContext(root);

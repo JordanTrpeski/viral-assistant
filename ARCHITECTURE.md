@@ -101,6 +101,8 @@ Normal software should be able to:
 - push permitted development branches,
 - produce a concise handoff/checkpoint.
 
+Verified development publication runs in the normal Viral process after the selected coding harness exits. A deterministic finalizer checks the passing verification record, development branch, owner Git identity, configured owner remote, and push availability. It persists a private phase journal under `.viral/finalization/`, commits and pushes the implementation, then commits and pushes completion state. Retries resume the recorded commit or push phase and do not relaunch the coding harness or create duplicate implementation commits. `main`, force pushes, history rewrites, and unresolved owner gates remain outside this path.
+
 ### 7. Development Loop
 
 Conceptual flow:
@@ -113,7 +115,8 @@ Owner objective
 → execute selected coding harness
 → collect result
 → run verification
-→ on success: checkpoint + update state
+→ on success: commit + push verified implementation
+→ commit + push completion state
 → on failure: capture diagnostics + retry/escalate according to policy
 → continue or wait for owner/model availability.
 

@@ -19,13 +19,13 @@ const decide = (changes: Partial<SelectionDecision> = {}): SelectionDecision => 
 const runRecord = (taskId: string): PersistedHarnessRun => ({ schemaVersion: 1, runId: "run", taskId, packetPath: `packets/${taskId}.md`, harness: "codex", displayName: "Codex", command: [], succeeded: true, diagnostics: [], startedAt: "2026-01-01T00:00:00.000Z", finishedAt: "2026-01-01T00:00:00.001Z", durationMs: 1, exitCode: 0, signal: null, timedOut: false, stdout: "", stderr: "", error: null });
 const localSuccess = (text: string): LocalTaskResult<Summary> => ({ succeeded: true, escalation: "LOCAL_OK", value: { text, originalCharacters: 100, summaryCharacters: text.length }, inference: null, diagnostics: [] });
 
-function service(root: string, selection: Partial<SelectionDecision>, calls: { plans: unknown[]; launches: string[]; local: number[] }) {
+function service(root: string, selection: Partial<SelectionDecision>, calls: { plans: unknown[]; launches: string[]; local: number[] }, finalizer?: { finalize(taskId: string): Promise<{ succeeded: boolean; diagnostic: string }> }) {
   const executor = {
     planObjectiveTask: async (taskId: string, options: unknown) => { calls.plans.push(options); return decide({ taskId, ...selection }); },
     executeDecision: async (taskId: string) => { calls.launches.push(taskId); return runRecord(taskId); }
   };
   const brain = { summarize: async () => { calls.local.push(1); return localSuccess("Concise local result."); } };
-  return new OwnerObjectiveService(root, executor, brain, () => new Date("2026-09-11T12:34:56.789Z"));
+  return new OwnerObjectiveService(root, executor, brain, () => new Date("2026-09-11T12:34:56.789Z"), finalizer);
 }
 
 test("doctor command is deterministically recognized as coding work", () => {
@@ -52,6 +52,16 @@ test("authorized coding objective starts the exact governor-selected harness dec
   assert.equal(result.execution?.succeeded, true);
   assert.deepEqual(calls.launches, [result.taskId]);
   assert.equal((await readTask(root, result.taskId)).status, "in_progress");
+});
+
+test("a successful coding run delegates publication to the deterministic finalizer", async () => {
+  const root = await fixture();
+  const calls = { plans: [] as unknown[], launches: [] as string[], local: [] as number[] };
+  const finalized: string[] = [];
+  const result = await service(root, {}, calls, { finalize: async (taskId) => { finalized.push(taskId); return { succeeded: true, diagnostic: "published" }; } }).submit("Implement and publish a small change");
+  assert.deepEqual(finalized, [result.taskId]);
+  assert.equal(result.execution?.succeeded, true);
+  assert.equal(result.execution?.output, "published");
 });
 
 test("owner-gated objective persists safely and launches nothing", async () => {

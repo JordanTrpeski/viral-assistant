@@ -12,6 +12,7 @@ import type { DevelopmentState, DevelopmentTask } from "./types.js";
 type PlanOptions = Partial<Omit<GovernorRequest, "taskId" | "objective" | "workKind">>;
 type ObjectiveExecutor = Pick<GovernedDevelopmentExecutor, "planObjectiveTask" | "executeDecision">;
 type ObjectiveBrain = Pick<LocalBrain, "summarize">;
+type ObjectiveFinalizer = { finalize(taskId: string): Promise<{ succeeded: boolean; diagnostic: string }> };
 
 export interface ObjectiveOptions {
   planOnly?: boolean;
@@ -97,7 +98,8 @@ export class OwnerObjectiveService {
     private readonly root: string,
     private readonly executor: ObjectiveExecutor,
     private readonly localBrain: ObjectiveBrain,
-    private readonly now: () => Date = () => new Date()
+    private readonly now: () => Date = () => new Date(),
+    private readonly finalizer?: ObjectiveFinalizer
   ) {}
 
   private async focus(state: DevelopmentState, taskId: string, nextAction: string): Promise<void> {
@@ -169,6 +171,11 @@ export class OwnerObjectiveService {
         const blocked = await updateTask(this.root, taskId, { status: "blocked", notes: [...task.notes, diagnostic], nextAction: diagnostic });
         await this.focus(state, taskId, diagnostic);
         return { taskId, taskPath: `tasks/${taskId}.json`, planOnly: false, decision, execution: { kind: "CODING_HARNESS", succeeded: false, output: diagnostic, run }, task: blocked };
+      }
+      if (run.succeeded && this.finalizer) {
+        const finalized = await this.finalizer.finalize(taskId);
+        const finalizedTask = await readTask(this.root, taskId);
+        return { taskId, taskPath: `tasks/${taskId}.json`, planOnly: false, decision, execution: { kind: "CODING_HARNESS", succeeded: finalized.succeeded, output: finalized.diagnostic, run }, task: finalizedTask };
       }
       return { taskId, taskPath: `tasks/${taskId}.json`, planOnly: false, decision, execution: { kind: "CODING_HARNESS", succeeded: run.succeeded, output: null, run }, task };
     } catch (error) {

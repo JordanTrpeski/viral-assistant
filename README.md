@@ -22,8 +22,10 @@ Run these from the repository root after building. `npm run viral-dev -- --help`
 ```sh
 npm run viral-dev -- objective "Add a doctor command that checks Git, Ollama, Codex, config, and runtime health"
 pnpm viral-dev objective "Summarize the current project state." --plan-only
+pnpm viral-dev finalize OBJ-20260911111434557
 pnpm viral-dev context
 pnpm viral-dev status
+pnpm viral-dev doctor
 pnpm viral-dev verify
 pnpm viral-dev checkpoint
 pnpm viral-dev harnesses
@@ -40,7 +42,9 @@ pnpm viral-dev efficiency-run M04-001 --timeout-ms 900000
 pnpm viral-dev efficiency-status
 ```
 
-`objective` creates a durable `OBJ-…` task in the current approved milestone, applies the Efficiency Governor, prints the task ID and selection reason, and starts the selected deterministic, local-model, or coding-harness execution. Use `--plan-only` to persist the task and inspect the decision without executing it. Policy decisions that require owner input or model availability leave the task safely blocked without launching a harness.
+`objective` creates a durable `OBJ-…` task in the current approved milestone, applies the Efficiency Governor, prints the task ID and selection reason, and starts the selected deterministic, local-model, or coding-harness execution. After a coding harness succeeds, deterministic finalization requires passing verification, a non-`main` branch, the configured owner identity and repository, and a successful push preflight. It then commits and pushes the implementation before marking the task complete and publishing its lifecycle state. Use `--plan-only` to persist the task and inspect the decision without executing it. Policy decisions that require owner input or model availability leave the task safely blocked without launching a harness.
+
+`finalize [task-id]` resumes publication for an already verified task from the normal Viral process. Its private journal under `.viral/finalization/` records the implementation and completion commits, so restart or push failure retries the existing phase without rerunning the coding harness or duplicating commits. Push failures retain the exact diagnostic and leave the task blocked and recoverable.
 
 Add `--json` to any command for script-friendly JSON output. Genuine errors return a non-zero exit code. `verify` executes the commands in `viral-dev.config.json` and writes structured results to `verification/latest.json`. `checkpoint` writes `CHECKPOINT.md` from current state, task, verification, and read-only Git inspection.
 
@@ -55,6 +59,8 @@ The efficiency commands apply configurable capability, effort, context, retry, o
 Development tasks live in `tasks/*.json`. `STATE.json` and `STATE.md` describe current progress. A different coding agent should read `AGENTS.md`, the ordered context listed there, the active task, and `CHECKPOINT.md` before continuing.
 
 `EFFICIENCY.md` is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute choices. Independent applications and major subsystems integrate through explicit, versioned connectors rather than shared databases, mutable state, or internal imports by default.
+
+`doctor` prints six concise health checks for Git repository access, the Ollama CLI/service, the configured local model, Codex subscription authentication, runtime storage, and Viral configuration. Use `doctor --json` for structured output or `--data-dir <directory>` to check alternate runtime storage. It exits 0 only when every check passes, otherwise 1. It probes availability without inference, downloads, or harness launches. Storage checking validates any existing snapshot and creates/removes a private scratch directory to verify read/write/rename access; it never starts or recovers runtime tasks. Raw credentials, configuration values, and runtime contents are excluded from the report.
 
 ## Direct project checks
 

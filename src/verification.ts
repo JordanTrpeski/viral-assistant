@@ -8,16 +8,16 @@ const run = promisify(exec);
 
 interface VerificationConfig { verificationCommands: Array<{ name: string; command: string }>; }
 
-function validateConfig(value: unknown): VerificationConfig {
+export function validateVerificationConfig(value: unknown): VerificationConfig {
   const commands = (value as VerificationConfig | null)?.verificationCommands;
-  if (!Array.isArray(commands) || commands.length === 0 || commands.some((item) => !item?.name || !item.command)) {
+  if (!Array.isArray(commands) || commands.length === 0 || commands.some((item) => typeof item?.name !== "string" || !item.name.trim() || typeof item.command !== "string" || !item.command.trim())) {
     throw new Error("viral-dev.config.json must define non-empty verificationCommands");
   }
   return { verificationCommands: commands };
 }
 
 export async function runVerification(root: string): Promise<VerificationReport> {
-  const config = validateConfig(await readJson(join(root, "viral-dev.config.json")));
+  const config = validateVerificationConfig(await readJson(join(root, "viral-dev.config.json")));
   const results: VerificationResult[] = [];
   for (const entry of config.verificationCommands) {
     const started = Date.now();
@@ -33,4 +33,3 @@ export async function runVerification(root: string): Promise<VerificationReport>
   await writeJson(join(root, "verification", "latest.json"), report);
   return report;
 }
-

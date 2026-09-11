@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "executedAt": "2026-09-11T11:49:18.895Z",
+  "passed": true,
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "durationMs": 1265
+    },
+    {
+      "name": "build",
+      "command": "node node_modules/typescript/bin/tsc",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "durationMs": 1510
+    },
+    {
+      "name": "tests",
+      "command": "node --test dist/tests/*.test.js",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "✔ inspects actual Git state and generates a concise deterministic checkpoint (640.4156ms)\n✔ Viral CLI help exposes the canonical command and succeeds (179.6631ms)\n✔ loads every required context file and validates state (33.2641ms)\n✔ reports a missing context file clearly (27.7244ms)\n✔ reports malformed and invalid state clearly (41.6717ms)\n✔ doctor reports all six checks and healthy text without inference or launches (3.021ms)\n✔ doctor isolates failures and does not leak raw diagnostics (0.8696ms)\n✔ doctor distinguishes missing model, service, CLI, and unknown authentication (1.701ms)\n✔ runtime check cleans up scratch files and preserves invalid snapshots (46.1045ms)\n✔ configuration checks all sections without executing verification commands (25.563ms)\n✔ doctor CLI emits complete JSON and exits nonzero with broken configuration (584.5434ms)\n✔ availability condition respects retry time and requires a real probe without inference (4.0396ms)\n✔ runtime keeps governed work waiting until availability is confirmed, then resumes (4.7475ms)\n✔ governed runtime owner gate pauses safely and does not launch (0.9012ms)\n✔ private efficiency telemetry is covered by Git ignore policy (8.4975ms)\n✔ efficiency configuration validates owner gates and configurable thresholds (3.3522ms)\n✔ governor selects deterministic, local, and coding tiers with visible reasons (1.7839ms)\n✔ risk and bounded failures raise effort then require owner input (0.4753ms)\n✔ permanent gates and paid harness switching require owner approval by default (0.6824ms)\n✔ unavailable harnesses wait with earliest retry and fresh-session evidence (0.4248ms)\n✔ context planning preserves authority, compresses after filtering, and retrieves progressively (1.4659ms)\n✔ local compression failure keeps a valid deterministic context plan (0.3713ms)\n✔ session planner creates a bounded repository-style handoff without conversation replay (0.707ms)\n✔ telemetry is bounded, structured, and excludes task prompts (52.0691ms)\n✔ governed execution blocks unauthorized decisions and carries effort into an authorized launch (44.077ms)\n✔ harness adapters propagate governed model and effort only where supported (1.4294ms)\n✔ task packet includes authoritative efficiency policy and the visible selection record (506.2594ms)\n✔ efficiency CLI plans, blocks unauthorized execution, and reports local telemetry (385.8992ms)\n✔ non-Windows harness commands retain normal PATH execution (2.8729ms)\n✔ Windows resolution prefers executable npm shims and records the resolved command (1.9871ms)\n✔ Windows resolution supports PowerShell-only npm shims (0.6538ms)\n✔ Windows cmd shim probe retrieves version and preserves authentication status (232.2916ms)\n✔ Windows PowerShell shim probe retrieves version without assuming usability (971.0837ms)\n✔ Codex adapter probes auth and launches a stdin packet in workspace sandbox (22.4759ms)\n✔ Claude adapter uses print mode with stdin and structured output (13.1389ms)\n✔ process runner captures missing executables and timeouts (1060.8594ms)\n✔ authentication probes distinguish subscription login, logout, and unknown status (9.1553ms)\n✔ local model configuration accepts only loopback and supports a configurable preferred model (4.4517ms)\n✔ Ollama probe distinguishes CLI, service, models, and preferred-model usability (1.1556ms)\n✔ Ollama inference uses an explicit model, structured context, and returns structured success (1.8037ms)\n✔ Ollama handles no model, unavailable service, HTTP errors, and malformed output cleanly (1.1702ms)\n✔ Ollama reports cancellation and timeout without throwing (1015.018ms)\n✔ deterministic policy classifies representative local and escalation requests without model execution (3.1441ms)\n✔ model classification and routing recommendations are validated and policy remains authoritative (0.8008ms)\n✔ local context selection produces a substantially smaller relevant packet without a harness (1.8249ms)\n✔ summarization is bounded and malformed task output leaves repository state unchanged (27.8147ms)\n✔ local task inference failures become UNSURE (0.7874ms)\n✔ doctor command is deterministically recognized as coding work (3.3647ms)\n✔ owner objective creates a milestone-associated task and planning-only never executes (39.1525ms)\n✔ authorized coding objective starts the exact governor-selected harness decision (77.0865ms)\n✔ owner-gated objective persists safely and launches nothing (116.4386ms)\n✔ local and deterministic objective paths execute without a coding harness (93.2915ms)\n✔ objective CLI returns a created task id and deterministic plan without execution (203.1116ms)\n✔ a fake Codex start is understandable to a separate fake Claude process without chat history (913.842ms)\n✔ launch rejects missing required context before invoking the harness (260.8044ms)\n✔ long-running service stops cleanly and releases its wait (9.3361ms)\n✔ runtime exposes every required durable task state (2.5907ms)\n✔ a scheduled task survives runtime reconstruction and executes after its due time (52.5647ms)\n✔ recurring scheduling runs at fixed due times without busy execution (1.6336ms)\n✔ owner-dependent task pauses until an explicit response is supplied (1.7512ms)\n✔ model waiting resumes on an injected availability condition and waiting spends no inference (1.4801ms)\n✔ the M02 model-availability integration probes only and never runs inference while waiting (0.5ms)\n✔ modular conditions hold and resume WAITING_FOR_CONDITION tasks (1.6798ms)\n✔ pause and resume preserve a scheduled task without executing while paused (1.6024ms)\n✔ bounded retry backoff eventually fails and never loops forever (1.9108ms)\n✔ dependencies run in order and failed dependencies stop dependants (2.6037ms)\n✔ successful tasks pass through deterministic verification before completion (0.6881ms)\n✔ startup safely recovers interrupted RUNNING and VERIFYING tasks (1.2715ms)\n✔ creates, reads, and updates a validated development task (40.9345ms)\n✔ rejects an invalid task (13.1779ms)\n✔ captures structured pass and fail verification results (267.3903ms)\nℹ tests 71\nℹ suites 0\nℹ pass 71\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1479.5558",
+      "stderr": "",
+      "durationMs": 1549
+    },
+    {
+      "name": "lint",
+      "command": "node scripts/lint.mjs",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "Lint passed.",
+      "stderr": "",
+      "durationMs": 77
+    },
+    {
+      "name": "m02-acceptance",
+      "command": "node --test dist/tests/local-model.test.js dist/tests/local-tasks.test.js",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "✔ local model configuration accepts only loopback and supports a configurable preferred model (2.6715ms)\n✔ Ollama probe distinguishes CLI, service, models, and preferred-model usability (0.6565ms)\n✔ Ollama inference uses an explicit model, structured context, and returns structured success (1.1338ms)\n✔ Ollama handles no model, unavailable service, HTTP errors, and malformed output cleanly (0.5974ms)\n✔ Ollama reports cancellation and timeout without throwing (1006.2414ms)\n✔ deterministic policy classifies representative local and escalation requests without model execution (1.9199ms)\n✔ model classification and routing recommendations are validated and policy remains authoritative (0.4356ms)\n✔ local context selection produces a substantially smaller relevant packet without a harness (1.1229ms)\n✔ summarization is bounded and malformed task output leaves repository state unchanged (16.8999ms)\n✔ local task inference failures become UNSURE (0.2956ms)\nℹ tests 10\nℹ suites 0\nℹ pass 10\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1087.122",
+      "stderr": "",
+      "durationMs": 1148
+    },
+    {
+      "name": "m03-acceptance",
+      "command": "node --test dist/tests/runtime.test.js dist/tests/runtime-service.test.js",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "✔ long-running service stops cleanly and releases its wait (4.1987ms)\n✔ runtime exposes every required durable task state (1.6284ms)\n✔ a scheduled task survives runtime reconstruction and executes after its due time (18.5191ms)\n✔ recurring scheduling runs at fixed due times without busy execution (0.784ms)\n✔ owner-dependent task pauses until an explicit response is supplied (0.753ms)\n✔ model waiting resumes on an injected availability condition and waiting spends no inference (0.6985ms)\n✔ the M02 model-availability integration probes only and never runs inference while waiting (0.2594ms)\n✔ modular conditions hold and resume WAITING_FOR_CONDITION tasks (0.5712ms)\n✔ pause and resume preserve a scheduled task without executing while paused (0.5776ms)\n✔ bounded retry backoff eventually fails and never loops forever (0.7494ms)\n✔ dependencies run in order and failed dependencies stop dependants (1.1856ms)\n✔ successful tasks pass through deterministic verification before completion (0.3764ms)\n✔ startup safely recovers interrupted RUNNING and VERIFYING tasks (0.6892ms)\nℹ tests 13\nℹ suites 0\nℹ pass 13\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 119.0616",
+      "stderr": "",
+      "durationMs": 185
+    },
+    {
+      "name": "m04-acceptance",
+      "command": "node --test dist/tests/efficiency*.test.js",
+      "passed": true,
+      "exitCode": 0,
+      "stdout": "✔ availability condition respects retry time and requires a real probe without inference (1.2368ms)\n✔ runtime keeps governed work waiting until availability is confirmed, then resumes (2.8621ms)\n✔ governed runtime owner gate pauses safely and does not launch (0.5185ms)\n✔ private efficiency telemetry is covered by Git ignore policy (5.2894ms)\n✔ efficiency configuration validates owner gates and configurable thresholds (1.9946ms)\n✔ governor selects deterministic, local, and coding tiers with visible reasons (1.0354ms)\n✔ risk and bounded failures raise effort then require owner input (0.2657ms)\n✔ permanent gates and paid harness switching require owner approval by default (0.3766ms)\n✔ unavailable harnesses wait with earliest retry and fresh-session evidence (0.2506ms)\n✔ context planning preserves authority, compresses after filtering, and retrieves progressively (0.7554ms)\n✔ local compression failure keeps a valid deterministic context plan (0.2219ms)\n✔ session planner creates a bounded repository-style handoff without conversation replay (0.3761ms)\n✔ telemetry is bounded, structured, and excludes task prompts (11.8044ms)\n✔ governed execution blocks unauthorized decisions and carries effort into an authorized launch (9.7166ms)\n✔ harness adapters propagate governed model and effort only where supported (0.6576ms)\n✔ task packet includes authoritative efficiency policy and the visible selection record (298.567ms)\n✔ efficiency CLI plans, blocks unauthorized execution, and reports local telemetry (309.1837ms)\nℹ tests 17\nℹ suites 0\nℹ pass 17\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 738.6616",
+      "stderr": "",
+      "durationMs": 800
+    }
+  ]
+}

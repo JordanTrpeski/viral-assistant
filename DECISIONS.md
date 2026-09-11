@@ -150,3 +150,10 @@ Git branches, commit history, the GitHub repository URL, and `.viral/` storage a
 The `viral-dev objective` command is the owner-facing development entry point. It persists an automatically identified task under the current approved milestone before planning, then passes the natural-language objective through the M04 Efficiency Governor. Deterministic status work, local reasoning, coding-harness execution, and owner/model waits use their existing boundaries; the command does not create a parallel scheduler, model router, or source of truth.
 
 Planning-only requests remain durable and return their task ID. Owner-gated, unavailable, unsure, and failed work remains recorded without an unauthorized launch. The command does not start M05 or expand the approved milestone boundary.
+
+## D023 — Deterministic Two-Phase Development Finalization
+**Status:** accepted implementation under the existing D004/D018 authority
+
+After a coding harness succeeds, the normal Viral owner process owns Git finalization. It requires a passing verification report, a non-`main` branch, the configured Jordan Trpeski Git identity, the `JordanTrpeski/viral-assistant` origin, and a successful push preflight. It uses ordinary `git add`, `git commit`, and non-force `git push`; it never merges, rewrites history, or bypasses an owner gate.
+
+The implementation commit is pushed before the task becomes complete. Viral then commits and pushes the completion/task/checkpoint state. A private journal under `.viral/finalization/` records each phase. If a push fails or the process restarts, the task remains blocked with the exact diagnostic and a retry resumes the already-created commit rather than rerunning the harness or duplicating implementation work.

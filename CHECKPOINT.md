@@ -3,11 +3,25 @@
 - Milestone: M04_EFFICIENCY_GOVERNOR (complete)
 - Active task: OBJ-20260911111434557 — Add a doctor command that checks Git, Ollama, the configured local model, Codex CLI, runtime storage, and Viral configuration, then prints a concise health report. Do not change architecture or start a new milestone.
 - Branch: fix/windows-codex-shim-resolution
-- HEAD: a28874036c42c321ae66e621090f041f9d249802
+- HEAD: 21017242c9fe6525f5c39e6d471c9a0429723af1
 - Working tree: dirty
 
 ## Files Changed
+- CHECKPOINT.md
+- README.md
 - STATE.json
+- STATE.md
+- src/cli.ts
+- src/verification.ts
+- tasks/OBJ-20260911111434557.json
+- verification/latest.json
+- packets/OBJ-20260911111434557.md
+- runs/20260911114014458-codex-OBJ-20260911111434557.json
+- runs/20260911114756120-codex-OBJ-20260911111434557.json
+- runs/OBJ-20260911111434557-implementation.json
+- src/doctor.ts
+- tests/doctor.test.ts
+- verification/doctor-objective.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -19,11 +33,12 @@
 
 ## Latest Harness Run
 - Codex CLI: succeeded
-- Run record: `runs/20260910082604189-codex-M01-001.json`
+- Run record: `runs/20260911114756120-codex-OBJ-20260911111434557.json`
 - Exit: 0; timed out: false
 
 ## Blockers
-- None
+- Publication blocked: session permissions make .git read-only; commit requires a Git-write-enabled environment.
+- Publication blocked: Git Credential Manager github list failed with wincredman storage error; JordanTrpeski push authentication remains unverified.
 
 ## Next Action
-Codex Windows shim detection is repaired. Resume OBJ-20260911111434557 through governed execution only when requested; do not start M05.
+Commit and push verified changes on the current development branch from an environment permitting Git writes and verified JordanTrpeski authentication. Do not merge main or start M05.
