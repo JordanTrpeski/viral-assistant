@@ -127,3 +127,12 @@ This decision locks the policy boundary for M04 planning. It does not implement 
 The owner authorized the remaining M02 live setup after M02 implementation. Ollama 0.34.0 was installed with Ollama's official signed Windows installer. `qwen3:4b-instruct` is the preferred local model: its 4.0B instruction-tuned Q4_K_M build is about 2.5 GB on disk, fits fully within the machine's 8 GB GTX 1070 VRAM, and is appropriately sized for classification, concise summarization, relevance selection, and simple routing. The machine also has 16 GB system RAM and a 6-core/12-thread i5-10400F, so a larger general model is unnecessary for these tasks.
 
 Viral continues to accept only an explicitly validated loopback Ollama base URL. Live validation used `http://127.0.0.1:11434`, whose listener was bound only to `127.0.0.1`; no cloud model API, API key, or API billing path was added. Model installation is an owner-authorized setup action outside the local-brain adapter, which still never pulls models automatically.
+
+## D020 — Deterministic Efficiency Governor and Private Operational Telemetry
+**Status:** accepted for M04
+
+M04 implements `EFFICIENCY.md` through a small provider-neutral governor whose inputs are explicit task, risk, availability, failure, context, and permission facts. Deterministic software selects the capability tier, LOW/MEDIUM/HIGH effort, owner gate, retry/wait action, context budget, and fresh-session recommendation. Local-model output may compress already-filtered context but cannot authorize actions or own state transitions.
+
+The configured primary harness is Codex. Alternate paid/cloud harness switching remains disabled unless the owner approves the specific switch or explicitly enables automatic switching. Governed execution must plan before launch, propagate the selection where the provider supports it, and persist the concise user-visible selection record. Unavailable capability enters `WAITING_FOR_MODEL`; reaching a stored retry time only permits a real availability probe and does not imply success.
+
+Efficiency telemetry uses a replaceable bounded JSON store under `.viral/efficiency/`. It may record capability/provider selection, effort, practical reason, context budget and size, waits, escalation, session reset, outcome, and latency. It must not record prompts, conversation history, credentials, owner-private content, or hidden reasoning. This local telemetry is operational evidence rather than project source of truth.

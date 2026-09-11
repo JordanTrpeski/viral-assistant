@@ -3,11 +3,11 @@ import { join } from "node:path";
 import { inspectGit } from "./git.js";
 import { loadState } from "./state.js";
 import { readTask } from "./tasks.js";
-import type { PersistedHarnessRun } from "./harness/types.js";
+import type { HarnessSelectionRecord, PersistedHarnessRun } from "./harness/types.js";
 import type { VerificationReport } from "./types.js";
 
 const requiredReading = [
-  "AGENTS.md", "PRODUCT.md", "PRINCIPLES.md", "RULES.md", "ARCHITECTURE.md",
+  "AGENTS.md", "PRODUCT.md", "PRINCIPLES.md", "RULES.md", "EFFICIENCY.md", "ARCHITECTURE.md",
   "ROADMAP.md", "DECISIONS.md", "STATE.json", "STATE.md", "CHECKPOINT.md"
 ];
 
@@ -16,7 +16,7 @@ async function optionalJson<T>(path: string): Promise<T | null> {
   catch { return null; }
 }
 
-export async function prepareTaskPacket(root: string, taskId: string, write = true): Promise<{ path: string; content: string }> {
+export async function prepareTaskPacket(root: string, taskId: string, write = true, selection?: HarnessSelectionRecord): Promise<{ path: string; content: string }> {
   const [state, task, git, verification] = await Promise.all([
     loadState(root), readTask(root, taskId), inspectGit(root),
     optionalJson<VerificationReport>(join(root, "verification", "latest.json"))
@@ -45,6 +45,7 @@ export async function prepareTaskPacket(root: string, taskId: string, write = tr
     "", "### Blockers", ...blockers, "", "## Git", `- Branch: ${git.branch}`, `- HEAD: ${git.head}`,
     `- Working tree: ${git.workingTreeStatus}`, "", "### Changed Files", ...changed,
     "", "## Latest Verification", ...verificationLines, "", "## Previous Harness Run", ...runLines,
+    ...(selection ? ["", "## Efficiency Selection", `- Harness: ${selection.harness}`, `- Model: ${selection.model ?? "Harness default"}`, `- Reasoning effort: ${selection.effort}`, `- Practical reason: ${selection.reason}`] : []),
     "", "## Operating Constraints",
     "- Work only on the active milestone and selected task.",
     "- Do not use OpenAI or Anthropic API keys, direct APIs, or API billing.",

@@ -10,9 +10,13 @@ export class CodexHarness implements DevelopmentHarness {
   probe() { return probeHarness(this.id, this.displayName, this.command, this.runner, ["login", "status"], this.probeRoot); }
 
   async launch(request: HarnessLaunchRequest): Promise<HarnessRunResult> {
+    const selectionArgs = [
+      ...(request.model ? ["--model", request.model] : []),
+      ...(request.reasoningEffort ? ["-c", `model_reasoning_effort="${request.reasoningEffort}"`] : [])
+    ];
     const command = commandParts(this.command, [
       "--ask-for-approval", "never", "exec", "--json", "--color", "never", "-C", request.root,
-      "--sandbox", "workspace-write", "-"
+      "--sandbox", "workspace-write", ...selectionArgs, "-"
     ]);
     const result = await this.runner.run({ ...command, cwd: request.root, stdin: request.packet, timeoutMs: request.timeoutMs });
     const succeeded = result.exitCode === 0 && !result.error && !result.timedOut;

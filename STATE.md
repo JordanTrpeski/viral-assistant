@@ -1,38 +1,28 @@
 # Jarvis — Current Development State
 
-M00–M03 remain complete and verified. M04 — Efficiency Governor is active on `dev/m04-efficiency-governor` with task `M04-001` in progress.
+M00–M04 are complete and verified. M04 — Efficiency Governor was implemented on `dev/m04-efficiency-governor`; M05 has not started.
 
-## Permanent policy guidance
-`EFFICIENCY.md` is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute behavior. The connector-first boundary requires explicit, versioned interfaces between independent applications and major subsystems, including software Viral develops in the future. This integration changes policy documentation only; no Efficiency Governor or M04 functionality has been implemented.
+## M04 verified work
+- A provider-neutral deterministic governor selects `DETERMINISTIC`, `LOCAL_MODEL`, or `CODING_HARNESS`, plus LOW/MEDIUM/HIGH effort, from explicit facts.
+- Every plan has a concise user-visible practical reason and structured action. Owner gates block consequential actions, major policy/direction changes, and unauthorized paid/cloud harness switching.
+- Governed development execution plans before launch, invokes only an authorized harness, passes model/effort where supported, and persists the selection in task packets and run records.
+- Mandatory authoritative context is retained. Optional context is ranked within configurable budgets, supports progressive retrieval, and can use bounded local compression with a deterministic fallback.
+- Fresh-session planning produces a compact repository/task/checkpoint handoff rather than replaying conversation history.
+- `WAITING_FOR_MODEL` stores the earliest known retry time, waits through deterministic runtime state with zero inference, and resumes only after a real availability probe succeeds.
+- Bounded replaceable telemetry is stored under Git-ignored `.viral/efficiency/` without prompts, conversations, credentials, private content, or hidden reasoning.
+- Scriptable `efficiency-plan`, `efficiency-run`, and `efficiency-status` commands expose selection, guarded execution, and local operational evidence.
 
-## Local brain live setup
-Ollama 0.34.0 and `qwen3:4b-instruct` are installed and live-validated. The preferred 4.0B Q4_K_M instruction model is approximately 2.5 GB, fits fully in the GTX 1070's 8 GB VRAM, and completed classification, summarization, relevance selection, routing, and direct inference through Viral's loopback-only adapter. No cloud model API was added.
+## Existing foundations
+Ollama 0.34.0 and `qwen3:4b-instruct` remain live-validated through the loopback-only M02 adapter. M03 continues to provide the durable deterministic runtime and Git-ignored `.viral/runtime/` state. M01 explicit Codex/Claude harness commands remain supported; live Claude validation remains an optional future check because the owner has no current Claude Code subscription.
 
-## Pre-M04 autonomy policy
-D018 records the owner-approved autonomy boundary. Viral may select harness/model/effort, create subtasks, compact into fresh sessions, and continue permitted development operations inside an approved milestone. Selection reasons must be concise and user-visible. Deterministic `WAITING_FOR_MODEL` recovery must confirm actual availability. Paid/cloud harness switching, major policy/direction changes, and major merges into `main` remain owner-gated by default. This records policy only; M04 has not started.
+## Policy and repository
+`EFFICIENCY.md` remains authoritative. D018 defines the owner-approved autonomy boundary and D020 records the implemented governor and private telemetry architecture. Independent applications and major subsystems continue to use explicit, versioned connector boundaries. The canonical Git root is `C:\Users\jorda\Desktop\viral-bootstrap`.
 
-## Repository root
-The canonical Git repository root is `C:\Users\jorda\Desktop\viral-bootstrap`. The former nested repository under the outer `milestones` directory was consolidated upward with Git history, branches, remotes, tracked files, and ignored `.viral/` runtime data preserved. The final `milestones/` directory contains milestone specifications only.
-
-## Verified work
-- A long-running service drives bounded deterministic ticks and stops through an explicit shutdown controller.
-- A replaceable store persists validated atomic JSON snapshots under the Git-ignored `.viral/runtime/` directory.
-- The durable task model includes every required state, explicit `ownerInputRequired`, schedules, recurrence, conditions, owner responses, pause/resume, dependencies, verification, and bounded retry data.
-- One-time tasks survive runtime reconstruction and execute when due; recurring tasks execute only at fixed due times.
-- Owner-dependent tasks remain paused until explicit input is supplied.
-- Model and general condition waits resume through modular condition adapters. The M02 model integration probes availability without running inference.
-- Failed work uses bounded exponential backoff and reaches `FAILED`; dependency failures propagate without an unbounded loop.
-- Important completion, failure, owner-input, model-wait, scheduled-start, retry, pause/resume, and recovery events are persisted and exposed to internal listeners.
-- Interrupted `RUNNING` and `VERIFYING` tasks recover to `QUEUED` with at-least-once semantics and a recovery event.
-- Typecheck, lint, all 36 tests, the 10-test M02 suite, and the 13-test M03 acceptance suite pass.
-
-## Live evidence
-`runtime-status` created and read a valid empty local snapshot at `.viral/runtime/state.json`; Git confirmed the directory is ignored. The service process started and polled without an LLM session. Clean shutdown and timer release are covered by the controlled service lifecycle test.
+## Verification
+M04 focused tests cover selection, effort escalation, owner gates, context budgets and compression fallback, fresh-session handoff, governed launch propagation, runtime waits, telemetry privacy/bounds, CLI behavior, and adapter support. The complete repository verification includes M00–M04 typecheck, lint, tests, and milestone acceptance checks.
 
 ## Blockers
 None.
 
 ## Next action
-Implement and objectively verify M04 only. Do not merge into main or begin M05.
-
-Last verified implementation commit: 741cd486c64c74dcdc84dd7740c872af733d8bbd. Runtime persistence and repository development state are separate replaceable Bootstrap mechanisms.
+Await owner direction. Do not merge into `main` or begin M05.

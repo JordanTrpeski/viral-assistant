@@ -6,10 +6,41 @@
     "defaultTimeoutMs": 120000
   },
   "verificationCommands": [
-    { "name": "typecheck", "command": "pnpm run typecheck" },
-    { "name": "tests", "command": "pnpm run test" },
-    { "name": "lint", "command": "pnpm run lint" },
-    { "name": "m02-acceptance", "command": "pnpm run acceptance:m02" },
-    { "name": "m03-acceptance", "command": "pnpm run acceptance:m03" }
-  ]
+    {
+      "name": "typecheck",
+      "command": "pnpm run typecheck"
+    },
+    {
+      "name": "tests",
+      "command": "pnpm run test"
+    },
+    {
+      "name": "lint",
+      "command": "pnpm run lint"
+    },
+    {
+      "name": "m02-acceptance",
+      "command": "pnpm run acceptance:m02"
+    },
+    {
+      "name": "m03-acceptance",
+      "command": "pnpm run acceptance:m03"
+    },
+    {
+      "name": "m04-acceptance",
+      "command": "pnpm run acceptance:m04"
+    }
+  ],
+  "efficiencyGovernor": {
+    "primaryHarness": "codex",
+    "allowAutomaticPaidHarnessSwitch": false,
+    "maximumAttempts": 6,
+    "failuresPerEffortLevel": 2,
+    "initialContextCharacters": 12000,
+    "maximumContextCharacters": 24000,
+    "freshSessionCharacters": 18000,
+    "freshSessionCompletedRatio": 0.6,
+    "freshSessionNoiseRatio": 0.5,
+    "maximumTelemetryEvents": 500
+  }
 }

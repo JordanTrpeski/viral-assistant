@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { loadState } from "./state.js";
 
-const requiredDocuments = ["PRODUCT.md", "PRINCIPLES.md", "RULES.md", "ARCHITECTURE.md", "ROADMAP.md", "DECISIONS.md", "STATE.md"] as const;
+const requiredDocuments = ["PRODUCT.md", "PRINCIPLES.md", "RULES.md", "EFFICIENCY.md", "ARCHITECTURE.md", "ROADMAP.md", "DECISIONS.md", "STATE.md"] as const;
 
 export interface ProjectContext {
   state: Awaited<ReturnType<typeof loadState>>;

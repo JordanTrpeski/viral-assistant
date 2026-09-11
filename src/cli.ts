@@ -13,6 +13,7 @@ import { createLocalModel } from "./local/registry.js";
 import { LocalBrain } from "./local/tasks.js";
 import { createDefaultRuntime } from "./runtime/registry.js";
 import { RuntimeService } from "./runtime/service.js";
+import { createEfficiencyServices } from "./efficiency/registry.js";
 
 const root = resolve(process.env.JARVIS_ROOT ?? process.cwd());
 const command = process.argv[2];
@@ -99,7 +100,36 @@ async function main(): Promise<void> {
     const result = await new LocalBrain(await createLocalModel(root)).classify(input, requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout });
     console.log(json ? JSON.stringify(result, null, 2) : `${result.escalation}: ${result.value?.rationale ?? result.diagnostics.join(" ")}`);
     if (!result.succeeded) process.exitCode = 1;
-  } else if (command === "runtime-status") {
+  } else if (command === "efficiency-plan" || command === "efficiency-run") {
+    const taskId = await selectedTask(process.argv[3]);
+    const services = await createEfficiencyServices(root);
+    const failureValue = option("--failure-count");
+    const requestedHarness = option("--harness");
+    if (requestedHarness !== undefined && requestedHarness !== "codex" && requestedHarness !== "claude") throw new Error("--harness must be codex or claude");
+    const riskValue = option("--risk");
+    const retryAt = option("--retry-at");
+    if (riskValue !== undefined && riskValue !== "routine" && riskValue !== "normal" && riskValue !== "high") throw new Error("--risk must be routine, normal, or high");
+    const options = {
+      ...(failureValue === undefined ? {} : { failureCount: Number(failureValue) }),
+      ...(requestedHarness === undefined ? {} : { requestedHarness: requestedHarness as HarnessId }),
+      ...(riskValue === undefined ? {} : { risk: riskValue as "routine" | "normal" | "high" }),
+      ...(process.argv.includes("--architecture-change") ? { architectureChange: true } : {}),
+      ...(process.argv.includes("--security-sensitive") ? { securitySensitive: true } : {}),
+      ...(process.argv.includes("--approve-paid-switch") ? { paidSwitchApproved: true } : {}),
+      ...(retryAt ? { earliestModelRetryAt: retryAt } : {})
+    };
+    if (command === "efficiency-plan") {
+      const decision = await services.executor.planTask(taskId, options);
+      console.log(json ? JSON.stringify(decision, null, 2) : `${decision.action}: ${decision.tier}${decision.harness ? `/${decision.harness}` : ""} ${decision.effort} — ${decision.reason}`);
+    } else {
+      const result = await services.executor.runTask(taskId, timeout(900_000) ?? 900_000, options);
+      console.log(json ? JSON.stringify(result, null, 2) : result.launched ? `${result.decision.reason}\nRun: ${result.run?.succeeded ? "succeeded" : "failed"}` : `${result.decision.action}: ${result.decision.reason}`);
+      if (!result.launched || !result.run?.succeeded) process.exitCode = 1;
+    }
+  } else if (command === "efficiency-status") {
+    const snapshot = await (await createEfficiencyServices(root, option("--data-dir"))).telemetry.snapshot();
+    const latest = snapshot.events.at(-1) ?? null;
+    console.log(json ? JSON.stringify(snapshot, null, 2) : [`Efficiency events: ${snapshot.events.length}`, `Latest: ${latest ? `${latest.action} ${latest.tier} ${latest.effort} — ${latest.reason}` : "None"}`].join("\n"));  } else if (command === "runtime-status") {
     const snapshot = await (await createDefaultRuntime(root, option("--data-dir"))).getSnapshot();
     const counts = Object.fromEntries(snapshot.tasks.map((task) => task.state).filter((state, index, states) => states.indexOf(state) === index).map((state) => [state, snapshot.tasks.filter((task) => task.state === state).length]));
     console.log(json ? JSON.stringify(snapshot, null, 2) : [`Runtime tasks: ${snapshot.tasks.length}`, `Events: ${snapshot.events.length}`, ...Object.entries(counts).map(([state, count]) => `${state}: ${count}`)].join("\n"));
@@ -114,7 +144,7 @@ async function main(): Promise<void> {
     await service.start();
     console.log("Viral runtime stopped cleanly.");
   } else {
-    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|runtime-status|runtime-start> [options]");
+    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]");
     process.exitCode = 2;
   }
 }

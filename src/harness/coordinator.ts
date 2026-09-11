@@ -5,17 +5,23 @@ import { loadProjectContext } from "../context.js";
 import { writeJson } from "../files.js";
 import { prepareTaskPacket } from "../packet.js";
 import { loadState, saveState } from "../state.js";
-import type { DevelopmentHarness, PersistedHarnessRun } from "./types.js";
+import type { DevelopmentHarness, HarnessSelectionRecord, PersistedHarnessRun } from "./types.js";
 
-export async function launchTask(root: string, harness: DevelopmentHarness, taskId: string, timeoutMs: number): Promise<PersistedHarnessRun> {
+export interface HarnessExecutionOptions {
+  reasoningEffort?: "low" | "medium" | "high";
+  model?: string;
+  selection?: HarnessSelectionRecord;
+}
+
+export async function launchTask(root: string, harness: DevelopmentHarness, taskId: string, timeoutMs: number, options: HarnessExecutionOptions = {}): Promise<PersistedHarnessRun> {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000) throw new Error("timeoutMs must be an integer of at least 1000");
   await loadProjectContext(root);
-  const packet = await prepareTaskPacket(root, taskId);
-  const result = await harness.launch({ root, packet: packet.content, timeoutMs });
+  const packet = await prepareTaskPacket(root, taskId, true, options.selection);
+  const result = await harness.launch({ root, packet: packet.content, timeoutMs, ...(options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {}), ...(options.model ? { model: options.model } : {}) });
   const timestamp = result.startedAt.replace(/[^0-9]/g, "").slice(0, 17);
   const runId = `${timestamp}-${harness.id}-${taskId}`;
   const relativePath = `runs/${runId}.json`;
-  const record: PersistedHarnessRun = { schemaVersion: 1, runId, taskId, packetPath: packet.path, ...result };
+  const record: PersistedHarnessRun = { schemaVersion: 1, runId, taskId, packetPath: packet.path, ...result, ...(options.selection ? { selection: options.selection } : {}) };
   await mkdir(join(root, "runs"), { recursive: true });
   await writeJson(join(root, relativePath), record);
   const state = await loadState(root);

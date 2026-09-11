@@ -39,10 +39,21 @@ export interface HarnessProbe {
   diagnostics: string[];
 }
 
+export type HarnessReasoningEffort = "low" | "medium" | "high";
+export interface HarnessSelectionRecord {
+  tier: "CODING_HARNESS";
+  effort: "LOW" | "MEDIUM" | "HIGH";
+  harness: HarnessId;
+  model: string | null;
+  reason: string;
+}
+
 export interface HarnessLaunchRequest {
   root: string;
   packet: string;
   timeoutMs: number;
+  reasoningEffort?: HarnessReasoningEffort;
+  model?: string;
 }
 
 export interface HarnessRunResult extends ProcessResult {
@@ -58,6 +69,7 @@ export interface PersistedHarnessRun extends HarnessRunResult {
   runId: string;
   taskId: string;
   packetPath: string;
+  selection?: HarnessSelectionRecord;
 }
 
 export interface DevelopmentHarness {

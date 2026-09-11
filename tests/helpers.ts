@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import type { DevelopmentState } from "../src/types.js";
 
 const run = promisify(execFile);
-const documents = ["PRODUCT.md", "PRINCIPLES.md", "RULES.md", "ARCHITECTURE.md", "ROADMAP.md", "DECISIONS.md", "STATE.md"];
+const documents = ["PRODUCT.md", "PRINCIPLES.md", "RULES.md", "EFFICIENCY.md", "ARCHITECTURE.md", "ROADMAP.md", "DECISIONS.md", "STATE.md"];
 
 export const validState: DevelopmentState = {
   schemaVersion: 1,

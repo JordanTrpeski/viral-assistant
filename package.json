@@ -13,6 +13,7 @@
     "test": "pnpm run build && node --test dist/tests/*.test.js",
     "acceptance:m02": "pnpm run build && node --test dist/tests/local-model.test.js dist/tests/local-tasks.test.js",
     "acceptance:m03": "pnpm run build && node --test dist/tests/runtime.test.js dist/tests/runtime-service.test.js",
+    "acceptance:m04": "pnpm run build && node --test dist/tests/efficiency*.test.js",
     "lint": "node scripts/lint.mjs"
   },
   "devDependencies": {

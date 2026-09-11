@@ -11,7 +11,7 @@ test("loads every required context file and validates state", async () => {
   const context = await loadProjectContext(root);
   assert.equal(context.state.currentMilestone, "M00_BOOTSTRAP");
   assert.equal(context.milestonePath, "milestones/M00_BOOTSTRAP.md");
-  assert.equal(Object.keys(context.documents).length, 7);
+  assert.equal(Object.keys(context.documents).length, 8);
 });
 
 test("reports a missing context file clearly", async () => {

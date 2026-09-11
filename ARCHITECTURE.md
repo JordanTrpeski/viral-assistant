@@ -31,7 +31,7 @@ This mechanism is explicitly temporary/replaceable.
 
 `EFFICIENCY.md` is the authoritative policy for model and reasoning-effort selection, context budgeting and progressive retrieval, failure-aware escalation, session compaction, model-switch handoffs, and token/compute efficiency. It separates stable rules, semi-stable project context, and dynamic task state, while keeping authoritative constraints as deterministic inclusions.
 
-M00–M03 provide foundations used by that policy, but do not implement an Efficiency Governor. M04 is reserved for the first practical governor. Until then, agents and explicit callers apply the policy directly.
+M04 implements the first practical Efficiency Governor under `src/efficiency/`. It converts explicit task facts into a validated, serializable capability, effort, owner-gate, retry, context, and session plan. Its output includes a concise practical reason and never stores or exposes hidden reasoning.
 
 ### 3. Task Model
 A small task representation should track:
@@ -79,7 +79,15 @@ M03 adds a long-running deterministic service under `src/runtime/`. A replaceabl
 
 The engine owns scheduling, fixed-interval recurrence, condition checks, owner-input gates, pause/resume, dependencies, bounded retry backoff, verification transitions, and event generation. Work and condition adapters are injectable. The provided model-availability condition calls only the M02 availability probe while waiting; it does not run inference. The runtime has no direct dependency on a coding harness and never keeps an LLM session alive merely to wait.
 
-### 5c. Connector-First Boundary
+### 5c. Efficiency Governor
+
+M04 adds a provider-neutral deterministic governor under `src/efficiency/`. The governor selects deterministic software, the M02 local brain, or an M01 coding harness from explicit work, risk, availability, failure, and permission facts. It applies bounded LOW/MEDIUM/HIGH effort escalation, enforces owner gates before launch, and records the chosen tier, provider, effort, and practical reason in both task packets and run metadata.
+
+The context planner always retains authoritative material, ranks optional material within configurable budgets, supports progressive retrieval, and may ask the local brain to compress only after deterministic filtering. The session planner emits bounded repository/task/checkpoint handoffs when context becomes inefficient. The runtime adapter represents unavailable capabilities as `WAITING_FOR_MODEL`; a timer only permits a probe, and only a successful provider probe permits resumption.
+
+Bounded operational telemetry is persisted through a replaceable store under Git-ignored `.viral/efficiency/`. It records selection, budgets, waits, escalation, session resets, outcomes, and latency without prompts, conversations, credentials, private content, or hidden reasoning. The governor does not call cloud APIs and cannot bypass the existing harness authentication or sandbox boundaries.
+
+### 5d. Connector-First Boundary
 
 Independent applications and major subsystems integrate through explicit, versioned connectors or interfaces. Connectors own their request/response contracts, versioning, error semantics, and permission boundaries. Implementations should avoid direct access to another application's database, shared mutable state, or internal modules unless a strong reason and migration impact are recorded in `DECISIONS.md`.
 
@@ -109,7 +117,7 @@ Owner objective
 → on failure: capture diagnostics + retry/escalate according to policy
 → continue or wait for owner/model availability.
 
-The M04 governor may automate harness/model and reasoning-effort selection, implementation subtask creation, fresh-session checkpointing, and the permitted edit/test/commit/push/retry/pause/resume loop within an owner-approved milestone. Each selection must emit a concise user-visible record of the selected capability, effort level, and practical reason without exposing hidden chain-of-thought.
+The M04 governor automates harness/model and reasoning-effort selection, fresh-session planning, and permitted governed development launches within an owner-approved milestone. Each selection must emit a concise user-visible record of the selected capability, effort level, and practical reason without exposing hidden chain-of-thought.
 
 When allowance is exhausted, deterministic runtime state may move work to `WAITING_FOR_MODEL`, store the earliest known reset time, wait without model usage, and probe actual availability at or after that time. A timer expiring does not establish availability. Switching to another paid/cloud harness remains owner-gated unless the owner explicitly configures automatic switching. Major product/rule/privacy/security/roadmap changes and major merges into `main` remain owner-gated during bootstrap.
 
@@ -120,7 +128,6 @@ The coding agent is a worker inside the development loop. It is not the sole man
 ## Future Architecture
 
 Future modules may include:
-- efficiency governor,
 - voice input/output,
 - desktop overlay/full UI,
 - OS automation,

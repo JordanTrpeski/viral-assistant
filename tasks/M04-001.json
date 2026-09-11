@@ -3,7 +3,7 @@
   "id": "M04-001",
   "milestone": "M04_EFFICIENCY_GOVERNOR",
   "objective": "Implement the deterministic, observable, owner-overridable Efficiency Governor defined by the M04 specification.",
-  "status": "in_progress",
+  "status": "complete",
   "acceptanceCriteria": [
     "Selection covers deterministic, local-model, and coding-harness work with LOW/MEDIUM/HIGH effort and a concise visible reason.",
     "Context budgeting, progressive retrieval, local compression fallback, and fresh-session handoff are verified.",
@@ -29,9 +29,22 @@
     "tests/efficiency.test.ts"
   ],
   "notes": [
-    "Use deterministic policy for enforcement; local AI may recommend only.",
+    "Implemented deterministic selection, owner gates, effort escalation, context/session planning, governed harness execution, WAITING_FOR_MODEL recovery, and bounded private telemetry.",
+    "Live Codex planning selected CODING_HARNESS/HIGH and reported a concise practical reason without launching a nested harness.",
     "Do not begin M05 or merge into main."
   ],
-  "nextAction": "Implement the typed governor, context/session planning, governed execution, runtime wait integration, telemetry, CLI, and tests.",
-  "verificationResult": null
+  "nextAction": "Await owner direction; M05 and main merge remain out of scope.",
+  "verificationResult": {
+    "status": "passed",
+    "checks": [
+      "typecheck",
+      "all automated tests",
+      "lint",
+      "M02 acceptance",
+      "M03 acceptance",
+      "M04 acceptance"
+    ],
+    "m04Tests": 17,
+    "allTests": 53
+  }
 }

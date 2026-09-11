@@ -119,3 +119,12 @@ The plan command must be side-effect-light except for bounded telemetry. The run
 - Update architecture, decisions, state, task, verification evidence, and checkpoint.
 - Commit and push verified work on `dev/m04-efficiency-governor` using the owner's GitHub identity.
 - Do not merge into `main` and do not begin M05.
+
+## Validation Record
+
+- Implemented on `dev/m04-efficiency-governor` without merging into `main` or beginning M05.
+- Focused M04 acceptance: 17 tests passed.
+- Full automated suite: 53 tests passed, including preserved M00–M03 behavior.
+- Typecheck, lint, build, M02 acceptance, M03 acceptance, and M04 acceptance passed.
+- A live authenticated Codex probe and `efficiency-plan` selected `CODING_HARNESS` with HIGH effort for M04 architecture work and emitted the practical reason. The plan path did not launch a nested harness.
+- Git ignore verification covers `.viral/efficiency/`; tests confirm telemetry is bounded and excludes prompts, conversations, credentials, and hidden reasoning.
