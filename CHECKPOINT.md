@@ -3,22 +3,11 @@
 - Milestone: M04_EFFICIENCY_GOVERNOR (complete)
 - Active task: None
 - Branch: dev/owner-development-objective
-- HEAD: ba186604e3055301f9f531fad6272f76c0731e70
+- HEAD: 27845098f466e877db0fd0c7d31dfc5c2da56905
 - Working tree: dirty
 
 ## Files Changed
-- DECISIONS.md
-- README.md
 - STATE.json
-- STATE.md
-- src/cli.ts
-- src/efficiency/execution.ts
-- src/efficiency/registry.ts
-- src/local/policy.ts
-- tests/cli.test.ts
-- verification/latest.json
-- src/objective.ts
-- tests/objective.test.ts
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
