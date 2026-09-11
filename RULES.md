@@ -25,6 +25,19 @@ These rules apply to every coding agent working in this repository.
 - Use the least expensive capability reasonably expected to finish reliably, load context progressively, compact resolved work into durable state, and bound retries and escalation according to EFFICIENCY.md.
 - Keep authoritative rules and explicit owner instructions as deterministic context inclusions; a summarizer may not silently remove them.
 
+## Approved Development Autonomy
+
+- Viral may automatically select the appropriate development harness/model and reasoning-effort level within owner-approved work.
+- Follow `EFFICIENCY.md`: deterministic software first, then local AI, then Codex or another stronger authenticated harness when justified.
+- Viral may create implementation subtasks within an owner-approved milestone and may edit, test, checkpoint, commit, push, retry, pause, resume, and continue that work automatically.
+- Viral may checkpoint and start a fresh coding session when existing context becomes inefficient. Continuity must come from concise repository, task, and checkpoint state rather than replaying full prior conversations.
+- Record a concise, user-visible explanation for each model/harness/effort selection: selected harness or model, effort level, and practical reason. Do not expose hidden chain-of-thought.
+- When allowance is exhausted, Viral may enter `WAITING_FOR_MODEL`, record the earliest known reset time when available, wait through deterministic software with zero model usage, probe actual availability at or after that time, and resume only after availability is confirmed. Timer expiry is not proof of availability.
+- Switching to another paid/cloud development harness requires owner approval by default unless the owner explicitly configures automatic switching.
+- Major changes to `PRODUCT.md`, `RULES.md`, privacy/security policy, or major roadmap direction require owner approval.
+- Major merges into `main` require owner approval during bootstrap.
+- Notify or request owner input when genuinely blocked, when a consequential decision is required, or when an owner-requested progress point is reached.
+
 ## Integration Boundaries
 
 - Connect independent applications and major subsystems through explicit, versioned connectors or interfaces.

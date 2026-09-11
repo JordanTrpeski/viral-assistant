@@ -2,7 +2,7 @@
   "localBrain": {
     "provider": "ollama",
     "baseUrl": "http://127.0.0.1:11434",
-    "preferredModel": null,
+    "preferredModel": "qwen3:4b-instruct",
     "defaultTimeoutMs": 120000
   },
   "verificationCommands": [

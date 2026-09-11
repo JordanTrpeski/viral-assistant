@@ -23,7 +23,7 @@ Run Jarvis continuously as a background process with durable scheduled tasks, co
 Detailed specification: `milestones/M03_BACKGROUND_RUNTIME.md`
 
 ## M04 — Efficiency Governor
-Implement the first simple, observable, owner-overridable policy layer for autonomous development. Apply `EFFICIENCY.md` to capability and reasoning-effort selection, progressive context loading, bounded escalation, fresh-session/checkpoint decisions, local context compression, model-availability waits, and local efficiency telemetry. Do not optimize past correctness, safety, privacy, or verification.
+Implement the first simple, observable, owner-overridable policy layer for autonomous development using the approved boundary in D018. Apply `EFFICIENCY.md` to capability and reasoning-effort selection, progressive context loading, bounded escalation, fresh-session/checkpoint decisions, local context compression, model-availability waits, and local efficiency telemetry. Emit a concise user-visible selection reason. Keep paid/cloud harness switching, major policy/direction changes, and major merges into `main` owner-gated by default. Do not optimize past correctness, safety, privacy, or verification.
 
 ## M05 — Voice Interface
 Add local-first speech recognition and text-to-speech, plus push-to-talk/hotkey interaction. Wake-word support may follow if justified.

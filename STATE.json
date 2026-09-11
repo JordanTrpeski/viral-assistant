@@ -14,16 +14,17 @@
   "lastVerifiedCommit": "741cd486c64c74dcdc84dd7740c872af733d8bbd",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
-  "nextAction": "Await owner direction. Do not begin M04 or merge into main without owner approval.",
+  "nextAction": "Pre-M04 preparation is complete. Await owner direction; do not begin M04 or merge into main without owner approval.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
     "M02 must not launch a coding harness or directly enforce infrastructure decisions from model output.",
-    "The safe live probe found no Ollama CLI, running service, or installed models. Optional setup: install Ollama, manually pull a chosen small model, and configure localBrain.preferredModel or JARVIS_LOCAL_MODEL.",
+    "Ollama 0.34.0 and qwen3:4b-instruct are installed and live-validated through Viral on loopback 127.0.0.1:11434; the preferred model is configured without adding a cloud API.",
     "M03 runtime infrastructure must remain deterministic; waiting must not keep or repeatedly prompt an LLM session.",
     "Private runtime snapshots default to the Git-ignored .viral/runtime directory. Interrupted work uses at-least-once recovery, so consequential handlers must be idempotent.",
     "EFFICIENCY.md is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute efficiency behavior.",
     "Connector-first architecture applies to Viral and independent software it develops; cross-application contracts should be explicit and versioned.",
-    "The canonical repository root is C:\\Users\\jorda\\Desktop\\viral-bootstrap; the accidental nested repository was consolidated with full Git history and local runtime state preserved."
+    "The canonical repository root is C:\\Users\\jorda\\Desktop\\viral-bootstrap; the accidental nested repository was consolidated with full Git history and local runtime state preserved.",
+    "D018 locks the owner-approved pre-M04 autonomy boundary: automatic work within an approved milestone, user-visible selection reasons, deterministic WAITING_FOR_MODEL recovery, and owner gates for paid/cloud switching, major policy/direction changes, and major main merges."
   ]
 }

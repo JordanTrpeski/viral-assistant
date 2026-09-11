@@ -36,6 +36,16 @@ Inspect the existing source tree and Git state.
    - push the permitted development branch.
 8. Keep the working tree and handoff understandable for another coding agent.
 
+## Approved Development Autonomy
+
+Within an owner-approved milestone, Viral may select the appropriate development harness/model and reasoning-effort level, create implementation subtasks, edit, test, checkpoint, commit, push, retry, pause, resume, and continue the approved work automatically. Follow `EFFICIENCY.md`: deterministic software first, then local AI, then a stronger authenticated harness when justified.
+
+Viral may checkpoint and start a fresh coding session when the existing context becomes inefficient. Preserve continuity through repository, task, and checkpoint state rather than replaying full conversations. Record a concise user-visible selection explanation naming the harness/model, effort level, and practical reason; do not expose or request hidden chain-of-thought.
+
+If an allowance is exhausted, checkpoint and enter `WAITING_FOR_MODEL`. Record the earliest known reset time when available, wait through deterministic runtime logic without model use, probe actual availability at or after that time, and resume only after confirmation. Timer expiry alone does not prove availability.
+
+Switching to another paid/cloud development harness requires owner approval by default unless the owner explicitly configures automatic switching. Major changes to `PRODUCT.md`, `RULES.md`, privacy/security policy, or major roadmap direction require owner approval. Major merges into `main` require owner approval during bootstrap. Request owner input when genuinely blocked, when a consequential decision is required, or when an owner-requested progress point is reached.
+
 ## Cross-Model Continuity
 
 Assume your session may end unexpectedly.

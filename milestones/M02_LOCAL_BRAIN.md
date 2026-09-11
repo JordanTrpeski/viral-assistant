@@ -111,4 +111,14 @@ If Ollama or a suitable model is unavailable, report detected models and a clear
 - Controlled Ollama responses demonstrate successful local abstraction queries, model selection, context use, failure handling, cancellation, and timeout behavior.
 - Representative classification examples produce the required deterministic escalation categories.
 - A synthetic context exceeding 50,000 characters is reduced to a relevant packet under 8,000 characters without invoking a development harness or cloud API.
-- The safe live probe found no Ollama CLI, running loopback service, or installed models. Per the milestone rules, optional manual installation and a future live inference do not block implementation completion.
+- The original completion probe found no Ollama CLI, running loopback service, or installed models. Per the milestone rules at that time, optional manual installation did not block implementation completion.
+
+## Live Validation Addendum — 2026-09-11
+
+- With explicit owner authorization after M02 completion, Ollama 0.34.0 was installed through Ollama's official signed Windows installer and `qwen3:4b-instruct` was pulled as the configured preferred model.
+- The 4.0B Q4_K_M model is approximately 2.5 GB on disk and loaded fully in the GTX 1070's 8 GB VRAM. The machine has 16 GB system RAM and a 6-core/12-thread i5-10400F; this small instruction model is sufficient for M02's structured, inexpensive tasks without installing a larger general model.
+- Viral's real adapter probe reported the CLI installed, loopback service running, preferred model available, and no diagnostics.
+- A live inference returned `LOCAL_READY` successfully. Real local-brain calls completed classification, summarization, relevance selection, and routing with valid structured results.
+- Live summarization reduced 2,840 synthetic characters to 107. Two live relevance-selection runs reduced 7,045 synthetic characters to no more than 540 characters and selected only the two relevant sections.
+- The Ollama listener was bound only to `127.0.0.1:11434`; Viral's configuration and validation continue to reject non-loopback endpoints. No cloud API, API key, or API billing path was introduced.
+- The focused 10-test M02 acceptance suite and the full repository verification suite pass after live setup.

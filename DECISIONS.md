@@ -109,3 +109,21 @@ This principle applies to Viral's internal and external integrations and to inde
 **Status:** accepted by owner on 2026-09-10
 
 The authoritative efficiency policy assigns M04 to the first practical Efficiency Governor. The prior future milestones are renumbered without changing their approved scope: voice begins at M05 and remote/mobile becomes M11. This policy integration does not start or implement M04.
+
+## D018 — Pre-M04 Development Autonomy Boundary
+**Status:** accepted by owner on 2026-09-11
+
+Within an owner-approved milestone, Viral may automatically select the appropriate development harness/model and reasoning-effort level; create implementation subtasks; checkpoint and start a fresh session when context becomes inefficient; and edit, test, checkpoint, commit, push, retry, pause, resume, and continue approved development work. Selection follows `EFFICIENCY.md`: deterministic software first, then local AI, then Codex or another stronger authenticated harness when justified. Each selection records a concise user-visible explanation of the selected harness/model, effort level, and practical reason without exposing hidden chain-of-thought.
+
+Allowance exhaustion may move work to `WAITING_FOR_MODEL`. Viral records the earliest known reset time when available, waits through deterministic runtime logic with zero model usage, probes actual availability at or after that time, and resumes only after confirmation; timer expiry alone is not evidence of availability. Continuity is preserved through concise repository, task, and checkpoint state rather than replaying full conversations.
+
+Switching to another paid/cloud development harness requires owner approval initially unless the owner explicitly configures automatic switching. Major changes to `PRODUCT.md`, `RULES.md`, privacy/security policy, or major roadmap direction require owner approval. Major merges into `main` require owner approval during bootstrap. Viral requests owner input when genuinely blocked, when a consequential decision is required, or when an owner-requested progress point is reached.
+
+This decision locks the policy boundary for M04 planning. It does not implement or start M04.
+
+## D019 — Installed M02 Local Model
+**Status:** accepted operational setup on 2026-09-11
+
+The owner authorized the remaining M02 live setup after M02 implementation. Ollama 0.34.0 was installed with Ollama's official signed Windows installer. `qwen3:4b-instruct` is the preferred local model: its 4.0B instruction-tuned Q4_K_M build is about 2.5 GB on disk, fits fully within the machine's 8 GB GTX 1070 VRAM, and is appropriately sized for classification, concise summarization, relevance selection, and simple routing. The machine also has 16 GB system RAM and a 6-core/12-thread i5-10400F, so a larger general model is unnecessary for these tasks.
+
+Viral continues to accept only an explicitly validated loopback Ollama base URL. Live validation used `http://127.0.0.1:11434`, whose listener was bound only to `127.0.0.1`; no cloud model API, API key, or API billing path was added. Model installation is an owner-authorized setup action outside the local-brain adapter, which still never pulls models automatically.

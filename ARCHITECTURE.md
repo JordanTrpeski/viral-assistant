@@ -109,6 +109,10 @@ Owner objective
 → on failure: capture diagnostics + retry/escalate according to policy
 → continue or wait for owner/model availability.
 
+The M04 governor may automate harness/model and reasoning-effort selection, implementation subtask creation, fresh-session checkpointing, and the permitted edit/test/commit/push/retry/pause/resume loop within an owner-approved milestone. Each selection must emit a concise user-visible record of the selected capability, effort level, and practical reason without exposing hidden chain-of-thought.
+
+When allowance is exhausted, deterministic runtime state may move work to `WAITING_FOR_MODEL`, store the earliest known reset time, wait without model usage, and probe actual availability at or after that time. A timer expiring does not establish availability. Switching to another paid/cloud harness remains owner-gated unless the owner explicitly configures automatic switching. Major product/rule/privacy/security/roadmap changes and major merges into `main` remain owner-gated during bootstrap.
+
 ## Important Boundary
 
 The coding agent is a worker inside the development loop. It is not the sole manager, verifier, or source of truth.

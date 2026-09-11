@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "validatedAt": "2026-09-11T06:15:00.034787Z",
+  "provider": "ollama",
+  "ollamaVersion": "0.34.0",
+  "installation": {
+    "method": "official signed Windows installer",
+    "source": "https://ollama.com/download/windows",
+    "signatureStatus": "Valid",
+    "signer": "Ollama Inc."
+  },
+  "machine": {
+    "os": "Windows 11 Pro for Workstations",
+    "systemRamGiB": 15.91,
+    "cpu": "Intel Core i5-10400F",
+    "cpuCores": 6,
+    "cpuLogicalProcessors": 12,
+    "gpu": "NVIDIA GeForce GTX 1070",
+    "gpuVramGiB": 8
+  },
+  "model": {
+    "name": "qwen3:4b-instruct",
+    "parameters": "4.0B",
+    "quantization": "Q4_K_M",
+    "downloadBytes": 2497293803,
+    "digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0",
+    "loadedFullyInVram": true
+  },
+  "locality": {
+    "configuredBaseUrl": "http://127.0.0.1:11434",
+    "listenerAddresses": [
+      "127.0.0.1"
+    ],
+    "nonLoopbackRejectedByConfig": true,
+    "cloudModelApiAdded": false
+  },
+  "liveValidation": {
+    "probe": {
+      "installed": true,
+      "running": true,
+      "usable": true,
+      "diagnostics": []
+    },
+    "directInference": {
+      "succeeded": true,
+      "expectedOutputReceived": true,
+      "statusCode": 200
+    },
+    "classification": {
+      "succeeded": true,
+      "escalation": "LOCAL_OK",
+      "source": "model"
+    },
+    "summarization": {
+      "succeeded": true,
+      "originalCharacters": 2840,
+      "summaryCharacters": 107
+    },
+    "contextSelection": {
+      "succeeded": true,
+      "selectedKeys": [
+        "active",
+        "rules"
+      ],
+      "originalCharacters": 7045,
+      "packetCharacters": 519,
+      "priorPacketCharacters": 540
+    },
+    "routing": {
+      "succeeded": true,
+      "escalation": "LOCAL_OK",
+      "source": "model"
+    }
+  }
+}

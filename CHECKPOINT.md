@@ -3,11 +3,23 @@
 - Milestone: M03_BACKGROUND_RUNTIME (complete)
 - Active task: None
 - Branch: dev/efficiency-policy
-- HEAD: 34fef3295074995315d1d3f13240690bc4159e8d
-- Working tree: clean
+- HEAD: 55b0a480da34ed4dd30670389994b59bca2b74ce
+- Working tree: dirty
 
 ## Files Changed
-- None
+- AGENTS.md
+- ARCHITECTURE.md
+- DECISIONS.md
+- EFFICIENCY.md
+- README.md
+- ROADMAP.md
+- RULES.md
+- STATE.json
+- STATE.md
+- jarvis-dev.config.json
+- milestones/M02_LOCAL_BRAIN.md
+- verification/latest.json
+- verification/m02-live.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -25,4 +37,4 @@
 - None
 
 ## Next Action
-Await owner direction. Do not begin M04 or merge into main without owner approval.
+Pre-M04 preparation is complete. Await owner direction; do not begin M04 or merge into main without owner approval.

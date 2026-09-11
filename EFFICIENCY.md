@@ -152,7 +152,11 @@ Do not copy full previous model conversations by default.
 
 A handoff should normally contain objective, current state, completed work, unresolved issue, relevant files, verification status, Git state, and next action.
 
-Owner policy controls whether model switching is automatic or requires confirmation.
+Owner policy controls whether model switching is automatic or requires confirmation. The initial default is that switching to another paid/cloud development harness requires owner approval unless the owner explicitly configures automatic switching.
+
+Every automatic selection should produce a concise, user-visible record containing the selected harness/model, reasoning-effort level, and practical reason. This is an operational explanation, not hidden chain-of-thought.
+
+Within an owner-approved milestone, Viral may select capability and effort, create implementation subtasks, edit, test, checkpoint, commit, push, retry, pause, resume, and continue automatically, subject to permanent owner gates. Major product/rule/privacy/security/roadmap changes and major merges into `main` still require owner approval during bootstrap.
 
 ## 17. Local Context Compression
 
