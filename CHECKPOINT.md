@@ -3,35 +3,11 @@
 - Milestone: M04_EFFICIENCY_GOVERNOR (complete)
 - Active task: None
 - Branch: dev/m04-efficiency-governor
-- HEAD: bdb7d4aef0a9237aaad120d7a926c420df092070
+- HEAD: f41c2d9fa080d8c41debe10cf01ff1fc076bf127
 - Working tree: dirty
 
 ## Files Changed
-- .gitignore
-- ARCHITECTURE.md
-- DECISIONS.md
-- README.md
-- ROADMAP.md
 - STATE.json
-- STATE.md
-- jarvis-dev.config.json
-- milestones/M04_EFFICIENCY_GOVERNOR.md
-- package.json
-- src/cli.ts
-- src/context.ts
-- src/harness/claude.ts
-- src/harness/codex.ts
-- src/harness/coordinator.ts
-- src/harness/types.ts
-- src/packet.ts
-- src/runtime/registry.ts
-- tasks/M04-001.json
-- tests/context-state.test.ts
-- tests/helpers.ts
-- verification/latest.json
-- src/efficiency/
-- tests/efficiency-runtime.test.ts
-- tests/efficiency.test.ts
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
