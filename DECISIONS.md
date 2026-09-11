@@ -1,9 +1,9 @@
-# Jarvis — Decision Log
+# Viral — Decision Log
 
 ## D001 — TypeScript First
 **Status:** accepted
 
-Jarvis core development should prefer TypeScript/JavaScript where practical.
+Viral core development should prefer TypeScript/JavaScript where practical.
 
 Python or other languages remain allowed when they provide a concrete technical advantage.
 
@@ -21,12 +21,12 @@ Do not default development work to OpenAI API or Anthropic API billing.
 
 During Bootstrap V0, repository state files provide development continuity between coding agents.
 
-This is not intended to permanently define Jarvis memory/state architecture. It must remain easy to replace later.
+This is not intended to permanently define Viral memory/state architecture. It must remain easy to replace later.
 
 ## D004 — Automatic Git Commit and Push
 **Status:** accepted
 
-Jarvis may automatically commit and push verified development work on appropriate development branches.
+Viral may automatically commit and push verified development work on appropriate development branches.
 
 Major changes must not be merged into the stable/main branch without owner approval during the bootstrap period.
 
@@ -40,7 +40,7 @@ Personal/private information remains local until the owner explicitly changes th
 
 The owner defines major milestones and acceptance outcomes.
 
-Jarvis/coding agents may determine implementation subtasks and may propose roadmap changes.
+Viral/coding agents may determine implementation subtasks and may propose roadmap changes.
 
 ## D007 — Open-Source Reuse
 **Status:** accepted
@@ -50,7 +50,7 @@ Reuse mature compatible open-source code/components where it provides a real adv
 ## D008 — Deterministic Core + AI
 **Status:** accepted
 
-Jarvis should combine deterministic algorithms/software with AI rather than using an LLM for operations that conventional software can perform reliably.
+Viral should combine deterministic algorithms/software with AI rather than using an LLM for operations that conventional software can perform reliably.
 
 ## D009 — Dependency-Light Bootstrap Controller
 **Status:** accepted
@@ -136,3 +136,10 @@ M04 implements `EFFICIENCY.md` through a small provider-neutral governor whose i
 The configured primary harness is Codex. Alternate paid/cloud harness switching remains disabled unless the owner approves the specific switch or explicitly enables automatic switching. Governed execution must plan before launch, propagate the selection where the provider supports it, and persist the concise user-visible selection record. Unavailable capability enters `WAITING_FOR_MODEL`; reaching a stored retry time only permits a real availability probe and does not imply success.
 
 Efficiency telemetry uses a replaceable bounded JSON store under `.viral/efficiency/`. It may record capability/provider selection, effort, practical reason, context budget and size, waits, escalation, session reset, outcome, and latency. It must not record prompts, conversation history, credentials, owner-private content, or hidden reasoning. This local telemetry is operational evidence rather than project source of truth.
+
+## D021 — Viral Is the Canonical Product and CLI Name
+**Status:** accepted by owner on 2026-09-11
+
+The active product, npm package, executable, configuration, environment variables, source diagnostics, tests, and maintained documentation use Viral. The canonical package is `viral-development-controller`, the CLI and npm script are `viral-dev`, and its configuration is `viral-dev.config.json`. No compatibility alias is retained because the bootstrap CLI has no external stable consumers recorded in the repository.
+
+Git branches, commit history, the GitHub repository URL, and `.viral/` storage are unchanged. The legacy name `Jarvis` remains only in this decision and in `runs/20260910082604189-codex-M01-001.json`, whose captured M01 process output is preserved as immutable historical diagnostic evidence rather than rewritten.

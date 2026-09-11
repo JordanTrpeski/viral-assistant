@@ -1,9 +1,9 @@
-# Jarvis — Roadmap
+# Viral — Roadmap
 
-The roadmap defines major direction. Jarvis may create and reorder implementation subtasks inside an active milestone when doing so is necessary to satisfy that milestone. Major roadmap changes require owner approval.
+The roadmap defines major direction. Viral may create and reorder implementation subtasks inside an active milestone when doing so is necessary to satisfy that milestone. Major roadmap changes require owner approval.
 
 ## M00 — Bootstrap Self-Development Core
-Build the smallest reliable controller that understands Jarvis's product/rules/state and can coordinate verified development work.
+Build the smallest reliable controller that understands Viral's product/rules/state and can coordinate verified development work.
 
 Detailed specification: `milestones/M00_BOOTSTRAP.md`
 
@@ -18,7 +18,7 @@ Integrate a small local LLM runtime, initially likely through Ollama, for cheap 
 Detailed specification: `milestones/M02_LOCAL_BRAIN.md`
 
 ## M03 — Background Runtime and Scheduler
-Run Jarvis continuously as a background process with durable scheduled tasks, condition waits, resumable work, notifications, and owner-input states.
+Run Viral continuously as a background process with durable scheduled tasks, condition waits, resumable work, notifications, and owner-input states.
 
 Detailed specification: `milestones/M03_BACKGROUND_RUNTIME.md`
 

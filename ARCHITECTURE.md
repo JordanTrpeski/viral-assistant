@@ -1,4 +1,4 @@
-# Jarvis — Bootstrap Architecture
+# Viral — Bootstrap Architecture
 
 ## Current Architecture Status
 
@@ -6,7 +6,7 @@ This document describes Bootstrap V0 only. It is not the final life-assistant ar
 
 ## Bootstrap Goal
 
-Provide a small TypeScript-based controller that can coordinate the development of Jarvis itself while preserving continuity across coding-agent sessions.
+Provide a small TypeScript-based controller that can coordinate the development of Viral itself while preserving continuity across coding-agent sessions.
 
 ## Bootstrap Components
 

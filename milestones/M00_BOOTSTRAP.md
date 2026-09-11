@@ -2,13 +2,13 @@
 
 ## Objective
 
-Build the smallest TypeScript-based development controller that allows Jarvis development to survive coding-agent/session changes without relying on chat history.
+Build the smallest TypeScript-based development controller that allows Viral development to survive coding-agent/session changes without relying on chat history.
 
 The result should be understandable, testable, and intentionally small.
 
 ## Why This Exists
 
-Before Jarvis gains voice, browser automation, local AI, scheduling, or life-assistant features, it needs a reliable mechanism for coordinating its own development.
+Before Viral gains voice, browser automation, local AI, scheduling, or life-assistant features, it needs a reliable mechanism for coordinating its own development.
 
 M00 builds that mechanism.
 
@@ -99,14 +99,14 @@ Automatic commit/push behavior may be implemented only if doing so remains small
 
 ### G. CLI
 
-Provide a small Jarvis development CLI.
+Provide a small Viral development CLI.
 
 Preferred command shape may evolve, but M00 should expose useful commands analogous to:
 
-- `jarvis-dev status`
-- `jarvis-dev verify`
-- `jarvis-dev checkpoint`
-- `jarvis-dev context`
+- `viral-dev status`
+- `viral-dev verify`
+- `viral-dev checkpoint`
+- `viral-dev context`
 
 The CLI must be scriptable and return non-zero exit codes on genuine failures.
 

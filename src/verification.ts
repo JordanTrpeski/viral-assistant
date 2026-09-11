@@ -11,13 +11,13 @@ interface VerificationConfig { verificationCommands: Array<{ name: string; comma
 function validateConfig(value: unknown): VerificationConfig {
   const commands = (value as VerificationConfig | null)?.verificationCommands;
   if (!Array.isArray(commands) || commands.length === 0 || commands.some((item) => !item?.name || !item.command)) {
-    throw new Error("jarvis-dev.config.json must define non-empty verificationCommands");
+    throw new Error("viral-dev.config.json must define non-empty verificationCommands");
   }
   return { verificationCommands: commands };
 }
 
 export async function runVerification(root: string): Promise<VerificationReport> {
-  const config = validateConfig(await readJson(join(root, "jarvis-dev.config.json")));
+  const config = validateConfig(await readJson(join(root, "viral-dev.config.json")));
   const results: VerificationResult[] = [];
   for (const entry of config.verificationCommands) {
     const started = Date.now();

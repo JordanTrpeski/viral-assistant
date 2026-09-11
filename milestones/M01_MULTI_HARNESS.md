@@ -69,9 +69,9 @@ The result files must contain no credentials and must remain useful if the origi
 ## CLI Shape
 
 ```text
-jarvis-dev harnesses [--json]
-jarvis-dev packet [task-id] [--json]
-jarvis-dev run <codex|claude> [task-id] [--timeout-ms <milliseconds>] [--json]
+viral-dev harnesses [--json]
+viral-dev packet [task-id] [--json]
+viral-dev run <codex|claude> [task-id] [--timeout-ms <milliseconds>] [--json]
 ```
 
 Existing M00 commands remain supported.

@@ -1,14 +1,14 @@
-# Jarvis — Product Definition
+# Viral — Product Definition
 
 ## Purpose
 
-Jarvis is a local-first personal AI operating layer that helps its owner save time, reduce repetitive work, and coordinate both digital work and day-to-day life.
+Viral is a local-first personal AI operating layer that helps its owner save time, reduce repetitive work, and coordinate both digital work and day-to-day life.
 
-Jarvis is not a single chatbot and is not tied to one model. It is an orchestrator that can use local models, authenticated coding agents such as Codex CLI and Claude Code, deterministic software, external tools, and later additional services.
+Viral is not a single chatbot and is not tied to one model. It is an orchestrator that can use local models, authenticated coding agents such as Codex CLI and Claude Code, deterministic software, external tools, and later additional services.
 
 ## Long-Term Capabilities
 
-Jarvis should eventually be able to:
+Viral should eventually be able to:
 
 - Accept natural text and voice commands.
 - Run continuously in the background on the owner's PC.
@@ -31,7 +31,7 @@ Jarvis should eventually be able to:
 
 The current scope is only Bootstrap V0.
 
-Bootstrap V0 exists to make Jarvis capable of coordinating the development of Jarvis itself.
+Bootstrap V0 exists to make Viral capable of coordinating the development of Viral itself.
 
 Do not implement the long-term capabilities above unless they are explicitly part of the active milestone.
 
@@ -44,4 +44,4 @@ The human owner remains the final authority over:
 - major architectural changes,
 - promotion/merge of major self-upgrades into the stable branch.
 
-Jarvis may propose improvements. It may not redefine its own purpose without owner approval.
+Viral may propose improvements. It may not redefine its own purpose without owner approval.

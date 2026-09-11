@@ -1,6 +1,6 @@
 # First Codex Prompt
 
-You are beginning implementation of Jarvis.
+You are beginning implementation of Viral.
 
 Work directly in this repository.
 
@@ -25,7 +25,7 @@ Important constraints:
 
 - TypeScript-first.
 - Keep the bootstrap small and understandable.
-- Do not implement future Jarvis features.
+- Do not implement future Viral features.
 - Do not use OpenAI or Anthropic APIs.
 - Do not add local LLM, voice, browser automation, desktop UI, scheduler, calendar, finance, or OS control.
 - Do not store secrets/private owner data.

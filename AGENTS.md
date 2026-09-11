@@ -1,6 +1,6 @@
 # AGENTS.md — Instructions for Coding Agents
 
-You are working on Jarvis, a local-first personal AI operating layer.
+You are working on Viral, a local-first personal AI operating layer.
 
 Your immediate responsibility is **not** to build the entire product. Your responsibility is to complete the currently active milestone safely and verifiably.
 

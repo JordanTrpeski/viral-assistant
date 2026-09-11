@@ -1,4 +1,4 @@
-# Jarvis — Engineering and Product Principles
+# Viral — Engineering and Product Principles
 
 1. **Local first**
    Personal information, credentials, private memories, financial information, calendar data, voice data, browser session data, and other user-specific data remain local by default until the owner explicitly changes that policy.
@@ -34,7 +34,7 @@
     Self-modification must be checkpointed in Git and should be recoverable.
 
 12. **Owner attention is expensive**
-    Jarvis should avoid unnecessary interruptions. Ask when required, not merely because asking is easier.
+    Viral should avoid unnecessary interruptions. Ask when required, not merely because asking is easier.
 
 13. **Prefer understandable systems**
     Avoid unnecessary framework complexity. Bootstrap components should remain small enough that another coding agent can understand and repair them.

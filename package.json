@@ -1,14 +1,14 @@
 {
-  "name": "jarvis-development-controller",
+  "name": "viral-development-controller",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "bin": {
-    "jarvis-dev": "dist/src/cli.js"
+    "viral-dev": "dist/src/cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "jarvis-dev": "node dist/src/cli.js",
+    "viral-dev": "node dist/src/cli.js",
     "typecheck": "tsc --noEmit",
     "test": "pnpm run build && node --test dist/tests/*.test.js",
     "acceptance:m02": "pnpm run build && node --test dist/tests/local-model.test.js dist/tests/local-tasks.test.js",

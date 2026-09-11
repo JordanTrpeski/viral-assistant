@@ -101,7 +101,7 @@ export class OllamaLocalModel implements LocalModel {
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000) return failure(started, null, { error: "timeoutMs must be an integer of at least 1000" });
     if (!request.input.trim()) return failure(started, null, { error: "input must be non-empty" });
     const model = request.model?.trim() || this.config.preferredModel;
-    if (!model) return failure(started, null, { error: "No local model selected", diagnostics: ["Configure localBrain.preferredModel, set JARVIS_LOCAL_MODEL, or pass a model explicitly."] });
+    if (!model) return failure(started, null, { error: "No local model selected", diagnostics: ["Configure localBrain.preferredModel, set VIRAL_LOCAL_MODEL, or pass a model explicitly."] });
     let body: string;
     try {
       const prompt = request.context === undefined ? request.input : `${request.input}\n\nStructured context:\n${JSON.stringify(request.context)}`;

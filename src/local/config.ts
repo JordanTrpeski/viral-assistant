@@ -20,14 +20,14 @@ export function assertLoopbackUrl(value: string): string {
 }
 
 export function validateLocalModelConfig(value: unknown): LocalModelConfig {
-  if (!isObject(value)) throw new Error("jarvis-dev.config.json.localBrain must be an object");
+  if (!isObject(value)) throw new Error("viral-dev.config.json.localBrain must be an object");
   if (value.provider !== "ollama") throw new Error("localBrain.provider must equal ollama for M02");
   if (typeof value.baseUrl !== "string") throw new Error("localBrain.baseUrl must be a string");
   if (value.preferredModel !== null && typeof value.preferredModel !== "string") throw new Error("localBrain.preferredModel must be a string or null");
   if (!Number.isSafeInteger(value.defaultTimeoutMs) || (value.defaultTimeoutMs as number) < 1_000) {
     throw new Error("localBrain.defaultTimeoutMs must be an integer of at least 1000");
   }
-  const environmentModel = process.env.JARVIS_LOCAL_MODEL?.trim();
+  const environmentModel = process.env.VIRAL_LOCAL_MODEL?.trim();
   return {
     provider: "ollama",
     baseUrl: assertLoopbackUrl(value.baseUrl),
@@ -37,7 +37,7 @@ export function validateLocalModelConfig(value: unknown): LocalModelConfig {
 }
 
 export async function loadLocalModelConfig(root: string): Promise<LocalModelConfig> {
-  const config = await readJson(join(root, "jarvis-dev.config.json"));
-  if (!isObject(config)) throw new Error("jarvis-dev.config.json must be an object");
+  const config = await readJson(join(root, "viral-dev.config.json"));
+  if (!isObject(config)) throw new Error("viral-dev.config.json must be an object");
   return validateLocalModelConfig(config.localBrain);
 }

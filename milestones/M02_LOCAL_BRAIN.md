@@ -35,14 +35,14 @@ The HTTP transport and process runner must be injectable so all behavior can be 
 
 ### C. Configuration
 
-Extend `jarvis-dev.config.json` with a `localBrain` object containing:
+Extend `viral-dev.config.json` with a `localBrain` object containing:
 
 - provider (`ollama` for M02),
 - loopback base URL,
 - nullable preferred model,
 - default timeout.
 
-`JARVIS_LOCAL_MODEL` may override the preferred model for a local session without modifying tracked configuration. No single model name is permanent in code.
+`VIRAL_LOCAL_MODEL` may override the preferred model for a local session without modifying tracked configuration. No single model name is permanent in code.
 
 ### D. Local Reasoning Tasks
 
@@ -71,9 +71,9 @@ Deterministic rules take precedence over model recommendations for consequential
 Add small scriptable commands:
 
 ```text
-jarvis-dev local-status [--json]
-jarvis-dev local-infer <text> [--model <name>] [--timeout-ms <milliseconds>] [--json]
-jarvis-dev local-classify <text> [--timeout-ms <milliseconds>] [--json]
+viral-dev local-status [--json]
+viral-dev local-infer <text> [--model <name>] [--timeout-ms <milliseconds>] [--json]
+viral-dev local-classify <text> [--timeout-ms <milliseconds>] [--json]
 ```
 
 The commands return non-zero for unavailable runtime/model, timeout, cancellation, malformed output, or inference failure. Existing commands remain supported.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "project": "Jarvis",
+  "project": "Viral",
   "currentMilestone": "M04_EFFICIENCY_GOVERNOR",
   "milestoneStatus": "complete",
   "activeTask": null,
@@ -27,6 +27,7 @@
     "Connector-first architecture applies to Viral and independent software it develops; cross-application contracts should be explicit and versioned.",
     "The canonical repository root is C:\\Users\\jorda\\Desktop\\viral-bootstrap; the accidental nested repository was consolidated with full Git history and local runtime state preserved.",
     "D018 locks the owner-approved pre-M04 autonomy boundary: automatic work within an approved milestone, user-visible selection reasons, deterministic WAITING_FOR_MODEL recovery, and owner gates for paid/cloud switching, major policy/direction changes, and major main merges.",
-    "M04 implements the deterministic Efficiency Governor, governed harness execution, context/session planning, WAITING_FOR_MODEL recovery, and private bounded telemetry under .viral/efficiency/."
+    "M04 implements the deterministic Efficiency Governor, governed harness execution, context/session planning, WAITING_FOR_MODEL recovery, and private bounded telemetry under .viral/efficiency/.",
+    "Viral is the canonical project, package, CLI, configuration, environment-variable, and documentation name under D021; the raw M01 run transcript retains the legacy name as historical evidence."
   ]
 }

@@ -18,7 +18,7 @@ const ratio = (value: unknown, label: string): number => {
 };
 
 export function validateEfficiencyConfig(value: unknown): EfficiencyConfig {
-  const data = object(value, "jarvis-dev.config.json.efficiencyGovernor");
+  const data = object(value, "viral-dev.config.json.efficiencyGovernor");
   if (data.primaryHarness !== "codex" && data.primaryHarness !== "claude") throw new Error("efficiencyGovernor.primaryHarness must be codex or claude");
   if (typeof data.allowAutomaticPaidHarnessSwitch !== "boolean") throw new Error("efficiencyGovernor.allowAutomaticPaidHarnessSwitch must be boolean");
   const config: EfficiencyConfig = {
@@ -40,6 +40,6 @@ export function validateEfficiencyConfig(value: unknown): EfficiencyConfig {
 }
 
 export async function loadEfficiencyConfig(root: string): Promise<EfficiencyConfig> {
-  const config = object(await readJson(join(root, "jarvis-dev.config.json")), "jarvis-dev.config.json");
+  const config = object(await readJson(join(root, "viral-dev.config.json")), "viral-dev.config.json");
   return validateEfficiencyConfig(config.efficiencyGovernor);
 }

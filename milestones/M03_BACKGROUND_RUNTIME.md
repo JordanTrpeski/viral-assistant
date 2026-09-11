@@ -78,8 +78,8 @@ The long-running service repeatedly performs one bounded deterministic tick, the
 Expose scriptable commands:
 
 ```text
-jarvis-dev runtime-start [--data-dir <path>] [--poll-ms <milliseconds>]
-jarvis-dev runtime-status [--data-dir <path>] [--json]
+viral-dev runtime-start [--data-dir <path>] [--poll-ms <milliseconds>]
+viral-dev runtime-status [--data-dir <path>] [--json]
 ```
 
 Programmatic queue methods cover enqueue, pause, resume, owner response, ticking, and event subscription. Final UI and notification controls remain future work.

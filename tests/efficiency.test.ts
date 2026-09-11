@@ -213,14 +213,14 @@ test("efficiency CLI plans, blocks unauthorized execution, and reports local tel
   const root = await fixture();
   await saveTask(root, { schemaVersion: 1, id: "M04-001", milestone: "M04_EFFICIENCY_GOVERNOR", objective: "Implement governor", status: "in_progress", acceptanceCriteria: ["works"], dependencies: [], relevantFiles: [], notes: [], nextAction: "continue", verificationResult: null });
   await saveState(root, { ...validState, currentMilestone: "M04_EFFICIENCY_GOVERNOR", activeTask: "M04-001" });
-  await writeFile(join(root, "jarvis-dev.config.json"), JSON.stringify({
+  await writeFile(join(root, "viral-dev.config.json"), JSON.stringify({
     localBrain: { provider: "ollama", baseUrl: "http://127.0.0.1:11434", preferredModel: "small", defaultTimeoutMs: 5_000 },
     efficiencyGovernor: config,
     verificationCommands: []
   }), "utf8");
   const run = promisify(execFile);
   const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
-  const environment = { ...process.env, JARVIS_ROOT: root };
+  const environment = { ...process.env, VIRAL_ROOT: root };
   const planned = await run(process.execPath, [cli, "efficiency-plan", "M04-001", "--harness", "claude", "--json"], { env: environment });
   assert.equal((JSON.parse(planned.stdout) as SelectionDecision).action, "OWNER_INPUT_REQUIRED");
   await assert.rejects(run(process.execPath, [cli, "efficiency-run", "M04-001", "--harness", "claude", "--json"], { env: environment }), (error: unknown) => {

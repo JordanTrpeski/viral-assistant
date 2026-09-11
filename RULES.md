@@ -1,11 +1,11 @@
-# Jarvis — Development Rules
+# Viral — Development Rules
 
 These rules apply to every coding agent working in this repository.
 
 ## Authority
 
 - The human owner is the final authority.
-- PRODUCT.md defines what Jarvis is intended to become.
+- PRODUCT.md defines what Viral is intended to become.
 - ROADMAP.md defines owner-approved milestone direction.
 - EFFICIENCY.md is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute efficiency behavior.
 - The active milestone defines current scope.
@@ -85,7 +85,7 @@ Do not blindly copy large repositories or code that is not needed.
 
 ## Self-Modification Safety
 
-Jarvis may modify its own source code as part of an approved milestone.
+Viral may modify its own source code as part of an approved milestone.
 
 It may not:
 - remove owner-controlled safety or approval boundaries because they are inconvenient,

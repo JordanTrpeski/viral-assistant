@@ -15,9 +15,10 @@ import { createDefaultRuntime } from "./runtime/registry.js";
 import { RuntimeService } from "./runtime/service.js";
 import { createEfficiencyServices } from "./efficiency/registry.js";
 
-const root = resolve(process.env.JARVIS_ROOT ?? process.cwd());
+const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
+const usage = "Usage: viral-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]";
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -40,7 +41,9 @@ async function selectedTask(explicit?: string): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  if (command === "context") {
+  if (command === "--help" || command === "-h" || command === "help") {
+    console.log(usage);
+  } else if (command === "context") {
     const context = await loadProjectContext(root);
     const summary = { milestone: context.state.currentMilestone, milestonePath: context.milestonePath, files: [...Object.keys(context.documents), "STATE.json", context.milestonePath] };
     console.log(json ? JSON.stringify(summary, null, 2) : `Loaded ${summary.files.length} context files for ${summary.milestone}.`);
@@ -144,7 +147,7 @@ async function main(): Promise<void> {
     await service.start();
     console.log("Viral runtime stopped cleanly.");
   } else {
-    console.error("Usage: jarvis-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]");
+    console.error(usage);
     process.exitCode = 2;
   }
 }

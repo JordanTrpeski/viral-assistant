@@ -21,7 +21,7 @@
     "milestones/M02_LOCAL_BRAIN.md",
     "src/local/",
     "src/cli.ts",
-    "jarvis-dev.config.json",
+    "viral-dev.config.json",
     "tests/local-model.test.ts",
     "tests/local-tasks.test.ts"
   ],

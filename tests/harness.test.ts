@@ -55,7 +55,7 @@ test("Claude adapter uses print mode with stdin and structured output", async ()
 test("process runner captures missing executables and timeouts", async () => {
   const root = await fixture();
   const runner = new NodeProcessRunner();
-  const missing = await runner.run({ executable: "definitely-missing-jarvis-command", args: [], cwd: root, stdin: "", timeoutMs: 1_000 });
+  const missing = await runner.run({ executable: "definitely-missing-viral-command", args: [], cwd: root, stdin: "", timeoutMs: 1_000 });
   assert.match(missing.error ?? "", /ENOENT/);
   assert.notEqual(missing.exitCode, 0);
   const timeout = await runner.run({ executable: process.execPath, args: ["-e", "setTimeout(() => {}, 10000)"], cwd: root, stdin: "", timeoutMs: 1_000 });

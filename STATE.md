@@ -1,4 +1,4 @@
-# Jarvis — Current Development State
+# Viral — Current Development State
 
 M00–M04 are complete and verified. M04 — Efficiency Governor was implemented on `dev/m04-efficiency-governor`; M05 has not started.
 
@@ -14,6 +14,9 @@ M00–M04 are complete and verified. M04 — Efficiency Governor was implemented
 
 ## Existing foundations
 Ollama 0.34.0 and `qwen3:4b-instruct` remain live-validated through the loopback-only M02 adapter. M03 continues to provide the durable deterministic runtime and Git-ignored `.viral/runtime/` state. M01 explicit Codex/Claude harness commands remain supported; live Claude validation remains an optional future check because the owner has no current Claude Code subscription.
+
+## Canonical naming
++Viral is the canonical product and project name. The package is `viral-development-controller`, the CLI is `viral-dev`, configuration is `viral-dev.config.json`, and supported environment variables use the `VIRAL_` prefix. D021 records the preserved historical-run exception.
 
 ## Policy and repository
 `EFFICIENCY.md` remains authoritative. D018 defines the owner-approved autonomy boundary and D020 records the implemented governor and private telemetry architecture. Independent applications and major subsystems continue to use explicit, versioned connector boundaries. The canonical Git root is `C:\Users\jorda\Desktop\viral-bootstrap`.

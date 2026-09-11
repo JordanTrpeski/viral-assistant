@@ -10,7 +10,7 @@ const documents = ["PRODUCT.md", "PRINCIPLES.md", "RULES.md", "EFFICIENCY.md", "
 
 export const validState: DevelopmentState = {
   schemaVersion: 1,
-  project: "Jarvis",
+  project: "Viral",
   currentMilestone: "M00_BOOTSTRAP",
   milestoneStatus: "in_progress",
   activeTask: null,
@@ -23,7 +23,7 @@ export const validState: DevelopmentState = {
 };
 
 export async function fixture(options: { git?: boolean } = {}): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "jarvis-m00-"));
+  const root = await mkdtemp(join(tmpdir(), "viral-m00-"));
   await mkdir(join(root, "milestones"), { recursive: true });
   await mkdir(join(root, "tasks"), { recursive: true });
   for (const document of documents) await writeFile(join(root, document), `# ${document}\n`, "utf8");

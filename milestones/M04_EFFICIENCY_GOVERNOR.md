@@ -87,9 +87,9 @@ Do not store prompts, conversation history, credentials, hidden reasoning, or pr
 Extend configuration with explicit, validated governor defaults and thresholds. Provide commands analogous to:
 
 ```text
-jarvis-dev efficiency-plan <task-id> [--json]
-jarvis-dev efficiency-run <task-id> [--timeout-ms <milliseconds>] [--json]
-jarvis-dev efficiency-status [--json]
+viral-dev efficiency-plan <task-id> [--json]
+viral-dev efficiency-run <task-id> [--timeout-ms <milliseconds>] [--json]
+viral-dev efficiency-status [--json]
 ```
 
 The plan command must be side-effect-light except for bounded telemetry. The run command must honor all owner gates. Existing commands remain supported.
