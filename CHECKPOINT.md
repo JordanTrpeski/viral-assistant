@@ -3,21 +3,11 @@
 - Milestone: M04_EFFICIENCY_GOVERNOR (complete)
 - Active task: OBJ-20260911111434557 — Add a doctor command that checks Git, Ollama, the configured local model, Codex CLI, runtime storage, and Viral configuration, then prints a concise health report. Do not change architecture or start a new milestone.
 - Branch: fix/windows-codex-shim-resolution
-- HEAD: 1b5e1cdbf3905fadcd40cb9a34e37d56f7288d0f
+- HEAD: a28874036c42c321ae66e621090f041f9d249802
 - Working tree: dirty
 
 ## Files Changed
-- README.md
 - STATE.json
-- STATE.md
-- src/harness/registry.ts
-- src/harness/shared.ts
-- src/harness/types.ts
-- verification/latest.json
-- src/harness/resolve.ts
-- tasks/OBJ-20260911090239798.json
-- tasks/OBJ-20260911111434557.json
-- tests/harness-resolution.test.ts
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
