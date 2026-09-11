@@ -25,7 +25,10 @@ The `viral-dev objective` command creates a durable `OBJ-…` task under the cur
 `EFFICIENCY.md` remains authoritative. D018 defines the owner-approved autonomy boundary and D020 records the implemented governor and private telemetry architecture. Independent applications and major subsystems continue to use explicit, versioned connector boundaries. The canonical Git root is `C:\Users\jorda\Desktop\viral-bootstrap`.
 
 ## Verification
-M04 focused tests cover selection, effort escalation, owner gates, context budgets and compression fallback, fresh-session handoff, governed launch propagation, runtime waits, telemetry privacy/bounds, CLI behavior, and adapter support. Owner-objective tests cover task creation, milestone association, planning-only behavior, deterministic/local/Codex execution paths, policy gates, and task-ID output. The complete 60-test repository suite and M02–M04 acceptance checks pass.
+M04 focused tests cover selection, effort escalation, owner gates, context budgets and compression fallback, fresh-session handoff, governed launch propagation, runtime waits, telemetry privacy/bounds, CLI behavior, and adapter support. Owner-objective tests cover task creation, milestone association, planning-only behavior, deterministic/local/Codex execution paths, policy gates, and task-ID output. The complete 65-test repository suite and M02–M04 acceptance checks pass.
+
+## Pending owner objective
+`OBJ-20260911111434557` remains pending after the Windows Codex detection fix. Codex is now installed, versioned, and subscription-authenticated by the live probe; the doctor-command objective was not executed during this focused fix and can resume through governed execution when requested.
 
 ## Blockers
 None.

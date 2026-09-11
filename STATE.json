@@ -3,7 +3,7 @@
   "project": "Viral",
   "currentMilestone": "M04_EFFICIENCY_GOVERNOR",
   "milestoneStatus": "complete",
-  "activeTask": null,
+  "activeTask": "OBJ-20260911111434557",
   "completedTasks": [
     "M00-001",
     "M01-001",
@@ -15,7 +15,7 @@
   "lastVerifiedCommit": "27845098f466e877db0fd0c7d31dfc5c2da56905",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
-  "nextAction": "Await owner direction. Do not begin M05 or merge M04 into main without owner approval.",
+  "nextAction": "Codex Windows shim detection is repaired. Resume OBJ-20260911111434557 through governed execution only when requested; do not start M05.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
@@ -29,6 +29,7 @@
     "D018 locks the owner-approved pre-M04 autonomy boundary: automatic work within an approved milestone, user-visible selection reasons, deterministic WAITING_FOR_MODEL recovery, and owner gates for paid/cloud switching, major policy/direction changes, and major main merges.",
     "M04 implements the deterministic Efficiency Governor, governed harness execution, context/session planning, WAITING_FOR_MODEL recovery, and private bounded telemetry under .viral/efficiency/.",
     "Viral is the canonical project, package, CLI, configuration, environment-variable, and documentation name under D021; the raw M01 run transcript retains the legacy name as historical evidence.",
-    "D022 adds viral-dev objective as a durable owner-facing entry point that creates a task, applies the Efficiency Governor, and begins only policy-authorized execution."
+    "D022 adds viral-dev objective as a durable owner-facing entry point that creates a task, applies the Efficiency Governor, and begins only policy-authorized execution.",
+    "Windows harness resolution now discovers native executables plus .cmd, .bat, and .ps1 shims on PATH; installation and version remain distinct from authentication/usability."
   ]
 }

@@ -3,6 +3,7 @@ export type HarnessId = "codex" | "claude";
 export interface ProcessCommand {
   executable: string;
   prefixArgs?: string[];
+  resolvedExecutable?: string;
 }
 
 export interface ProcessSpec {

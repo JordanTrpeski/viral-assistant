@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260911111434557",
+  "milestone": "M04_EFFICIENCY_GOVERNOR",
+  "objective": "Add a doctor command that checks Git, Ollama, the configured local model, Codex CLI, runtime storage, and Viral configuration, then prints a concise health report. Do not change architecture or start a new milestone.",
+  "status": "pending",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Add a doctor command that checks Git, Ollama, the configured local model, Codex CLI, runtime storage, and Viral configuration, then prints a concise health report. Do not change architecture or start a new milestone.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M04_EFFICIENCY_GOVERNOR.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: WAITING_FOR_MODEL / CODING_HARNESS / HIGH. No authorized coding harness is currently confirmed usable; wait without model usage and probe again before resuming.",
+    "Codex Windows shim detection was repaired and live-probed successfully; this objective was not executed as part of the detection fix."
+  ],
+  "nextAction": "Resume through the governed coding harness when the owner requests execution. Do not start M05.",
+  "verificationResult": null
+}

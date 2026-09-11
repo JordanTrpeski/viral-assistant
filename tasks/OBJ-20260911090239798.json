@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260911090239798",
+  "milestone": "M04_EFFICIENCY_GOVERNOR",
+  "objective": "Add a doctor command that checks Git, Ollama, the configured local model, Codex CLI, runtime storage, and Viral configuration, then prints a concise health report. Do not change architecture or start a new milestone.",
+  "status": "blocked",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Add a doctor command that checks Git, Ollama, the configured local model, Codex CLI, runtime storage, and Viral configuration, then prints a concise health report. Do not change architecture or start a new milestone.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M04_EFFICIENCY_GOVERNOR.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: WAITING_FOR_MODEL / CODING_HARNESS / HIGH. No authorized coding harness is currently confirmed usable; wait without model usage and probe again before resuming."
+  ],
+  "nextAction": "No authorized coding harness is currently confirmed usable; wait without model usage and probe again before resuming.",
+  "verificationResult": null
+}

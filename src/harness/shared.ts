@@ -16,7 +16,7 @@ export async function probeHarness(
   const version = await runner.run({ ...versionCommand, cwd: root, stdin: "", timeoutMs: 5_000 });
   if (version.error || version.exitCode !== 0 || version.timedOut) {
     return {
-      id, displayName, executable: command.executable, installed: false, usable: false, version: null,
+      id, displayName, executable: command.resolvedExecutable ?? command.executable, installed: false, usable: false, version: null,
       diagnostics: diagnostics(version, "Version probe failed")
     };
   }
@@ -36,7 +36,7 @@ export async function probeHarness(
   return {
     id,
     displayName,
-    executable: command.executable,
+    executable: command.resolvedExecutable ?? command.executable,
     installed: true,
     usable,
     version: firstLine(version.stdout || version.stderr),
