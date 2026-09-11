@@ -60,6 +60,7 @@ export interface SelectionDecision {
   nextProbeAt: string | null;
   failureCount: number;
   maximumAttempts: number;
+  clarifyingQuestions?: string[];
 }
 
 export interface ContextSection {

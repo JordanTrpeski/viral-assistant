@@ -1,5 +1,6 @@
 import { deterministicEscalation } from "../local/policy.js";
 import type { HarnessId, HarnessProbe } from "../harness/types.js";
+import { ObjectiveRefiner } from "./refinement.js";
 import type { EfficiencyConfig, GovernorDependencies, GovernorRequest, ReasoningEffort, SelectionDecision, WorkKind } from "./types.js";
 
 function integer(value: number | undefined, label: string): number {
@@ -20,7 +21,7 @@ function retryTime(value: string | null | undefined): string | null {
 }
 
 export class EfficiencyGovernor {
-  constructor(private readonly config: EfficiencyConfig, private readonly dependencies: GovernorDependencies) {}
+  constructor(private readonly config: EfficiencyConfig, private readonly dependencies: GovernorDependencies, private readonly refiner: ObjectiveRefiner = new ObjectiveRefiner()) {}
 
   private effort(request: GovernorRequest, failures: number): ReasoningEffort {
     if (request.risk === "high" || request.architectureChange || request.securitySensitive || failures >= this.config.failuresPerEffortLevel * 2) return "HIGH";
@@ -86,6 +87,18 @@ export class EfficiencyGovernor {
     if (!request.taskId.trim() || !request.objective.trim()) throw new Error("taskId and objective must be non-empty");
     const failures = integer(request.failureCount, "failureCount");
     const effort = this.effort(request, failures);
+    // Refinement gate: a vague build/analyze/research objective is sent back for owner clarification
+    // before any capability is selected, rather than guessing at unstated scope.
+    const clarification = this.refiner.clarify(request.objective);
+    if (clarification.needsRefinement) {
+      const decision = this.decision(request, {
+        action: "OWNER_INPUT_REQUIRED", tier: "DETERMINISTIC", effort: "HIGH", harness: null, model: null,
+        ownerInputRequired: true, nextProbeAt: null, clarifyingQuestions: clarification.questions,
+        reason: `Objective needs refinement before execution; owner input required on ${clarification.questions.length} question(s).`
+      }, failures);
+      await this.dependencies.recorder?.record(decision, { contextBudgetCharacters: this.config.initialContextCharacters });
+      return decision;
+    }
     let decision: SelectionDecision;
     if ((request.ownerGate ?? "none") !== "none") {
       decision = this.decision(request, { action: "OWNER_INPUT_REQUIRED", tier: "DETERMINISTIC", effort: "HIGH", harness: null, model: null, ownerInputRequired: true, nextProbeAt: null, reason: `Owner approval is required for ${request.ownerGate?.replaceAll("_", " ")}.` }, failures);
