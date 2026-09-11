@@ -32,7 +32,7 @@
     }
   ],
   "efficiencyGovernor": {
-    "primaryHarness": "codex",
+    "primaryHarness": "claude",
     "allowAutomaticPaidHarnessSwitch": false,
     "maximumAttempts": 6,
     "failuresPerEffortLevel": 2,
