@@ -1,5 +1,6 @@
 import { launchTask, type HarnessExecutionOptions } from "../harness/coordinator.js";
 import type { DevelopmentHarness, HarnessId, PersistedHarnessRun } from "../harness/types.js";
+import { deterministicEscalation } from "../local/policy.js";
 import { readTask } from "../tasks.js";
 import type { EfficiencyRecorder, GovernedRunResult, GovernorRequest, SelectionDecision } from "./types.js";
 import { EfficiencyGovernor } from "./governor.js";
@@ -22,7 +23,10 @@ export class GovernedDevelopmentExecutor {
 
   async planObjectiveTask(taskId: string, options: Partial<Omit<GovernorRequest, "taskId" | "objective" | "workKind">> = {}) {
     const task = await readTask(this.root, taskId);
-    return await this.governor.plan({ ...options, taskId, objective: task.objective });
+    const developmentWork = deterministicEscalation(task.objective) === "CODING_HARNESS_REQUIRED"
+      ? { workKind: "development" as const }
+      : {};
+    return await this.governor.plan({ ...options, taskId, objective: task.objective, ...developmentWork });
   }
 
   async executeDecision(taskId: string, timeoutMs: number, decision: SelectionDecision): Promise<PersistedHarnessRun> {
