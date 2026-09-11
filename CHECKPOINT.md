@@ -1,14 +1,14 @@
 # Development Checkpoint
 
 - Milestone: M04_EFFICIENCY_GOVERNOR (complete)
-- Active task: OBJ-20260911203723723 — Build a voice interface CLI that uses Whisper (local) for STT, Piper TTS (local) for output, 16kHz mono, 2s silence timeout, interrupt support. CLI: viral-dev voice listen --timeout 30s. Include tests.
+- Active task: None
 - Branch: feat/m05-voice
-- HEAD: f991f08a57f6c5b5e88dafea3338d232dd308dd4
+- HEAD: c842bebe008efb6a97362ccba0520939ac94c26c
 - Working tree: dirty
 
 ## Files Changed
 - STATE.json
-- runs/20260911203724126-claude-OBJ-20260911203723723.json
+- tasks/OBJ-20260911203723723.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -27,4 +27,4 @@
 - OBJ-20260911203148743 and OBJ-20260911203723723 request identical M05 Voice Interface work (Whisper STT, Piper TTS, viral-dev voice listen) while M04_EFFICIENCY_GOVERNOR is the active milestone and is already complete. M04's own spec forbids voice/M05 work. OBJ-20260911203723723 is a duplicate resubmission of OBJ-20260911203148743's exact objective text; resubmitting it does not constitute owner approval. Awaiting an explicit owner decision to open M05 before any implementation.
 
 ## Next Action
-Await owner decision on OBJ-20260911203148743 and OBJ-20260911203723723: approve opening M05 (Voice Interface) or re-scope/cancel the objectives. Do not begin M05 implementation without that approval.
+Await the owner's next approved objective. Do not merge main or start M05.
