@@ -11,8 +11,9 @@ async function visit(path) {
     else if ([".ts", ".mjs"].includes(extname(file))) {
       const lines = (await readFile(file, "utf8")).split("\n");
       lines.forEach((line, index) => {
-        if (line.includes("\t")) failures.push(`${file}:${index + 1}: tab character`);
-        if (/\s+$/.test(line)) failures.push(`${file}:${index + 1}: trailing whitespace`);
+        const content = line.endsWith("\r") ? line.slice(0, -1) : line;
+        if (content.includes("\t")) failures.push(`${file}:${index + 1}: tab character`);
+        if (/[ \t]+$/.test(content)) failures.push(`${file}:${index + 1}: trailing whitespace`);
       });
     }
   }
