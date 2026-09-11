@@ -3,7 +3,7 @@
   "project": "Viral",
   "currentMilestone": "M04_EFFICIENCY_GOVERNOR",
   "milestoneStatus": "complete",
-  "activeTask": null,
+  "activeTask": "OBJ-20260911203148743",
   "completedTasks": [
     "M00-001",
     "M01-001",
@@ -12,11 +12,13 @@
     "M04-001",
     "OBJ-20260911111434557"
   ],
-  "blockers": [],
+  "blockers": [
+    "OBJ-20260911203148743 requests M05 Voice Interface work (Whisper STT, Piper TTS, viral-dev voice listen) while M04_EFFICIENCY_GOVERNOR is the active milestone and is already complete. M04's own spec forbids voice/M05 work. Awaiting owner decision to open M05 before any implementation."
+  ],
   "lastVerifiedCommit": "565535880da7e143d9cafd91a2c89baf1916cba7",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260911114756120-codex-OBJ-20260911111434557.json",
-  "nextAction": "Await the owner's next approved objective. Do not merge main or start M05.",
+  "nextAction": "Await owner decision on OBJ-20260911203148743: approve opening M05 (Voice Interface) or re-scope/cancel the objective. Do not begin M05 implementation without that approval.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
@@ -33,6 +35,7 @@
     "D022 adds viral-dev objective as a durable owner-facing entry point that creates a task, applies the Efficiency Governor, and begins only policy-authorized execution.",
     "Windows harness resolution now discovers native executables plus .cmd, .bat, and .ps1 shims on PATH; installation and version remain distinct from authentication/usability.",
     "Doctor objective OBJ-20260911111434557 is implemented and verified; deterministic finalization now publishes from the normal owner process with restart-safe private phase state.",
-    "D023 records two-phase development finalization: push verified implementation before completion, then publish lifecycle state without force, history rewrite, main merge, or duplicate execution."
+    "D023 records two-phase development finalization: push verified implementation before completion, then publish lifecycle state without force, history rewrite, main merge, or duplicate execution.",
+    "OBJ-20260911203148743 is blocked: its content is M05 Voice Interface scope tagged under the completed M04 milestone. No voice/STT/TTS code was implemented; the task remains parked pending an explicit owner decision to open M05."
   ]
 }

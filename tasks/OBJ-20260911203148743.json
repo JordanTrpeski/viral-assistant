@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260911203148743",
+  "milestone": "M04_EFFICIENCY_GOVERNOR",
+  "objective": "Build a voice interface CLI that uses Whisper (local) for STT, Piper TTS (local) for output, 16kHz mono, 2s silence timeout, interrupt support. CLI: viral-dev voice listen --timeout 30s. Include tests.",
+  "status": "blocked",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Build a voice interface CLI that uses Whisper (local) for STT, Piper TTS (local) for output, 16kHz mono, 2s silence timeout, interrupt support. CLI: viral-dev voice listen --timeout 30s. Include tests.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M04_EFFICIENCY_GOVERNOR.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: EXECUTE / CODING_HARNESS / MEDIUM. Selected claude with MEDIUM effort because development work requires an authenticated coding harness and the selected harness is usable.",
+    "Blocked on milestone scope, not capability: this objective is M05 Voice Interface work (Whisper STT, Piper TTS, `viral-dev voice listen`), but it was auto-tagged to the current milestone M04_EFFICIENCY_GOVERNOR, which is already complete and whose own spec explicitly forbids voice or any M05 work. ROADMAP.md, AGENTS.md Scope Discipline, and RULES.md all reserve starting a later milestone to the owner. No implementation code was written.",
+    "Unblock path: the owner explicitly approves opening M05 (Voice Interface) as the active milestone, or re-scopes/cancels this objective."
+  ],
+  "nextAction": "Awaiting owner decision to open M05 (Voice Interface) before this objective can be implemented; do not start M05 implementation without that approval.",
+  "verificationResult": null
+}

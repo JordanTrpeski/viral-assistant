@@ -38,5 +38,8 @@ Live checks passed for Git, the configured model, runtime storage, and configura
 ## Development finalization
 The cause of the incomplete doctor lifecycle was the objective service returning immediately after a successful Codex process. The new deterministic finalizer runs after that process in the normal Viral owner environment. It protects `main`, rejects the wrong identity or remote, uses only normal non-force Git operations, and marks work complete only after the implementation commit has reached the approved development branch. D023 records the two-phase publication and recovery contract.
 
+## Blocked owner objective
+`OBJ-20260911203148743` requests an M05 Voice Interface CLI (local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, `viral-dev voice listen --timeout 30s`, tests). The `viral-dev objective` command auto-tagged it under the current milestone, `M04_EFFICIENCY_GOVERNOR`, which is already complete and whose own spec explicitly forbids voice or any M05 work; `ROADMAP.md` and `AGENTS.md` Scope Discipline reserve starting a later milestone to the owner. No voice/STT/TTS code was written. The task is recorded as `blocked` in `tasks/OBJ-20260911203148743.json` and as a blocker in `STATE.json` pending an explicit owner decision to open M05 (or to re-scope/cancel the objective). All prior verification remains green and unaffected.
+
 ## Next action
-Await the owner's next approved objective after finalization. Do not merge into `main` or begin M05.
+Await the owner's decision on `OBJ-20260911203148743` (approve opening M05, or re-scope/cancel). Do not merge into `main` or begin M05 without that approval.
