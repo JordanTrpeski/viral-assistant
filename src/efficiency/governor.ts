@@ -1,6 +1,6 @@
 import { deterministicEscalation } from "../local/policy.js";
 import type { HarnessId, HarnessProbe } from "../harness/types.js";
-import { ObjectiveRefiner } from "./refinement.js";
+import { ObjectiveRefiner, maxRefinementIterations } from "./refinement.js";
 import type { EfficiencyConfig, GovernorDependencies, GovernorRequest, ReasoningEffort, SelectionDecision, WorkKind } from "./types.js";
 
 function integer(value: number | undefined, label: string): number {
@@ -87,14 +87,14 @@ export class EfficiencyGovernor {
     if (!request.taskId.trim() || !request.objective.trim()) throw new Error("taskId and objective must be non-empty");
     const failures = integer(request.failureCount, "failureCount");
     const effort = this.effort(request, failures);
-    // Refinement gate: a vague build/analyze/research objective is sent back for owner clarification
-    // before any capability is selected, rather than guessing at unstated scope.
-    const clarification = this.refiner.clarify(request.objective);
-    if (clarification.needsRefinement) {
+    // Iterative refinement gate: detect embedded answers, validate their clarity, and ask follow-ups
+    // only for vague/missing answers. Proceeds once all answers are clear or the iteration cap is hit.
+    const refinement = this.refiner.refine(request.objective);
+    if (refinement.action === "OWNER_INPUT_REQUIRED") {
       const decision = this.decision(request, {
         action: "OWNER_INPUT_REQUIRED", tier: "DETERMINISTIC", effort: "HIGH", harness: null, model: null,
-        ownerInputRequired: true, nextProbeAt: null, clarifyingQuestions: clarification.questions,
-        reason: `Objective needs refinement before execution; owner input required on ${clarification.questions.length} question(s).`
+        ownerInputRequired: true, nextProbeAt: null, clarifyingQuestions: refinement.questions,
+        reason: `Objective needs refinement (iteration ${refinement.iteration}/${maxRefinementIterations}); owner input required on ${refinement.questions.length} question(s).`
       }, failures);
       await this.dependencies.recorder?.record(decision, { contextBudgetCharacters: this.config.initialContextCharacters });
       return decision;
