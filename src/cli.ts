@@ -16,11 +16,12 @@ import { RuntimeService } from "./runtime/service.js";
 import { createEfficiencyServices } from "./efficiency/registry.js";
 import { formatHealthReport, runDoctor } from "./doctor.js";
 import { DevelopmentFinalizer } from "./finalization.js";
+import { formatSummary, formatTaskDetail, readTaskLogs, summarize } from "./efficiency/logs.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]";
+const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|summary|task-detail> [options]";
 const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
 
@@ -180,6 +181,17 @@ async function main(): Promise<void> {
     console.log(`Viral runtime started; polling every ${pollMs}ms.`);
     await service.start();
     console.log("Viral runtime stopped cleanly.");
+  } else if (command === "summary") {
+    const daysArg = process.argv[3];
+    const days = daysArg && !daysArg.startsWith("--") ? Number(daysArg) : 1;
+    if (!Number.isInteger(days) || days < 1) throw new Error("summary days must be a positive integer");
+    const summary = summarize(await readTaskLogs(root, days));
+    console.log(json ? JSON.stringify({ days, ...summary }, null, 2) : formatSummary(summary, days));
+  } else if (command === "task-detail") {
+    const taskId = process.argv[3];
+    if (!taskId || taskId.startsWith("--")) throw new Error("task-detail requires a task id");
+    const entries = await readTaskLogs(root, 3_650);
+    console.log(json ? JSON.stringify({ taskId, history: entries.filter((entry) => entry.taskId === taskId) }, null, 2) : formatTaskDetail(entries, taskId));
   } else {
     console.error(usage);
     process.exitCode = 2;

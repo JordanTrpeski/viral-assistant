@@ -4,3 +4,4 @@ dist/
 .viral/runtime/
 .viral/efficiency/
 .viral/finalization/
+.viral/logs/

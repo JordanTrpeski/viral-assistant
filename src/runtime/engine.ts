@@ -40,7 +40,7 @@ export class ViralRuntime {
         task.state = "QUEUED";
         task.updatedAt = now;
         task.lastError = "Recovered after runtime interruption; handler execution may be retried.";
-        this.emit("TASK_RECOVERED", task, { previousState: "interrupted" });
+        this.emit("TASK_RECOVERED", task, { previousState: "interrupted", attempt: task.attemptCount });
         recovered = true;
       }
     }
@@ -107,6 +107,7 @@ export class ViralRuntime {
       lastCompletedAt: null, scheduledStartPending: runAt !== null && Date.parse(runAt) <= Date.parse(now)
     };
     state.tasks.push(task);
+    this.emit("TASK_QUEUED", task, { attempt: task.attemptCount });
     await this.persist();
     return structuredClone(task);
   }
@@ -164,11 +165,11 @@ export class ViralRuntime {
       const delay = Math.min(task.retryPolicy.initialBackoffMs * task.retryPolicy.backoffMultiplier ** (task.failureCount - 1), task.retryPolicy.maxBackoffMs);
       task.nextAttemptAt = new Date(this.clock.now().getTime() + delay).toISOString();
       task.state = "WAITING_FOR_TIME";
-      this.emit("TASK_RETRY_SCHEDULED", task, { failureCount: task.failureCount, nextAttemptAt: task.nextAttemptAt });
+      this.emit("TASK_RETRY_SCHEDULED", task, { failureCount: task.failureCount, nextAttemptAt: task.nextAttemptAt, attempt: task.attemptCount, maxAttempts: task.retryPolicy.maxAttempts, error: task.lastError });
     } else {
       task.state = "FAILED";
       task.nextAttemptAt = null;
-      this.emit("TASK_FAILED", task, { error: task.lastError, failureCount: task.failureCount });
+      this.emit("TASK_FAILED", task, { error: task.lastError, failureCount: task.failureCount, attempt: task.attemptCount, maxAttempts: task.retryPolicy.maxAttempts });
     }
     await this.persist();
   }
@@ -183,7 +184,7 @@ export class ViralRuntime {
     task.condition = null;
     task.nextAttemptAt = null;
     task.ownerInputRequired = null;
-    this.emit("TASK_COMPLETED", task, { occurrence: task.occurrenceCount });
+    this.emit("TASK_COMPLETED", task, { occurrence: task.occurrenceCount, attempt: task.attemptCount });
     if (task.recurrence) {
       const nowMs = this.clock.now().getTime();
       let next = (task.runAt ? Date.parse(task.runAt) : nowMs) + task.recurrence.intervalMs;
@@ -272,6 +273,7 @@ export class ViralRuntime {
         task.state = "RUNNING";
         task.attemptCount += 1;
         task.updatedAt = this.now();
+        this.emit("TASK_EXECUTING", task, { attempt: task.attemptCount, maxAttempts: task.retryPolicy.maxAttempts });
         if (task.scheduledStartPending) {
           task.scheduledStartPending = false;
           this.emit("SCHEDULED_TASK_STARTED", task, { runAt: task.runAt });
