@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { OwnerObjectiveService } from "../objective.js";
 import { createHarnesses } from "../harness/registry.js";
 import { createLocalModel } from "../local/registry.js";
 import { LocalBrain } from "../local/tasks.js";
@@ -24,5 +25,6 @@ export async function createEfficiencyServices(root: string, dataDirectory?: str
   const contextPlanner = new EfficiencyContextPlanner(config, localBrain);
   const sessionPlanner = new EfficiencySessionPlanner(config);
   const executor = new GovernedDevelopmentExecutor(root, governor, harnesses, telemetry);
-  return { config, localModel, localBrain, harnesses, telemetry, governor, contextPlanner, sessionPlanner, executor };
+  const objectives = new OwnerObjectiveService(root, executor, localBrain);
+  return { config, localModel, localBrain, harnesses, telemetry, governor, contextPlanner, sessionPlanner, executor, objectives };
 }

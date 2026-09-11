@@ -18,7 +18,8 @@ import { createEfficiencyServices } from "./efficiency/registry.js";
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]";
+const usage = "Usage: viral-dev <objective|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start> [options]";
+const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -43,6 +44,23 @@ async function selectedTask(explicit?: string): Promise<string> {
 async function main(): Promise<void> {
   if (command === "--help" || command === "-h" || command === "help") {
     console.log(usage);
+  } else if (command === "objective") {
+    if (process.argv.includes("--help") || process.argv.includes("-h")) {
+      console.log([objectiveUsage, "", 'Example: npm run viral-dev -- objective "Add a doctor command"', "", "Creates an OBJ task in the current approved milestone, applies the Efficiency Governor, and executes immediately unless --plan-only or policy blocks execution."].join("\n"));
+    } else {
+      const objective = process.argv[3];
+      if (!objective || objective.startsWith("--")) throw new Error("objective requires natural-language text");
+      const requestedTimeout = timeout(900_000);
+      const result = await (await createEfficiencyServices(root)).objectives.submit(objective, { planOnly: process.argv.includes("--plan-only"), ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }) });
+      console.log(json ? JSON.stringify(result, null, 2) : [
+        `Task: ${result.taskId}`,
+        `Selection: ${result.decision.tier} / ${result.decision.effort}`,
+        `Decision: ${result.decision.reason}`,
+        result.planOnly ? "Execution: planning only" : result.execution ? `Execution: ${result.execution.succeeded ? "started successfully" : "failed"}` : `Execution: ${result.decision.action}`,
+        ...(result.execution?.output ? [result.execution.output] : [])
+      ].join("\n"));
+      if (result.execution?.succeeded === false) process.exitCode = 1;
+    }
   } else if (command === "context") {
     const context = await loadProjectContext(root);
     const summary = { milestone: context.state.currentMilestone, milestonePath: context.milestonePath, files: [...Object.keys(context.documents), "STATE.json", context.milestonePath] };

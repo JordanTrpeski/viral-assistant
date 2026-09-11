@@ -5,7 +5,7 @@ const ownerPatterns = [
   /\b(delete permanently|irreversible|sign (?:a )?contract|accept legal|make an irreversible|consequential decision)\b/i
 ];
 const codingPatterns = [
-  /\b(implement|code|modify|refactor|debug|fix|build|rewrite)\b.{0,60}\b(code|feature|system|repository|architecture|authentication|database|api)\b/i,
+  /\b(implement|code|modify|refactor|debug|fix|build|rewrite|add|create)\b.{0,60}\b(code|feature|system|repository|architecture|authentication|database|api|command|cli|test)\b/i,
   /\b(new authentication architecture|change the architecture|edit the source|create a pull request)\b/i
 ];
 const localPatterns = [

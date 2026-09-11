@@ -143,3 +143,10 @@ Efficiency telemetry uses a replaceable bounded JSON store under `.viral/efficie
 The active product, npm package, executable, configuration, environment variables, source diagnostics, tests, and maintained documentation use Viral. The canonical package is `viral-development-controller`, the CLI and npm script are `viral-dev`, and its configuration is `viral-dev.config.json`. No compatibility alias is retained because the bootstrap CLI has no external stable consumers recorded in the repository.
 
 Git branches, commit history, the GitHub repository URL, and `.viral/` storage are unchanged. The legacy name `Jarvis` remains only in this decision and in `runs/20260910082604189-codex-M01-001.json`, whose captured M01 process output is preserved as immutable historical diagnostic evidence rather than rewritten.
+
+## D022 — Owner Objectives Enter Through Durable Governed Tasks
+**Status:** accepted by owner on 2026-09-11
+
+The `viral-dev objective` command is the owner-facing development entry point. It persists an automatically identified task under the current approved milestone before planning, then passes the natural-language objective through the M04 Efficiency Governor. Deterministic status work, local reasoning, coding-harness execution, and owner/model waits use their existing boundaries; the command does not create a parallel scheduler, model router, or source of truth.
+
+Planning-only requests remain durable and return their task ID. Owner-gated, unavailable, unsure, and failed work remains recorded without an unauthorized launch. The command does not start M05 or expand the approved milestone boundary.

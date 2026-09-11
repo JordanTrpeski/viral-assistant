@@ -10,5 +10,6 @@ test("Viral CLI help exposes the canonical command and succeeds", async () => {
   const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
   const result = await run(process.execPath, [cli, "--help"]);
   assert.match(result.stdout, /^Usage: viral-dev /);
+  assert.match(result.stdout, /objective/);
   assert.equal(result.stderr, "");
 });

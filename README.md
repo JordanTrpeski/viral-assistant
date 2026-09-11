@@ -20,6 +20,8 @@ pnpm run build
 Run these from the repository root after building. `npm run viral-dev -- --help` prints the command list and exits successfully.
 
 ```sh
+npm run viral-dev -- objective "Add a doctor command that checks Git, Ollama, Codex, config, and runtime health"
+pnpm viral-dev objective "Summarize the current project state." --plan-only
 pnpm viral-dev context
 pnpm viral-dev status
 pnpm viral-dev verify
@@ -37,6 +39,8 @@ pnpm viral-dev efficiency-plan M04-001
 pnpm viral-dev efficiency-run M04-001 --timeout-ms 900000
 pnpm viral-dev efficiency-status
 ```
+
+`objective` creates a durable `OBJ-…` task in the current approved milestone, applies the Efficiency Governor, prints the task ID and selection reason, and starts the selected deterministic, local-model, or coding-harness execution. Use `--plan-only` to persist the task and inspect the decision without executing it. Policy decisions that require owner input or model availability leave the task safely blocked without launching a harness.
 
 Add `--json` to any command for script-friendly JSON output. Genuine errors return a non-zero exit code. `verify` executes the commands in `viral-dev.config.json` and writes structured results to `verification/latest.json`. `checkpoint` writes `CHECKPOINT.md` from current state, task, verification, and read-only Git inspection.
 
