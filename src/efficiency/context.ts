@@ -16,8 +16,10 @@ function score(section: ContextSection): number {
   return boundedScore(section.authority) * 4 + boundedScore(section.relevance) * 3 + boundedScore(section.recency) * 2 + boundedScore(section.dependency) * 2;
 }
 
+export type ContextBudget = Pick<EfficiencyConfig, "initialContextCharacters" | "maximumContextCharacters">;
+
 export class EfficiencyContextPlanner {
-  constructor(private readonly config: EfficiencyConfig, private readonly compressor?: Compressor) {}
+  constructor(private readonly config: ContextBudget, private readonly compressor?: Compressor) {}
 
   async plan(task: string, sections: ContextSection[]): Promise<ContextPlan> {
     if (!task.trim()) throw new Error("context task must be non-empty");

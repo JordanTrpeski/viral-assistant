@@ -4,6 +4,7 @@ import { deterministicEscalation } from "../local/policy.js";
 import { readTask } from "../tasks.js";
 import type { EfficiencyRecorder, GovernedRunResult, GovernorRequest, SelectionDecision } from "./types.js";
 import { EfficiencyGovernor } from "./governor.js";
+import { deriveSessionMetrics } from "./session.js";
 
 type Launcher = (root: string, harness: DevelopmentHarness, taskId: string, timeoutMs: number, options?: HarnessExecutionOptions) => Promise<PersistedHarnessRun>;
 
@@ -26,7 +27,8 @@ export class GovernedDevelopmentExecutor {
     const developmentWork = deterministicEscalation(task.objective) === "CODING_HARNESS_REQUIRED"
       ? { workKind: "development" as const }
       : {};
-    return await this.governor.plan({ ...options, taskId, objective: task.objective, ...developmentWork });
+    // Feed durable session-context signals so freshSession() can recommend a compact resume instead of replay.
+    return await this.governor.plan({ ...deriveSessionMetrics(task), ...options, taskId, objective: task.objective, ...developmentWork });
   }
 
   async executeDecision(taskId: string, timeoutMs: number, decision: SelectionDecision): Promise<PersistedHarnessRun> {
@@ -36,7 +38,8 @@ export class GovernedDevelopmentExecutor {
     const started = Date.now();
     const run = await this.launcher(this.root, this.harnesses[decision.harness], taskId, timeoutMs, {
       reasoningEffort: decision.effort.toLowerCase() as "low" | "medium" | "high",
-      ...(decision.model ? { model: decision.model } : {}), selection
+      ...(decision.model ? { model: decision.model } : {}),
+      ...(decision.freshSessionRecommended ? { freshSessionRecommended: true } : {}), selection
     });
     await this.recorder?.record(decision, { type: "EXECUTION", durationMs: Date.now() - started, succeeded: run.succeeded });
     return run;
