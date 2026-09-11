@@ -1,19 +1,23 @@
 # Development Checkpoint
 
 - Milestone: M04_EFFICIENCY_GOVERNOR (complete)
-- Active task: OBJ-20260911203148743 (blocked — owner input required)
-- Branch: main
-- HEAD: 7a4f3baad3a11fd9783a37759f5103abcac0a919
+- Active task: OBJ-20260911203723723 (blocked — owner input required; duplicate of OBJ-20260911203148743)
+- Branch: feat/m05-voice
+- HEAD: acefef0efd7bcb4946d56f76665b06acfeb7bc01
 - Working tree: dirty (state/task docs only; no source changes)
 
 ## Files Changed
+- CHECKPOINT.md
 - STATE.json
 - STATE.md
 - tasks/OBJ-20260911203148743.json
-- packets/OBJ-20260911203148743.md (generated, untracked)
+- tasks/OBJ-20260911203723723.json
+- packets/OBJ-20260911203723723.md (generated, untracked)
+- runs/20260911203149190-claude-OBJ-20260911203148743.json (generated, untracked)
 
-## Blocker
-`OBJ-20260911203148743` asks for an M05 Voice Interface CLI (local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, `viral-dev voice listen --timeout 30s`, tests). It was auto-tagged under the current milestone `M04_EFFICIENCY_GOVERNOR`, which is already complete and whose own spec explicitly forbids voice/M05 work. `ROADMAP.md` and `AGENTS.md` Scope Discipline reserve opening a later milestone to the owner. No voice/STT/TTS implementation code was written. Unblock requires an explicit owner decision to open M05, or to re-scope/cancel the objective.
+## Blockers
+- `OBJ-20260911203148743` and `OBJ-20260911203723723` both request an M05 Voice Interface CLI (local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, `viral-dev voice listen --timeout 30s`, tests). `OBJ-20260911203723723` is a duplicate resubmission of the same objective text after `OBJ-20260911203148743` was already blocked. Both were auto-tagged under the current milestone `M04_EFFICIENCY_GOVERNOR`, which is already complete and whose own spec explicitly forbids voice/M05 work. `ROADMAP.md`, `AGENTS.md` Scope Discipline, and `DECISIONS.md` D017 reserve opening a later milestone to the owner. No voice/STT/TTS implementation code was written for either task. Resubmitting the identical objective does not constitute owner approval.
+- Unblock requires an explicit owner decision to open M05 (e.g. a recorded DECISIONS.md entry), or to re-scope/cancel the objectives.
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -24,10 +28,10 @@
 - PASS — m04-acceptance: `pnpm run acceptance:m04`
 
 ## Latest Harness Run
-- Codex CLI: succeeded (prior objective OBJ-20260911111434557)
-- Run record: `runs/20260911114756120-codex-OBJ-20260911111434557.json`
+- Claude Code: succeeded (prior objective OBJ-20260911203148743)
+- Run record: `runs/20260911203149190-claude-OBJ-20260911203148743.json`
 - Exit: 0; timed out: false
-- No harness was launched for OBJ-20260911203148743; it was blocked before execution.
+- No harness work was launched for OBJ-20260911203723723; it was blocked before execution for the same reason as its duplicate.
 
 ## Next Action
-Await the owner's decision on `OBJ-20260911203148743`: approve opening M05 (Voice Interface), or re-scope/cancel the objective. Do not merge into `main`'s protected history unexpectedly, force-push, or begin M05 implementation without that approval.
+Await the owner's decision on `OBJ-20260911203148743` and `OBJ-20260911203723723`: approve opening M05 (Voice Interface), or re-scope/cancel the objectives. Do not merge into `main`, force-push, or begin M05 implementation without that approval.

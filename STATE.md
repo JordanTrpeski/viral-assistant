@@ -41,5 +41,7 @@ The cause of the incomplete doctor lifecycle was the objective service returning
 ## Blocked owner objective
 `OBJ-20260911203148743` requests an M05 Voice Interface CLI (local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, `viral-dev voice listen --timeout 30s`, tests). The `viral-dev objective` command auto-tagged it under the current milestone, `M04_EFFICIENCY_GOVERNOR`, which is already complete and whose own spec explicitly forbids voice or any M05 work; `ROADMAP.md` and `AGENTS.md` Scope Discipline reserve starting a later milestone to the owner. No voice/STT/TTS code was written. The task is recorded as `blocked` in `tasks/OBJ-20260911203148743.json` and as a blocker in `STATE.json` pending an explicit owner decision to open M05 (or to re-scope/cancel the objective). All prior verification remains green and unaffected.
 
+`OBJ-20260911203723723` resubmitted the identical objective text after the above task was already blocked. The `viral-dev objective` command does not currently deduplicate identical resubmissions, so it created a second task under the same completed milestone. It is blocked for the same reason and recorded in `tasks/OBJ-20260911203723723.json` and `STATE.json`. Resubmitting identical text is not treated as owner approval to open M05; no implementation code was written.
+
 ## Next action
-Await the owner's decision on `OBJ-20260911203148743` (approve opening M05, or re-scope/cancel). Do not merge into `main` or begin M05 without that approval.
+Await the owner's decision on `OBJ-20260911203148743` and `OBJ-20260911203723723` (approve opening M05, or re-scope/cancel). Do not merge into `main` or begin M05 without that approval.
