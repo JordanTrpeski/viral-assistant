@@ -60,11 +60,15 @@ async function main(): Promise<void> {
       if (!objective || objective.startsWith("--")) throw new Error("objective requires natural-language text");
       const requestedTimeout = timeout(900_000);
       const result = await (await createEfficiencyServices(root)).objectives.submit(objective, { planOnly: process.argv.includes("--plan-only"), ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }) });
+      const questions = result.decision.action === "OWNER_INPUT_REQUIRED" && result.decision.clarifyingQuestions?.length
+        ? ["Questions:", ...result.decision.clarifyingQuestions.map((question) => `  - ${question}`), "Answer these and provide refined objective."]
+        : [];
       console.log(json ? JSON.stringify(result, null, 2) : [
         `Task: ${result.taskId}`,
         `Selection: ${result.decision.tier} / ${result.decision.effort}`,
         `Decision: ${result.decision.reason}`,
         result.planOnly ? "Execution: planning only" : result.execution ? `Execution: ${result.execution.succeeded ? "started successfully" : "failed"}` : `Execution: ${result.decision.action}`,
+        ...questions,
         ...(result.execution?.output ? [result.execution.output] : [])
       ].join("\n"));
       if (result.execution?.succeeded === false) process.exitCode = 1;
