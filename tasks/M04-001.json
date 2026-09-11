@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "M04-001",
+  "milestone": "M04_EFFICIENCY_GOVERNOR",
+  "objective": "Implement the deterministic, observable, owner-overridable Efficiency Governor defined by the M04 specification.",
+  "status": "in_progress",
+  "acceptanceCriteria": [
+    "Selection covers deterministic, local-model, and coding-harness work with LOW/MEDIUM/HIGH effort and a concise visible reason.",
+    "Context budgeting, progressive retrieval, local compression fallback, and fresh-session handoff are verified.",
+    "Owner gates prevent unauthorized paid/cloud switching, major policy/direction changes, and consequential actions.",
+    "WAITING_FOR_MODEL records retry timing and resumes only after a successful availability probe without inference while waiting.",
+    "Governed execution launches only an authorized selection and carries its effort/selection record.",
+    "Bounded local telemetry is private, Git-ignored, replaceable, and excludes prompts, conversations, credentials, and hidden reasoning.",
+    "M00-M03 behavior remains green and all M04 acceptance checks pass."
+  ],
+  "dependencies": [
+    "M03-001"
+  ],
+  "relevantFiles": [
+    "EFFICIENCY.md",
+    "RULES.md",
+    "DECISIONS.md",
+    "milestones/M04_EFFICIENCY_GOVERNOR.md",
+    "src/efficiency/",
+    "src/harness/",
+    "src/local/",
+    "src/runtime/",
+    "src/cli.ts",
+    "tests/efficiency.test.ts"
+  ],
+  "notes": [
+    "Use deterministic policy for enforcement; local AI may recommend only.",
+    "Do not begin M05 or merge into main."
+  ],
+  "nextAction": "Implement the typed governor, context/session planning, governed execution, runtime wait integration, telemetry, CLI, and tests.",
+  "verificationResult": null
+}

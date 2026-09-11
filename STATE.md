@@ -1,6 +1,6 @@
 # Jarvis — Current Development State
 
-M03 remains complete and verified. Policy and repository-root maintenance are complete on `dev/efficiency-policy`; no task is active.
+M00–M03 remain complete and verified. M04 — Efficiency Governor is active on `dev/m04-efficiency-governor` with task `M04-001` in progress.
 
 ## Permanent policy guidance
 `EFFICIENCY.md` is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute behavior. The connector-first boundary requires explicit, versioned interfaces between independent applications and major subsystems, including software Viral develops in the future. This integration changes policy documentation only; no Efficiency Governor or M04 functionality has been implemented.
@@ -33,6 +33,6 @@ The canonical Git repository root is `C:\Users\jorda\Desktop\viral-bootstrap`. T
 None.
 
 ## Next action
-Pre-M04 preparation is complete. Await owner direction. Do not merge into main or begin M04 without owner approval.
+Implement and objectively verify M04 only. Do not merge into main or begin M05.
 
 Last verified implementation commit: 741cd486c64c74dcdc84dd7740c872af733d8bbd. Runtime persistence and repository development state are separate replaceable Bootstrap mechanisms.

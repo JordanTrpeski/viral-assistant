@@ -1,13 +1,16 @@
 # Development Checkpoint
 
-- Milestone: M03_BACKGROUND_RUNTIME (complete)
-- Active task: None
-- Branch: dev/efficiency-policy
-- HEAD: 01b98daabffc1d02baece345d6fb7def1e37d4a7
-- Working tree: clean
+- Milestone: M04_EFFICIENCY_GOVERNOR (in_progress)
+- Active task: M04-001 — Implement the deterministic, observable, owner-overridable Efficiency Governor defined by the M04 specification.
+- Branch: dev/m04-efficiency-governor
+- HEAD: 5218cfe7b9cbf73f34308da2b8e6b0f3dfc7e3e6
+- Working tree: dirty
 
 ## Files Changed
-- None
+- STATE.json
+- STATE.md
+- milestones/M04_EFFICIENCY_GOVERNOR.md
+- tasks/M04-001.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -25,4 +28,4 @@
 - None
 
 ## Next Action
-Pre-M04 preparation is complete. Await owner direction; do not begin M04 or merge into main without owner approval.
+Implement and objectively verify the M04 Efficiency Governor only; do not begin M05 or merge into main.

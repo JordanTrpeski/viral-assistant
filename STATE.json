@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "project": "Jarvis",
-  "currentMilestone": "M03_BACKGROUND_RUNTIME",
-  "milestoneStatus": "complete",
-  "activeTask": null,
+  "currentMilestone": "M04_EFFICIENCY_GOVERNOR",
+  "milestoneStatus": "in_progress",
+  "activeTask": "M04-001",
   "completedTasks": [
     "M00-001",
     "M01-001",
@@ -14,7 +14,7 @@
   "lastVerifiedCommit": "741cd486c64c74dcdc84dd7740c872af733d8bbd",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260910082604189-codex-M01-001.json",
-  "nextAction": "Pre-M04 preparation is complete. Await owner direction; do not begin M04 or merge into main without owner approval.",
+  "nextAction": "Implement and objectively verify the M04 Efficiency Governor only; do not begin M05 or merge into main.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
@@ -25,6 +25,7 @@
     "EFFICIENCY.md is authoritative for model, context, reasoning-effort, escalation, session-compaction, and token/compute efficiency behavior.",
     "Connector-first architecture applies to Viral and independent software it develops; cross-application contracts should be explicit and versioned.",
     "The canonical repository root is C:\\Users\\jorda\\Desktop\\viral-bootstrap; the accidental nested repository was consolidated with full Git history and local runtime state preserved.",
-    "D018 locks the owner-approved pre-M04 autonomy boundary: automatic work within an approved milestone, user-visible selection reasons, deterministic WAITING_FOR_MODEL recovery, and owner gates for paid/cloud switching, major policy/direction changes, and major main merges."
+    "D018 locks the owner-approved pre-M04 autonomy boundary: automatic work within an approved milestone, user-visible selection reasons, deterministic WAITING_FOR_MODEL recovery, and owner gates for paid/cloud switching, major policy/direction changes, and major main merges.",
+    "M04 started on dev/m04-efficiency-governor under the owner-approved D018 autonomy boundary."
   ]
 }
