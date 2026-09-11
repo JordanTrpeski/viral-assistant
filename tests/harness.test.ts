@@ -49,6 +49,7 @@ test("Claude adapter uses print mode with stdin and structured output", async ()
   assert.equal(call?.stdin, "handoff-packet");
   assert.ok(call?.args.includes("-p"));
   assert.ok(call?.args.includes("stream-json"));
+  assert.deepEqual([call?.args.at(call.args.indexOf("--permission-mode") + 1)], ["bypassPermissions"]);
   assert.ok(!call?.args.some((value) => value.includes("dangerously")));
 });
 
