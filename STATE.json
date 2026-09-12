@@ -3,7 +3,7 @@
   "project": "Viral",
   "currentMilestone": "M05_VOICE_INTERFACE",
   "milestoneStatus": "in_progress",
-  "activeTask": null,
+  "activeTask": "OBJ-20260912064652626",
   "completedTasks": [
     "M00-001",
     "M01-001",
@@ -13,11 +13,13 @@
     "OBJ-20260911111434557",
     "OBJ-20260911203723723"
   ],
-  "blockers": [],
+  "blockers": [
+    "OBJ-20260912064652626 requests an Electron + React 'Viral Desktop' app (M06 scope: system tray, HTTP daemon + WebSocket, Tailwind UI, auto-start) while M05_VOICE_INTERFACE is the active milestone and is itself not yet implemented. M05's own spec forbids M06+ work, and no milestones/M06_*.md spec exists to authoritatively define this work. Awaiting owner decision to complete M05 first and to resolve the M06 naming conflict between ROADMAP.md ('Desktop Control' OS automation) and D025 ('Viral Desktop' UI app)."
+  ],
   "lastVerifiedCommit": "c842bebe008efb6a97362ccba0520939ac94c26c",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260911203724126-claude-OBJ-20260911203723723.json",
-  "nextAction": "Implement the approved M05 voice interface objective per milestones/M05_VOICE_INTERFACE.md.",
+  "nextAction": "Await owner decision on OBJ-20260912064652626: complete M05 Voice Interface first, and resolve the M06 scope conflict (ROADMAP.md 'Desktop Control' vs. D025 'Viral Desktop') with an authoritative milestone spec before any desktop-app implementation begins.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
@@ -36,6 +38,8 @@
     "Doctor objective OBJ-20260911111434557 is implemented and verified; deterministic finalization now publishes from the normal owner process with restart-safe private phase state.",
     "D023 records two-phase development finalization: push verified implementation before completion, then publish lifecycle state without force, history rewrite, main merge, or duplicate execution.",
     "OBJ-20260911203148743 and its duplicate OBJ-20260911203723723 were blocked as M05 work while M04 was active; no voice code was written.",
-    "D024 records the owner's explicit approval (2026-09-12) to open M05 Voice Interface as the active milestone; milestones/M05_VOICE_INTERFACE.md is the authoritative spec. Voice tests must not require network access or installed audio engines."
+    "D024 records the owner's explicit approval (2026-09-12) to open M05 Voice Interface as the active milestone; milestones/M05_VOICE_INTERFACE.md is the authoritative spec. Voice tests must not require network access or installed audio engines.",
+    "OBJ-20260912064652626 is blocked: its content is a full Electron + React desktop app (M06 'Viral Desktop' scope per D025), auto-tagged under M05_VOICE_INTERFACE, whose spec explicitly forbids M06+ work. No desktop/Electron/React code was written. D025's 'M06 — Viral Desktop' also conflicts with ROADMAP.md's own M06 entry ('Desktop Control' OS automation); this naming/scope conflict needs an owner decision and an authoritative milestones/M06_*.md spec before implementation.",
+    "Discovered on investigation: origin/feat/m05-voice (unmerged into main) already contains a completed, verified M05 voice implementation (OBJ-20260912060549854) and three prior identical-text desktop-app objectives that were all correctly blocked for the same M06/M05-scope reason. That branch also shows one of them, OBJ-20260912062813043, later marked 'complete' (commit 01570bf) with a 'verified implementation' claim but zero desktop-app source changes -- an apparent false-completion that needs owner review. main's own dist/ build directory (git-ignored) contained stale compiled voice test artifacts left over from a prior checkout of that branch, which briefly and misleadingly inflated a local test run to 107 passing tests; dist/ was cleaned and a fresh build confirms main's true baseline is 95 tests, all passing, with no voice source present."
   ]
 }

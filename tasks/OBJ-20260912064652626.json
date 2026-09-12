@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260912064652626",
+  "milestone": "M05_VOICE_INTERFACE",
+  "objective": "Build an Electron + React desktop app called 'Viral Desktop' (MVP scope, 1 hour deadline). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Deliverable: working app (npm run desktop:dev works). Include tests for chat, task queue, diagnostics.",
+  "status": "blocked",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Build an Electron + React desktop app called 'Viral Desktop' (MVP scope, 1 hour deadline). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Deliverable: working app (npm run desktop:dev works). Include tests for chat, task queue, diagnostics.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M05_VOICE_INTERFACE.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: EXECUTE / CODING_HARNESS / MEDIUM. Selected claude with MEDIUM effort because development work requires an authenticated coding harness and the selected harness is usable.",
+    "Blocked on milestone scope, not capability: this objective describes an Electron + React 'Viral Desktop' application (system tray, HTTP daemon + WebSocket, Tailwind UI, auto-start), which is M06 'Viral Desktop' work, but it was auto-tagged under the active M05_VOICE_INTERFACE milestone. milestones/M05_VOICE_INTERFACE.md explicitly forbids M06+ work ('Do not begin M06+ work: desktop control, browser automation, memory, life modules'), and AGENTS.md Scope Discipline lists 'desktop UI' as out of scope unless the active milestone explicitly requires it.",
+    "M05 itself is not yet implemented (no src/voice code exists); STATE.md's recorded next action is still to implement the M05 voice interface, and D025 approved M06 explicitly 'to follow M05'.",
+    "There is no milestones/M06_*.md specification document defining required design, boundaries, or verification for this work, unlike every completed milestone. D025 ('M06 — Viral Desktop') and ROADMAP.md's own M06 entry ('Desktop Control — safe Windows/OS automation through a permissioned tool layer') describe different things under the same milestone number; this conflict is unresolved and is an owner decision, not something to resolve unilaterally by building one interpretation. The very specific requirements in this objective (Electron, React, Tailwind, system tray, 900x600, HTTP+WebSocket daemon, a '1 hour deadline') appear nowhere in ROADMAP.md or DECISIONS.md.",
+    "No Electron/React/desktop implementation code was written.",
+    "Important discovered context: an unmerged branch origin/feat/m05-voice already contains a completed, verified M05 voice implementation (OBJ-20260912060549854) plus three prior submissions of this exact same desktop-app objective text (OBJ-20260912062649417, OBJ-20260912062748956, OBJ-20260912062813043), all correctly blocked on that branch for the identical M06/M05-scope reasons identified here. That branch also shows OBJ-20260912062813043 later flipped from status 'blocked' to 'complete' (commit 01570bf) with a claim of 'verified implementation committed', but the commit contains no desktop-app source changes at all -- only task/state metadata. That looks like an erroneous completion claim (RULES.md: 'Do not claim completion when acceptance criteria are unverified') and needs owner review before feat/m05-voice is trusted or merged. Neither that branch's voice work nor its questionable completion record has been merged into main; main currently has no voice source. This objective did not attempt any merge."
+  ],
+  "nextAction": "Awaiting owner decision: (1) complete M05 Voice Interface first per its existing spec, and (2) resolve the M06 naming/scope conflict between ROADMAP.md ('Desktop Control' OS automation) and D025 ('Viral Desktop' UI app) with an authoritative milestones/M06_*.md spec before any desktop-app implementation begins.",
+  "verificationResult": null
+}
