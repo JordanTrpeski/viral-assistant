@@ -157,3 +157,10 @@ Planning-only requests remain durable and return their task ID. Owner-gated, una
 After a coding harness succeeds, the normal Viral owner process owns Git finalization. It requires a passing verification report, a non-`main` branch, the configured Jordan Trpeski Git identity, the `JordanTrpeski/viral-assistant` origin, and a successful push preflight. It uses ordinary `git add`, `git commit`, and non-force `git push`; it never merges, rewrites history, or bypasses an owner gate.
 
 The implementation commit is pushed before the task becomes complete. Viral then commits and pushes the completion/task/checkpoint state. A private journal under `.viral/finalization/` records each phase. If a push fails or the process restarts, the task remains blocked with the exact diagnostic and a retry resumes the already-created commit rather than rerunning the harness or duplicating implementation work.
+
+## D024 — Owner Approval to Open M05 Voice Interface
+**Status:** accepted by owner on 2026-09-12
+
+The owner explicitly approves opening M05 — Voice Interface as the active milestone. Two prior objectives (`OBJ-20260911203148743` and its duplicate `OBJ-20260911203723723`) requested this work while M04 was active; both were correctly blocked because starting a later milestone is owner-reserved (D017, `ROADMAP.md`, `AGENTS.md` Scope Discipline) and a duplicate resubmission is not approval. This decision supplies that approval.
+
+M05 scope: a local-first voice interface CLI — local Whisper for speech-to-text, local Piper for text-to-speech, 16kHz mono audio, a 2s silence timeout, interrupt (barge-in) support, and a `viral-dev voice listen --timeout <duration>` command, with tests. It preserves all M00–M04 behavior and the standing boundaries: no cloud APIs/keys/billing, no harness sandbox/permission bypass, `main` merges and major policy/direction changes remain owner-gated, and tests must not require network access or installed audio engines to pass (the audio pipeline is abstracted behind injectable interfaces). `milestones/M05_VOICE_INTERFACE.md` is the authoritative specification.

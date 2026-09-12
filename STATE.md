@@ -1,6 +1,6 @@
 # Viral — Current Development State
 
-M00–M04 are complete and verified. M04 — Efficiency Governor was implemented on `dev/m04-efficiency-governor`; M05 has not started.
+M00–M04 are complete and verified. **M05 — Voice Interface is now the active milestone**, opened by explicit owner approval D024 (2026-09-12); see `milestones/M05_VOICE_INTERFACE.md`.
 
 ## M04 verified work
 - A provider-neutral deterministic governor selects `DETERMINISTIC`, `LOCAL_MODEL`, or `CODING_HARNESS`, plus LOW/MEDIUM/HIGH effort, from explicit facts.
@@ -38,10 +38,10 @@ Live checks passed for Git, the configured model, runtime storage, and configura
 ## Development finalization
 The cause of the incomplete doctor lifecycle was the objective service returning immediately after a successful Codex process. The new deterministic finalizer runs after that process in the normal Viral owner environment. It protects `main`, rejects the wrong identity or remote, uses only normal non-force Git operations, and marks work complete only after the implementation commit has reached the approved development branch. D023 records the two-phase publication and recovery contract.
 
-## Blocked owner objective
-`OBJ-20260911203148743` requests an M05 Voice Interface CLI (local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, `viral-dev voice listen --timeout 30s`, tests). The `viral-dev objective` command auto-tagged it under the current milestone, `M04_EFFICIENCY_GOVERNOR`, which is already complete and whose own spec explicitly forbids voice or any M05 work; `ROADMAP.md` and `AGENTS.md` Scope Discipline reserve starting a later milestone to the owner. No voice/STT/TTS code was written. The task is recorded as `blocked` in `tasks/OBJ-20260911203148743.json` and as a blocker in `STATE.json` pending an explicit owner decision to open M05 (or to re-scope/cancel the objective). All prior verification remains green and unaffected.
+## M05 opened
+Earlier objectives `OBJ-20260911203148743` and its duplicate `OBJ-20260911203723723` requested M05 Voice Interface work while M04 was the active (and complete) milestone. Both were correctly blocked — starting a later milestone is owner-reserved (D017, `ROADMAP.md`, `AGENTS.md` Scope Discipline), and a duplicate resubmission is not approval. No voice/STT/TTS code was written by either.
 
-`OBJ-20260911203723723` resubmitted the identical objective text after the above task was already blocked. The `viral-dev objective` command does not currently deduplicate identical resubmissions, so it created a second task under the same completed milestone. It is blocked for the same reason and recorded in `tasks/OBJ-20260911203723723.json` and `STATE.json`. Resubmitting identical text is not treated as owner approval to open M05; no implementation code was written.
+On 2026-09-12 the owner explicitly approved opening M05 (**D024**). M05 — Voice Interface is now the active milestone. Scope: local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, and `viral-dev voice listen --timeout <duration>`, with deterministic tests that require neither network access nor installed audio engines. `milestones/M05_VOICE_INTERFACE.md` is authoritative.
 
 ## Next action
-Await the owner's decision on `OBJ-20260911203148743` and `OBJ-20260911203723723` (approve opening M05, or re-scope/cancel). Do not merge into `main` or begin M05 without that approval.
+Implement the approved M05 voice interface objective per `milestones/M05_VOICE_INTERFACE.md`. Do not merge into `main`.

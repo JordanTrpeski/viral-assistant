@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "project": "Viral",
-  "currentMilestone": "M04_EFFICIENCY_GOVERNOR",
-  "milestoneStatus": "complete",
+  "currentMilestone": "M05_VOICE_INTERFACE",
+  "milestoneStatus": "in_progress",
   "activeTask": null,
   "completedTasks": [
     "M00-001",
@@ -13,13 +13,11 @@
     "OBJ-20260911111434557",
     "OBJ-20260911203723723"
   ],
-  "blockers": [
-    "OBJ-20260911203148743 and OBJ-20260911203723723 request identical M05 Voice Interface work (Whisper STT, Piper TTS, viral-dev voice listen) while M04_EFFICIENCY_GOVERNOR is the active milestone and is already complete. M04's own spec forbids voice/M05 work. OBJ-20260911203723723 is a duplicate resubmission of OBJ-20260911203148743's exact objective text; resubmitting it does not constitute owner approval. Awaiting an explicit owner decision to open M05 before any implementation."
-  ],
+  "blockers": [],
   "lastVerifiedCommit": "c842bebe008efb6a97362ccba0520939ac94c26c",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260911203724126-claude-OBJ-20260911203723723.json",
-  "nextAction": "Await the owner's next approved objective. Do not merge main or start M05.",
+  "nextAction": "Implement the approved M05 voice interface objective per milestones/M05_VOICE_INTERFACE.md.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
@@ -37,6 +35,7 @@
     "Windows harness resolution now discovers native executables plus .cmd, .bat, and .ps1 shims on PATH; installation and version remain distinct from authentication/usability.",
     "Doctor objective OBJ-20260911111434557 is implemented and verified; deterministic finalization now publishes from the normal owner process with restart-safe private phase state.",
     "D023 records two-phase development finalization: push verified implementation before completion, then publish lifecycle state without force, history rewrite, main merge, or duplicate execution.",
-    "OBJ-20260911203148743 and its duplicate OBJ-20260911203723723 are blocked: both are M05 Voice Interface scope tagged under the completed M04 milestone. No voice/STT/TTS code was implemented; both tasks remain parked pending an explicit owner decision to open M05."
+    "OBJ-20260911203148743 and its duplicate OBJ-20260911203723723 were blocked as M05 work while M04 was active; no voice code was written.",
+    "D024 records the owner's explicit approval (2026-09-12) to open M05 Voice Interface as the active milestone; milestones/M05_VOICE_INTERFACE.md is the authoritative spec. Voice tests must not require network access or installed audio engines."
   ]
 }
