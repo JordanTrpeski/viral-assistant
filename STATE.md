@@ -58,5 +58,8 @@ Investigating this objective surfaced `origin/feat/m05-voice`, an unmerged branc
 
 Separately, `main`'s git-ignored `dist/` directory still held stale compiled voice test artifacts from a previous checkout of `feat/m05-voice`, which briefly made a local `pnpm run test` run report 107 passing tests including voice tests that do not exist in `main`'s source. `dist/` was removed and a clean rebuild confirms `main`'s true baseline: 95 tests, typecheck, lint, and the M02–M04 acceptance suites all pass, with no voice source present on this branch.
 
+## Duplicate resubmission blocked
+`OBJ-20260912070218517` resubmitted the identical desktop-app objective text on branch `feat/m06-desktop` after `OBJ-20260912064652626` was blocked (commit `0faa0ad`). None of the blocking facts changed: `STATE.json.currentMilestone` is still `M05_VOICE_INTERFACE`, whose spec forbids M06+ work; no `milestones/M06_*.md` spec exists; D025's "M06 — Viral Desktop" still conflicts with `ROADMAP.md`'s own M06 ("Desktop Control" OS automation); and no voice implementation exists on this branch. A repeat submission is not owner approval. `OBJ-20260912070218517` is recorded as `blocked` in `tasks/OBJ-20260912070218517.json`. No Electron/React/desktop code was written.
+
 ## Next action
-Await the owner's decision on `OBJ-20260912064652626` (complete M05 first; clarify/author an authoritative M06 spec). Do not merge into `main` or begin M06 desktop-app implementation without that resolution.
+Await the owner's explicit decision on the desktop-app objective: complete M05 first, or supply an authoritative M06 spec and explicitly authorize building the desktop app ahead of M05. Do not merge into `main` or begin M06 desktop-app implementation without that resolution.
