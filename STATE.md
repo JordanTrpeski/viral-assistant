@@ -1,6 +1,6 @@
 # Viral — Current Development State
 
-M00–M04 are complete and verified. Active milestones: **M05 — Voice Interface** (opened by owner approval D024, 2026-09-12; see `milestones/M05_VOICE_INTERFACE.md`) and **M06 — Viral Desktop** (approved by owner D025, 2026-09-12, to follow M05).
+M00–M04 are complete and verified. The current milestone is now **M06 — Viral Desktop** (`milestones/M06_VIRAL_DESKTOP.md`), activated by owner approval D025 (2026-09-12). **M05 — Voice Interface is paused** (not abandoned; `milestones/M05_VOICE_INTERFACE.md` remains authoritative when resumed). Both M05 and M06 remain in `activeMilestones`.
 
 ## M04 verified work
 - A provider-neutral deterministic governor selects `DETERMINISTIC`, `LOCAL_MODEL`, or `CODING_HARNESS`, plus LOW/MEDIUM/HIGH effort, from explicit facts.

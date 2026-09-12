@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "project": "Viral",
-  "currentMilestone": "M05_VOICE_INTERFACE",
+  "currentMilestone": "M06_VIRAL_DESKTOP",
   "activeMilestones": [
     "M05_VOICE_INTERFACE",
     "M06_VIRAL_DESKTOP"
@@ -44,6 +44,7 @@
     "D023 records two-phase development finalization: push verified implementation before completion, then publish lifecycle state without force, history rewrite, main merge, or duplicate execution.",
     "OBJ-20260911203148743 and its duplicate OBJ-20260911203723723 were blocked as M05 work while M04 was active; no voice code was written.",
     "D024 records the owner's explicit approval (2026-09-12) to open M05 Voice Interface as the active milestone; milestones/M05_VOICE_INTERFACE.md is the authoritative spec. Voice tests must not require network access or installed audio engines.",
-    "D025 approved M06 (Viral Desktop) to follow M05, but did not change currentMilestone, did not add a milestones/M06_*.md spec, and did not resolve the naming conflict with ROADMAP.md's own M06 ('Desktop Control'). OBJ-20260912064652626 was blocked on this branch for that reason (commit 0faa0ad); OBJ-20260912070218517 resubmits the identical objective text with none of those facts changed and is blocked again for the same reason. No desktop-app code has been written on this branch."
+    "D025 approved M06 (Viral Desktop) to follow M05, but did not change currentMilestone, did not add a milestones/M06_*.md spec, and did not resolve the naming conflict with ROADMAP.md's own M06 ('Desktop Control'). OBJ-20260912064652626 was blocked on this branch for that reason (commit 0faa0ad); OBJ-20260912070218517 resubmits the identical objective text with none of those facts changed and is blocked again for the same reason. No desktop-app code has been written on this branch.",
+    "M05 Voice Interface is paused (not abandoned); current milestone switched to M06 Viral Desktop per owner approval D025 (2026-09-12)."
   ]
 }
