@@ -14,14 +14,20 @@
     "acceptance:m02": "pnpm run build && node --test dist/tests/local-model.test.js dist/tests/local-tasks.test.js",
     "acceptance:m03": "pnpm run build && node --test dist/tests/runtime.test.js dist/tests/runtime-service.test.js",
     "acceptance:m04": "pnpm run build && node --test dist/tests/efficiency*.test.js",
-    "lint": "node scripts/lint.mjs"
+    "acceptance:m06": "pnpm run build && node --test dist/tests/desktop-*.test.js",
+    "lint": "node scripts/lint.mjs",
+    "desktop:dev": "node scripts/desktop-dev.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.9.0"
   },
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@11.19.0"
+  "packageManager": "pnpm@11.19.0",
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
 }

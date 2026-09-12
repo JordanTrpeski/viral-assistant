@@ -29,6 +29,10 @@
     {
       "name": "m04-acceptance",
       "command": "pnpm run acceptance:m04"
+    },
+    {
+      "name": "m06-acceptance",
+      "command": "pnpm run acceptance:m06"
     }
   ],
   "efficiencyGovernor": {

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+desktop/out/
 *.log
 .viral/runtime/
 .viral/efficiency/

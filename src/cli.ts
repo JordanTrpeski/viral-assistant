@@ -19,11 +19,12 @@ import { DevelopmentFinalizer } from "./finalization.js";
 import { formatSummary, formatTaskDetail, readTaskLogs, summarize } from "./efficiency/logs.js";
 import { ObjectiveRefiner } from "./efficiency/refinement.js";
 import { consoleReader, refineInteractively } from "./cli/interactive.js";
+import { createDesktopServer } from "./desktop/registry.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|summary|task-detail> [options]";
+const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|desktop-server|summary|task-detail> [options]";
 const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--milestone <id>] [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
 
@@ -205,6 +206,16 @@ async function main(): Promise<void> {
     console.log(`Viral runtime started; polling every ${pollMs}ms.`);
     await service.start();
     console.log("Viral runtime stopped cleanly.");
+  } else if (command === "desktop-server") {
+    const portValue = option("--port");
+    const port = portValue === undefined ? 4173 : Number(portValue);
+    if (!Number.isSafeInteger(port) || port < 0) throw new Error("--port must be a non-negative integer");
+    const server = await createDesktopServer(root, { port });
+    const address = await server.start();
+    const shutdown = (): void => { void server.stop().then(() => process.exit(0)); };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    console.log(`Viral desktop daemon listening on http://${address.host}:${address.port} (WebSocket at ws://${address.host}:${address.port}/ws)`);
   } else if (command === "summary") {
     const daysArg = process.argv[3];
     const days = daysArg && !daysArg.startsWith("--") ? Number(daysArg) : 1;
