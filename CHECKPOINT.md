@@ -1,23 +1,14 @@
 # Development Checkpoint
 
-- Milestone: M05_VOICE_INTERFACE (in_progress, not yet implemented)
-- Active task: OBJ-20260912070218517 (blocked — duplicate resubmission, owner input required)
+- Milestone: M05_VOICE_INTERFACE (in_progress)
+- Active task: OBJ-20260912070218517 — Build an Electron + React desktop app called 'Viral Desktop' (MVP scope, 1 hour deadline). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Deliverable: working app (npm run desktop:dev works). Include tests for chat, task queue, diagnostics.
 - Branch: feat/m06-desktop
-- HEAD: 0faa0adbeddb1dbd12a61c123d69c7ce8a2bd077
-- Working tree: dirty (state/task docs only; no source changes)
+- HEAD: e003b26ee094549b48f62bd5307c6f2533b7614e
+- Working tree: dirty
 
 ## Files Changed
 - STATE.json
-- STATE.md
-- tasks/OBJ-20260912070218517.json
-- tasks/OBJ-20260912064652626.json
-- runs/20260912064653293-claude-OBJ-20260912064652626.json (untracked run record)
-- packets/OBJ-20260912070218517.md (generated, untracked)
-
-## Blocker
-`OBJ-20260912070218517` resubmits the exact same objective text as `OBJ-20260912064652626`, which was already blocked on this branch (commit `0faa0ad`): an Electron + React "Viral Desktop" application (system tray, HTTP daemon + WebSocket, Tailwind UI, dark theme, auto-start on Windows) — M06 "Viral Desktop" scope per D025. It is auto-tagged under the active `M05_VOICE_INTERFACE` milestone, which is not yet implemented on this branch and whose own spec explicitly forbids M06+ work. `AGENTS.md` Scope Discipline separately excludes "desktop UI" unless the active milestone requires it. There is still no `milestones/M06_*.md` spec, and D025's "M06 — Viral Desktop" still conflicts with `ROADMAP.md`'s own M06 entry ("Desktop Control" OS automation). None of the facts that caused the earlier block have changed. No Electron/React/desktop implementation code was written.
-
-This is at least the fifth submission of this identical objective text across branches (three on `feat/m05-voice`, two on this branch), all blocked for the same reason.
+- runs/20260912070218929-claude-OBJ-20260912070218517.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -28,9 +19,12 @@ This is at least the fifth submission of this identical objective text across br
 - PASS — m04-acceptance: `pnpm run acceptance:m04`
 
 ## Latest Harness Run
-- Claude Code: succeeded (prior objective OBJ-20260912064652626 investigation)
-- Run record: `runs/20260912064653293-claude-OBJ-20260912064652626.json`
-- No harness work was performed for `OBJ-20260912070218517`; it was blocked before any implementation.
+- Claude Code: succeeded
+- Run record: `runs/20260912070218929-claude-OBJ-20260912070218517.json`
+- Exit: 0; timed out: false
+
+## Blockers
+- OBJ-20260912070218517 is a duplicate resubmission of OBJ-20260912064652626 (already blocked, commit 0faa0ad): an Electron + React 'Viral Desktop' app (M06 scope: system tray, HTTP daemon + WebSocket, Tailwind UI, auto-start) auto-tagged under the active M05_VOICE_INTERFACE milestone, which is itself not yet implemented and whose spec forbids M06+ work. No milestones/M06_*.md spec exists, and D025's 'M06 -- Viral Desktop' still conflicts with ROADMAP.md's own M06 ('Desktop Control' OS automation). Awaiting an explicit owner decision, not a repeat submission.
 
 ## Next Action
-Await the owner's explicit decision: complete M05 Voice Interface first, or supply an authoritative `milestones/M06_*.md` spec resolving the M06 naming conflict and explicitly authorize the desktop app ahead of M05. Do not merge into `main` or begin M06 desktop-app implementation without that resolution.
+Await owner decision on OBJ-20260912070218517: complete M05 Voice Interface first, or supply an authoritative M06 spec and explicit authorization to build the desktop app before M05 is complete.
