@@ -1,6 +1,6 @@
 # Viral — Current Development State
 
-M00–M04 are complete and verified. **M05 — Voice Interface is now the active milestone**, opened by explicit owner approval D024 (2026-09-12); see `milestones/M05_VOICE_INTERFACE.md`.
+M00–M04 are complete and verified. Active milestones: **M05 — Voice Interface** (opened by owner approval D024, 2026-09-12; see `milestones/M05_VOICE_INTERFACE.md`) and **M06 — Viral Desktop** (approved by owner D025, 2026-09-12, to follow M05).
 
 ## M04 verified work
 - A provider-neutral deterministic governor selects `DETERMINISTIC`, `LOCAL_MODEL`, or `CODING_HARNESS`, plus LOW/MEDIUM/HIGH effort, from explicit facts.
@@ -42,6 +42,9 @@ The cause of the incomplete doctor lifecycle was the objective service returning
 Earlier objectives `OBJ-20260911203148743` and its duplicate `OBJ-20260911203723723` requested M05 Voice Interface work while M04 was the active (and complete) milestone. Both were correctly blocked — starting a later milestone is owner-reserved (D017, `ROADMAP.md`, `AGENTS.md` Scope Discipline), and a duplicate resubmission is not approval. No voice/STT/TTS code was written by either.
 
 On 2026-09-12 the owner explicitly approved opening M05 (**D024**). M05 — Voice Interface is now the active milestone. Scope: local Whisper STT, local Piper TTS, 16kHz mono, 2s silence timeout, interrupt support, and `viral-dev voice listen --timeout <duration>`, with deterministic tests that require neither network access nor installed audio engines. `milestones/M05_VOICE_INTERFACE.md` is authoritative.
+
+## M06 approved
+On 2026-09-12 the owner also approved M06 — Viral Desktop as an active milestone (**D025**), to follow the M05 voice work. Standing boundaries continue to apply: no cloud APIs/keys/billing, no harness sandbox/permission bypass, and `main` merges and major policy/direction changes remain owner-gated.
 
 ## Next action
 Implement the approved M05 voice interface objective per `milestones/M05_VOICE_INTERFACE.md`. Do not merge into `main`.
