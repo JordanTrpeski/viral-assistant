@@ -52,7 +52,7 @@ const learningQuestions: RefinementQuestion[] = [
 const genericBuildQuestions: RefinementQuestion[] = [
   { id: "scope", text: "What is the intended scope and level of detail (prototype, MVP, or production)?", subject: /scope|level of detail/i, concrete: /\b(prototype|mvp|production|proof of concept|poc|full)\b/i },
   { id: "tech", text: "Any technology, language, or framework preference?", subject: /technolog|language|framework/i, concrete: /\b(typescript|javascript|python|react|node|rust|go|java|svelte|vue|next\.?js|c\+\+|c#|swift|kotlin)\b/i, category: CLOUD_LOCAL },
-  { id: "timeline", text: "Is there a timeline or deadline to plan around?", subject: /timeline|deadline/i, concrete: /\b(\d+\s?(day|days|week|weeks|month|months|hour|hours)|asap|by (monday|tuesday|wednesday|thursday|friday|next))\b/i },
+  { id: "timeline", text: "Is there a timeline or deadline to plan around?", subject: /timeline|deadline/i, concrete: /\b(\d+\s?(day|days|week|weeks|month|months|hour|hours)|asap|by (monday|tuesday|wednesday|thursday|friday|next)|no (fixed )?(deadline|timeline|rush)|none|not time[- ]?boxed|flexible|open[- ]?ended)\b/i },
   { id: "output", text: "What output format or deliverable is expected?", subject: /output|deliverable/i, concrete: /\b(cli|web app|library|api|report|json|binary|package|npm|docker|website|script)\b/i }
 ];
 

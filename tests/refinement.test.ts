@@ -12,6 +12,8 @@ test("validateAnswer scores concrete, partial, and vague answers", () => {
   assert.ok(refiner.validateAnswer("Which STT engine should it use?", "Whisper local") >= 0.9);
   assert.equal(refiner.validateAnswer("Which STT engine should it use?", "cloud thing"), 0.3);
   assert.ok(refiner.validateAnswer("Which STT engine should it use?", "something good") <= 0.1);
+  // "No deadline" is a valid (clear) answer to the timeline question, not a vague one.
+  assert.ok(refiner.validateAnswer("Is there a timeline or deadline to plan around?", "no fixed deadline") >= 0.6);
 });
 
 test("extractAnswers maps embedded answers to their questions", () => {
