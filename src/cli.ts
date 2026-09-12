@@ -17,6 +17,8 @@ import { createEfficiencyServices } from "./efficiency/registry.js";
 import { formatHealthReport, runDoctor } from "./doctor.js";
 import { DevelopmentFinalizer } from "./finalization.js";
 import { formatSummary, formatTaskDetail, readTaskLogs, summarize } from "./efficiency/logs.js";
+import { ObjectiveRefiner } from "./efficiency/refinement.js";
+import { consoleReader, refineInteractively } from "./cli/interactive.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
@@ -60,7 +62,24 @@ async function main(): Promise<void> {
       if (!objective || objective.startsWith("--")) throw new Error("objective requires natural-language text");
       const requestedTimeout = timeout(900_000);
       const requestedMilestone = option("--milestone");
-      const result = await (await createEfficiencyServices(root)).objectives.submit(objective, { planOnly: process.argv.includes("--plan-only"), ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }), ...(requestedMilestone ? { milestone: requestedMilestone } : {}) });
+      const planOnly = process.argv.includes("--plan-only");
+      const submitOptions = { planOnly, ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }), ...(requestedMilestone ? { milestone: requestedMilestone } : {}) };
+      const services = await createEfficiencyServices(root);
+      let result = await services.objectives.submit(objective, submitOptions);
+      // Interactive refinement: when running in a real terminal (not --json/--plan-only), ask the owner
+      // the clarifying questions inline, embed the answers, and auto-rerun instead of exiting.
+      if (result.decision.action === "OWNER_INPUT_REQUIRED" && result.decision.clarifyingQuestions?.length && process.stdin.isTTY && !json && !planOnly) {
+        const reader = consoleReader();
+        try {
+          const refiner = new ObjectiveRefiner();
+          result = await refineInteractively(objective, result, {
+            reader,
+            print: (line) => console.log(line),
+            validate: (question, answer) => refiner.validateAnswer(question, answer),
+            submit: (refined) => services.objectives.submit(refined, submitOptions)
+          });
+        } finally { reader.close(); }
+      }
       const questions = result.decision.action === "OWNER_INPUT_REQUIRED" && result.decision.clarifyingQuestions?.length
         ? ["Questions:", ...result.decision.clarifyingQuestions.map((question) => `  - ${question}`), "Answer these and provide refined objective."]
         : [];

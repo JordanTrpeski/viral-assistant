@@ -19,6 +19,7 @@ export interface FinalizationRecord {
   taskId: string;
   branch: string;
   phase: FinalizationPhase;
+  blocked?: boolean;
   implementationCommit: string;
   completionCommit: string | null;
   completionAt: string;
@@ -152,8 +153,15 @@ export class DevelopmentFinalizer {
     });
   }
 
-  private async prepareCompletion(record: FinalizationRecord, report: VerificationReport, checkpoint: boolean): Promise<void> {
+  private async prepareCompletion(record: FinalizationRecord, report: VerificationReport, checkpoint: boolean, blocked = false): Promise<void> {
     const task = await readTask(this.root, record.taskId);
+    if (blocked) {
+      // The block was published honestly; keep the task blocked (do not mark complete or add to completedTasks).
+      const reason = (task.nextAction || "governance refusal").replace(/\s+/g, " ").trim().slice(0, 140);
+      await updateTask(this.root, record.taskId, { status: "blocked", nextAction: reason });
+      if (checkpoint) await generateCheckpoint(this.root);
+      return;
+    }
     const note = `Verified implementation committed as ${record.implementationCommit} and pushed to origin/${record.branch}.`;
     await updateTask(this.root, record.taskId, {
       status: "complete",
@@ -194,13 +202,17 @@ export class DevelopmentFinalizer {
       await this.git.preflightPush(branch);
       if (!await this.git.isDirty()) throw new Error("Finalization found no verified working-tree changes to commit.");
       const current = await readTask(this.root, taskId);
+      // Decide once, at record creation: a run that exited 0 but left the task blocked (agent recorded a
+      // governance refusal, not verified code) is published honestly as a block, never as a completion.
+      const blocked = current.status === "blocked";
+      const blockReason = (current.nextAction || "governance refusal").replace(/\s+/g, " ").trim().slice(0, 140);
       if (current.status === "complete") await updateTask(this.root, taskId, { status: "in_progress", nextAction: "Commit and push the verified implementation." });
       const state = await loadState(this.root);
       if (state.completedTasks.includes(taskId)) await saveState(this.root, { ...state, activeTask: taskId, completedTasks: state.completedTasks.filter((id) => id !== taskId) });
       await this.git.stageAll();
       if (!await this.git.hasStagedChanges()) throw new Error("Finalization found no verified changes after staging.");
-      const implementationCommit = await this.git.commit(`feat: complete ${taskId} implementation`);
-      record = { schemaVersion: 1, taskId, branch, phase: "IMPLEMENTATION_COMMITTED", implementationCommit, completionCommit: null, completionAt: this.now().toISOString(), lastError: null };
+      const implementationCommit = await this.git.commit(blocked ? `chore: block ${taskId} (${blockReason})` : `feat: complete ${taskId} implementation`);
+      record = { schemaVersion: 1, taskId, branch, phase: "IMPLEMENTATION_COMMITTED", blocked, implementationCommit, completionCommit: null, completionAt: this.now().toISOString(), lastError: null };
       await this.saveRecord(record);
     }
 
@@ -218,10 +230,10 @@ export class DevelopmentFinalizer {
     }
 
     if (record.phase === "IMPLEMENTATION_PUSHED") {
-      await this.prepareCompletion(record, report, true);
+      await this.prepareCompletion(record, report, true, record.blocked ?? false);
       await this.git.stageAll();
       const completionCommit = await this.git.hasStagedChanges()
-        ? await this.git.commit(`docs: finalize ${taskId} lifecycle`)
+        ? await this.git.commit(record.blocked ? `chore: record ${taskId} block lifecycle` : `docs: finalize ${taskId} lifecycle`)
         : await this.git.head();
       record = { ...record, phase: "COMPLETION_COMMITTED", completionCommit, lastError: null };
       await this.saveRecord(record);
@@ -236,11 +248,13 @@ export class DevelopmentFinalizer {
         await this.block(taskId, reason);
         return this.result(record, false, reason);
       }
-      await this.prepareCompletion(record, report, false);
+      await this.prepareCompletion(record, report, false, record.blocked ?? false);
       record = { ...record, phase: "COMPLETED", lastError: null };
       await this.saveRecord(record);
     }
 
-    return this.result(record, true, `Task ${taskId} is complete; verified implementation and lifecycle state were pushed to origin/${branch}.`);
+    return this.result(record, true, record.blocked
+      ? `Task ${taskId} was blocked; the recorded block was pushed to origin/${branch} (no implementation completed).`
+      : `Task ${taskId} is complete; verified implementation and lifecycle state were pushed to origin/${branch}.`);
   }
 }

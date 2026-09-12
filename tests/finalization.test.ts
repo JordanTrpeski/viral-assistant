@@ -18,6 +18,7 @@ const report: VerificationReport = {
 
 class FakeGit implements GitPublisher {
   commits: string[] = [];
+  messages: string[] = [];
   pushes = 0;
   preflights = 0;
   dirty = true;
@@ -31,7 +32,7 @@ class FakeGit implements GitPublisher {
   async preflightPush(): Promise<void> { this.preflights += 1; }
   async stageAll(): Promise<void> {}
   async hasStagedChanges(): Promise<boolean> { return true; }
-  async commit(message: string): Promise<string> { const sha = `commit-${this.commits.length + 1}`; this.commits.push(sha); return sha; }
+  async commit(message: string): Promise<string> { this.messages.push(message); const sha = `commit-${this.commits.length + 1}`; this.commits.push(sha); return sha; }
   async push(): Promise<void> {
     this.pushes += 1;
     if (this.failPushes.has(this.pushes)) throw Object.assign(new Error("remote rejected test push"), { stderr: "remote rejected test push" });
@@ -69,8 +70,22 @@ test("successful finalization commits and pushes implementation before completin
   assert.equal(result.phase, "COMPLETED");
   assert.deepEqual(git.commits, ["commit-1", "commit-2"]);
   assert.equal(git.pushes, 2);
+  assert.match(git.messages[0]!, /^feat: complete OBJ-TEST implementation$/);
   assert.equal((await readTask(root, "OBJ-TEST")).status, "complete");
   assert.equal((await loadState(root)).activeTask, null);
+});
+
+test("a blocked task is finalized honestly as a block, not a completed implementation", async () => {
+  const { root, data } = await setup();
+  await saveTask(root, { ...await readTask(root, "OBJ-TEST"), status: "blocked", nextAction: "Blocked: out-of-scope M06 objective filed under M05." });
+  const git = new FakeGit();
+  const result = await new DevelopmentFinalizer(root, git, data, () => new Date("2026-09-11T12:01:00.000Z")).finalize("OBJ-TEST");
+  assert.equal(result.succeeded, true);
+  assert.match(git.messages[0]!, /^chore: block OBJ-TEST \(/);
+  assert.doesNotMatch(git.messages.join("\n"), /feat: complete/);
+  // The task stays blocked and is not added to completedTasks.
+  assert.equal((await readTask(root, "OBJ-TEST")).status, "blocked");
+  assert.equal((await loadState(root)).completedTasks.includes("OBJ-TEST"), false);
 });
 
 test("a failed implementation push keeps exact recoverable state and retry does not duplicate the commit", async () => {
