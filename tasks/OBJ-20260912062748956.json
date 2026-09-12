@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260912062748956",
+  "milestone": "M05_VOICE_INTERFACE",
+  "objective": "Build an Electron + React desktop app called 'Viral Desktop' (MVP scope). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Complete by end of session. Deliverable: working app you can run locally (npm run desktop:dev). Include tests for chat, task queue, diagnostics.",
+  "status": "blocked",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Build an Electron + React desktop app called 'Viral Desktop' (MVP scope). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Complete by end of session. Deliverable: working app you can run locally (npm run desktop:dev). Include tests for chat, task queue, diagnostics.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M05_VOICE_INTERFACE.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: OWNER_INPUT_REQUIRED / DETERMINISTIC / HIGH. Objective needs refinement (iteration 1/3); owner input required on 1 question(s)."
+  ],
+  "nextAction": "Objective needs refinement (iteration 1/3); owner input required on 1 question(s).",
+  "verificationResult": null
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260912062649417",
+  "milestone": "M05_VOICE_INTERFACE",
+  "objective": "Build an Electron + React desktop app called 'Viral Desktop'. Chat interface like Claude Code. User types objectives, Viral asks clarifying questions iteratively, user answers in chat, Viral executes and shows progress live. Left sidebar: task queue (QUEUED/RUNNING/COMPLETED/FAILED tasks, realtime updates). Right sidebar (collapsible): diagnostic panel with current task progress %, token usage X/Y, system health (daemon/Ollama/Claude auth status), recent logs from .viral/logs/, error details. System tray: icon that click toggles window, right-click menu (Open/Logs/Quit/Restart Daemon). Auto-start on Windows boot. Dark theme, futuristic cyan/purple accents, smooth animations. Expose daemon via simple HTTP server (GET /tasks, /summary, /logs; POST /objective; WebSocket /subscribe for live updates). Use Tailwind CSS. Window 900x600, resizable. Include tests for chat flow, task queue updates, diagnostic panel. Electron main + React frontend. Build output: Viral-Setup.exe installer.",
+  "status": "blocked",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Build an Electron + React desktop app called 'Viral Desktop'. Chat interface like Claude Code. User types objectives, Viral asks clarifying questions iteratively, user answers in chat, Viral executes and shows progress live. Left sidebar: task queue (QUEUED/RUNNING/COMPLETED/FAILED tasks, realtime updates). Right sidebar (collapsible): diagnostic panel with current task progress %, token usage X/Y, system health (daemon/Ollama/Claude auth status), recent logs from .viral/logs/, error details. System tray: icon that click toggles window, right-click menu (Open/Logs/Quit/Restart Daemon). Auto-start on Windows boot. Dark theme, futuristic cyan/purple accents, smooth animations. Expose daemon via simple HTTP server (GET /tasks, /summary, /logs; POST /objective; WebSocket /subscribe for live updates). Use Tailwind CSS. Window 900x600, resizable. Include tests for chat flow, task queue updates, diagnostic panel. Electron main + React frontend. Build output: Viral-Setup.exe installer.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M05_VOICE_INTERFACE.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: OWNER_INPUT_REQUIRED / DETERMINISTIC / HIGH. Objective needs refinement (iteration 1/3); owner input required on 3 question(s)."
+  ],
+  "nextAction": "Objective needs refinement (iteration 1/3); owner input required on 3 question(s).",
+  "verificationResult": null
+}

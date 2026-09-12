@@ -3,12 +3,16 @@
 - Milestone: M05_VOICE_INTERFACE (in_progress)
 - Active task: None
 - Branch: feat/m05-voice
-- HEAD: 11ae572d3cb49ebb0889d9f1673fd84ca4e9ffc0
+- HEAD: 0f0e6398f222d36b69a8b0f5c682e6c14400c22b
 - Working tree: dirty
 
 ## Files Changed
 - STATE.json
-- tasks/OBJ-20260912060549854.json
+- tasks/OBJ-20260912062813043.json
+- tasks/OBJ-20260912062649417.json
+- tasks/OBJ-20260912062748956.json
+- packets/OBJ-20260912062813043.md
+- runs/20260912060550260-claude-OBJ-20260912060549854.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -20,11 +24,11 @@
 
 ## Latest Harness Run
 - Claude Code: succeeded
-- Run record: `runs/20260911203724126-claude-OBJ-20260911203723723.json`
+- Run record: `runs/20260912060550260-claude-OBJ-20260912060549854.json`
 - Exit: 0; timed out: false
 
 ## Blockers
-- None
+- OBJ-20260912062813043 (and duplicates OBJ-20260912062649417, OBJ-20260912062748956) request an Electron + React "Viral Desktop" app (chat UI, task-queue/diagnostic sidebars, system tray, Windows auto-start, HTTP daemon + WebSocket). That is M06 Desktop Control / M10 Desktop Experience scope per ROADMAP.md, not M05 Voice Interface. M05's own spec forbids M06+ work and is already implemented/verified (OBJ-20260912060549854). No desktop-app code was written; awaiting an explicit owner decision to open that scope or re-scope/cancel the objective.
 
 ## Next Action
-Await the owner's next approved objective. Do not merge main or start M05.
+Await the owner's decision on OBJ-20260912062813043: approve opening M06/M10 desktop-app scope with an approved spec, or re-scope/cancel. Do not begin desktop-app implementation without that approval. Do not merge main.

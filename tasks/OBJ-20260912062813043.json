@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260912062813043",
+  "milestone": "M05_VOICE_INTERFACE",
+  "objective": "Build an Electron + React desktop app called 'Viral Desktop' (MVP scope, 1 hour deadline). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Deliverable: working app (npm run desktop:dev works). Include tests for chat, task queue, diagnostics.",
+  "status": "blocked",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Build an Electron + React desktop app called 'Viral Desktop' (MVP scope, 1 hour deadline). User types objectives, Viral asks clarifying questions iteratively in chat, user answers, Viral executes and shows progress live. Left sidebar: task queue with realtime updates. Right sidebar (collapsible): diagnostic panel (task progress %, token usage, system health, recent logs, errors). System tray: click toggles window, right-click menu. Auto-start on Windows. Dark theme, cyan/purple accents. 900x600 resizable. HTTP daemon server + WebSocket. Tailwind CSS. Deliverable: working app (npm run desktop:dev works). Include tests for chat, task queue, diagnostics.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M05_VOICE_INTERFACE.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: EXECUTE / CODING_HARNESS / MEDIUM. Selected claude with MEDIUM effort because development work requires an authenticated coding harness and the selected harness is usable.",
+    "Blocked on review: this objective asks for an Electron + React desktop app (chat UI, task-queue sidebar, diagnostic panel, system tray, Windows auto-start, HTTP daemon + WebSocket). That is M06 Desktop Control / M10 Desktop Experience scope per ROADMAP.md, not M05 Voice Interface (local Whisper STT, local Piper TTS, 16kHz mono, viral-dev voice listen), which milestones/M05_VOICE_INTERFACE.md defines and which is already implemented and verified (OBJ-20260912060549854). milestones/M05_VOICE_INTERFACE.md's own boundaries state 'Do not begin M06+ work (desktop control, browser automation, memory, life modules)', and this task's own Operating Constraints state 'Do not ... begin a later milestone.' Per AGENTS.md Scope Discipline, ROADMAP.md's Roadmap Rule, and D017, opening a later milestone is owner-reserved. This is the same out-of-scope desktop-app request already correctly blocked twice today as OBJ-20260912062649417 and OBJ-20260912062748956. No desktop-app code was written.",
+    "Unblock path: the owner either (a) explicitly approves opening M06 (Desktop Control) and/or M10 (Desktop Experience) as active milestones and supplies/approves a scoped spec for this desktop app, or (b) re-scopes/cancels this objective. No implementation should begin without that decision."
+  ],
+  "nextAction": "Awaiting an explicit owner decision to open the desktop-app milestone(s) or re-scope/cancel this objective. Do not begin desktop-app implementation without that approval.",
+  "verificationResult": null
+}
