@@ -1,9 +1,11 @@
 import { launchTask, type HarnessExecutionOptions } from "../harness/coordinator.js";
 import type { DevelopmentHarness, HarnessId, PersistedHarnessRun } from "../harness/types.js";
 import { deterministicEscalation } from "../local/policy.js";
-import { readTask } from "../tasks.js";
+import { loadState } from "../state.js";
+import { listTasks, readTask } from "../tasks.js";
 import type { EfficiencyRecorder, GovernedRunResult, GovernorRequest, SelectionDecision } from "./types.js";
 import { EfficiencyGovernor } from "./governor.js";
+import { evaluateScope } from "./scope-guard.js";
 import { deriveSessionMetrics } from "./session.js";
 
 type Launcher = (root: string, harness: DevelopmentHarness, taskId: string, timeoutMs: number, options?: HarnessExecutionOptions) => Promise<PersistedHarnessRun>;
@@ -24,6 +26,19 @@ export class GovernedDevelopmentExecutor {
 
   async planObjectiveTask(taskId: string, options: Partial<Omit<GovernorRequest, "taskId" | "objective" | "workKind">> = {}) {
     const task = await readTask(this.root, taskId);
+    // Deterministic pre-launch scope guard: refuse out-of-scope or duplicate objectives BEFORE any
+    // governor selection or harness launch, so a mis-scoped resubmission never spends a coding run.
+    const state = await loadState(this.root);
+    const existing = (await listTasks(this.root)).filter((candidate) => candidate.id !== taskId);
+    const scope = evaluateScope({
+      objective: task.objective,
+      milestone: task.milestone,
+      activeMilestones: state.activeMilestones ?? [state.currentMilestone],
+      existing: existing.map((candidate) => ({ id: candidate.id, objective: candidate.objective, status: candidate.status }))
+    });
+    if (scope.action !== "PROCEED") {
+      return this.governor.refuse({ ...deriveSessionMetrics(task), taskId, objective: task.objective }, scope.reason);
+    }
     const developmentWork = deterministicEscalation(task.objective) === "CODING_HARNESS_REQUIRED"
       ? { workKind: "development" as const }
       : {};

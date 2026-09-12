@@ -22,7 +22,7 @@ const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
 const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|summary|task-detail> [options]";
-const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--plan-only] [--timeout-ms <milliseconds>] [--json]';
+const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--milestone <id>] [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
 
 function option(name: string): string | undefined {
@@ -59,7 +59,8 @@ async function main(): Promise<void> {
       const objective = process.argv[3];
       if (!objective || objective.startsWith("--")) throw new Error("objective requires natural-language text");
       const requestedTimeout = timeout(900_000);
-      const result = await (await createEfficiencyServices(root)).objectives.submit(objective, { planOnly: process.argv.includes("--plan-only"), ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }) });
+      const requestedMilestone = option("--milestone");
+      const result = await (await createEfficiencyServices(root)).objectives.submit(objective, { planOnly: process.argv.includes("--plan-only"), ...(requestedTimeout === undefined ? {} : { timeoutMs: requestedTimeout }), ...(requestedMilestone ? { milestone: requestedMilestone } : {}) });
       const questions = result.decision.action === "OWNER_INPUT_REQUIRED" && result.decision.clarifyingQuestions?.length
         ? ["Questions:", ...result.decision.clarifyingQuestions.map((question) => `  - ${question}`), "Answer these and provide refined objective."]
         : [];

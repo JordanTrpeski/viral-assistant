@@ -30,8 +30,11 @@ Detailed specification: `milestones/M04_EFFICIENCY_GOVERNOR.md`
 ## M05 — Voice Interface
 Add local-first speech recognition and text-to-speech, plus push-to-talk/hotkey interaction. Wake-word support may follow if justified.
 
-## M06 — Desktop Control
-Add safe Windows/OS automation through a permissioned tool layer.
+## M06 — Viral Desktop (Electron desktop app)
+Deliver the Viral Desktop application: an Electron desktop app (approved by owner decision D025) that
+front-ends the governed objective workflow, including safe Windows/OS automation through a permissioned
+tool layer. This is the same milestone previously labelled "Desktop Control"; the label is unified here
+to remove the ambiguity between the ROADMAP entry and D025.
 
 ## M07 — Browser Automation
 Add isolated autonomous browsing and, where safe, controlled use of the owner's authenticated browser session.

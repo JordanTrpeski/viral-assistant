@@ -1,3 +1,4 @@
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { readJson, writeJson } from "./files.js";
 import type { DevelopmentTask } from "./types.js";
@@ -20,5 +21,18 @@ export async function updateTask(root: string, id: string, changes: Partial<Deve
   const updated = validateTask({ ...await readTask(root, id), ...changes, id }, `task ${id}`);
   await saveTask(root, updated);
   return updated;
+}
+
+/** Reads every persisted task under tasks/. Skips unreadable/malformed files rather than failing. */
+export async function listTasks(root: string): Promise<DevelopmentTask[]> {
+  let files: string[];
+  try { files = (await readdir(join(root, "tasks"))).filter((name) => name.endsWith(".json")); }
+  catch { return []; }
+  const tasks: DevelopmentTask[] = [];
+  for (const file of files) {
+    try { tasks.push(await readTask(root, file.slice(0, -5))); }
+    catch { /* ignore malformed task files */ }
+  }
+  return tasks;
 }
 

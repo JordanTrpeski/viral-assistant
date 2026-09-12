@@ -17,6 +17,17 @@ type ObjectiveFinalizer = { finalize(taskId: string): Promise<{ succeeded: boole
 export interface ObjectiveOptions {
   planOnly?: boolean;
   timeoutMs?: number;
+  milestone?: string;
+}
+
+/** Resolves a requested milestone (full id or short prefix like "M06") against the active set; defaults to current. */
+function resolveMilestone(requested: string | undefined, state: DevelopmentState): string {
+  const target = requested?.trim();
+  if (!target) return state.currentMilestone;
+  const active = state.activeMilestones ?? [state.currentMilestone];
+  const upper = target.toUpperCase();
+  const match = active.find((milestone) => milestone.toUpperCase() === upper || milestone.toUpperCase().startsWith(`${upper}_`) || milestone.split(/[_\s-]/, 1)[0]?.toUpperCase() === upper);
+  return match ?? target;
 }
 
 export interface ObjectiveExecution {
@@ -69,11 +80,11 @@ async function availableTaskId(root: string, now: Date): Promise<string> {
   throw new Error("Could not allocate a unique objective task id");
 }
 
-function taskFor(state: DevelopmentState, id: string, objective: string): DevelopmentTask {
+function taskFor(state: DevelopmentState, id: string, objective: string, milestone: string): DevelopmentTask {
   return {
     schemaVersion: 1,
     id,
-    milestone: state.currentMilestone,
+    milestone,
     objective,
     status: "pending",
     acceptanceCriteria: [
@@ -82,7 +93,7 @@ function taskFor(state: DevelopmentState, id: string, objective: string): Develo
       "Relevant automated verification passes and continuity state is updated."
     ],
     dependencies: [],
-    relevantFiles: ["AGENTS.md", "EFFICIENCY.md", "STATE.json", `milestones/${state.currentMilestone}.md`],
+    relevantFiles: ["AGENTS.md", "EFFICIENCY.md", "STATE.json", `milestones/${milestone}.md`],
     notes: ["Created from the owner-facing viral-dev objective command."],
     nextAction: "Apply the Efficiency Governor and begin authorized execution.",
     verificationResult: null
@@ -125,8 +136,9 @@ export class OwnerObjectiveService {
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000) throw new Error("timeoutMs must be an integer of at least 1000");
 
     const state = await loadState(this.root);
+    const milestone = resolveMilestone(options.milestone, state);
     const taskId = await availableTaskId(this.root, this.now());
-    await saveTask(this.root, taskFor(state, taskId, objective));
+    await saveTask(this.root, taskFor(state, taskId, objective, milestone));
     await this.focus(state, taskId, `Plan and execute owner objective ${taskId}.`);
 
     const decision = await this.executor.planObjectiveTask(taskId, policyHints(objective));

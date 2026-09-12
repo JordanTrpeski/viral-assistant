@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "project": "Viral",
   "currentMilestone": "M05_VOICE_INTERFACE",
+  "activeMilestones": [
+    "M05_VOICE_INTERFACE",
+    "M06_VIRAL_DESKTOP"
+  ],
   "milestoneStatus": "in_progress",
   "activeTask": null,
   "completedTasks": [

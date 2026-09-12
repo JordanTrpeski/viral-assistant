@@ -30,6 +30,7 @@ export function validateState(value: unknown): DevelopmentState {
     schemaVersion: 1,
     project: string(data.project, "STATE.json.project"),
     currentMilestone: string(data.currentMilestone, "STATE.json.currentMilestone"),
+    ...(data.activeMilestones === undefined ? {} : { activeMilestones: strings(data.activeMilestones, "STATE.json.activeMilestones") }),
     milestoneStatus: status as DevelopmentState["milestoneStatus"],
     activeTask: nullableString(data.activeTask, "STATE.json.activeTask"),
     completedTasks: strings(data.completedTasks, "STATE.json.completedTasks"),

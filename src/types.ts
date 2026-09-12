@@ -8,6 +8,7 @@ export interface DevelopmentState {
   schemaVersion: 1;
   project: string;
   currentMilestone: string;
+  activeMilestones?: string[];
   milestoneStatus: MilestoneStatus;
   activeTask: string | null;
   completedTasks: string[];

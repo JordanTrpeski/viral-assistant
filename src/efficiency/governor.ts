@@ -83,6 +83,14 @@ export class EfficiencyGovernor {
     return this.decision(request, { action: "WAITING_FOR_MODEL", tier: "CODING_HARNESS", effort, harness: selected, model: null, ownerInputRequired: false, nextProbeAt: retryTime(request.earliestModelRetryAt), reason: `${prefix}No authorized coding harness is currently confirmed usable; wait without model usage and probe again before resuming.` }, failures);
   }
 
+  /** Mints an owner-input-required decision without selecting or launching a capability (pre-launch refusal). */
+  refuse(request: GovernorRequest, reason: string): SelectionDecision {
+    return this.decision(request, {
+      action: "OWNER_INPUT_REQUIRED", tier: "DETERMINISTIC", effort: "HIGH", harness: null, model: null,
+      ownerInputRequired: true, nextProbeAt: null, reason
+    }, integer(request.failureCount, "failureCount"));
+  }
+
   async plan(request: GovernorRequest): Promise<SelectionDecision> {
     if (!request.taskId.trim() || !request.objective.trim()) throw new Error("taskId and objective must be non-empty");
     const failures = integer(request.failureCount, "failureCount");
