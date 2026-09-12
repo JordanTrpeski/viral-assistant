@@ -17,11 +17,15 @@ import { createEfficiencyServices } from "./efficiency/registry.js";
 import { formatHealthReport, runDoctor } from "./doctor.js";
 import { DevelopmentFinalizer } from "./finalization.js";
 import { formatSummary, formatTaskDetail, readTaskLogs, summarize } from "./efficiency/logs.js";
+import { parseDuration } from "./voice/duration.js";
+import { runListenSession } from "./voice/listen.js";
+import { createVoiceRuntime } from "./voice/registry.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|summary|task-detail> [options]";
+const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|voice|summary|task-detail> [options]";
+const voiceListenUsage = "Usage: viral-dev voice listen [--timeout <duration>] [--json]";
 const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
 
@@ -185,6 +189,23 @@ async function main(): Promise<void> {
     console.log(`Viral runtime started; polling every ${pollMs}ms.`);
     await service.start();
     console.log("Viral runtime stopped cleanly.");
+  } else if (command === "voice") {
+    const subcommand = process.argv[3];
+    if (subcommand !== "listen") throw new Error(voiceListenUsage);
+    const timeoutIndex = process.argv.indexOf("--timeout");
+    if (timeoutIndex !== -1 && (process.argv[timeoutIndex + 1] === undefined || process.argv[timeoutIndex + 1]!.startsWith("--"))) {
+      throw new Error("--timeout requires a duration value, e.g. 30s");
+    }
+    const sessionTimeoutMs = parseDuration(timeoutIndex === -1 ? "30s" : process.argv[timeoutIndex + 1]!);
+    const runtime = await createVoiceRuntime(root);
+    const result = await runListenSession(
+      { audio: runtime.audio, stt: runtime.stt, tts: runtime.tts, respond: runtime.respond },
+      { sessionTimeoutMs, silenceTimeoutMs: runtime.config.silenceTimeoutMs, sampleRateHz: runtime.config.sampleRateHz, channels: runtime.config.channels }
+    );
+    console.log(json ? JSON.stringify(result, null, 2) : [
+      `Listen session ended: ${result.endedReason}`,
+      ...result.turns.map((turn) => `Turn ${turn.turn}: "${turn.transcript}" -> "${turn.response}"${turn.interrupted ? " (interrupted)" : ""}`)
+    ].join("\n"));
   } else if (command === "summary") {
     const daysArg = process.argv[3];
     const days = daysArg && !daysArg.startsWith("--") ? Number(daysArg) : 1;

@@ -5,6 +5,21 @@
     "preferredModel": "qwen3:4b-instruct",
     "defaultTimeoutMs": 120000
   },
+  "voice": {
+    "sampleRateHz": 16000,
+    "channels": 1,
+    "silenceTimeoutMs": 2000,
+    "stt": {
+      "engine": "whisper",
+      "binary": "whisper-cli",
+      "modelPath": null
+    },
+    "tts": {
+      "engine": "piper",
+      "binary": "piper",
+      "modelPath": null
+    }
+  },
   "verificationCommands": [
     {
       "name": "typecheck",

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "OBJ-20260912060549854",
+  "milestone": "M05_VOICE_INTERFACE",
+  "objective": "Build a voice interface CLI that uses Whisper (local) for STT, Piper TTS (local) for output, 16kHz mono, 2s silence timeout, interrupt support. CLI: viral-dev voice listen --timeout 30s. Include tests.",
+  "status": "in_progress",
+  "acceptanceCriteria": [
+    "Owner objective is satisfied: Build a voice interface CLI that uses Whisper (local) for STT, Piper TTS (local) for output, 16kHz mono, 2s silence timeout, interrupt support. CLI: viral-dev voice listen --timeout 30s. Include tests.",
+    "Repository rules and current approved milestone boundaries are preserved.",
+    "Relevant automated verification passes and continuity state is updated."
+  ],
+  "dependencies": [],
+  "relevantFiles": [
+    "AGENTS.md",
+    "EFFICIENCY.md",
+    "STATE.json",
+    "milestones/M05_VOICE_INTERFACE.md"
+  ],
+  "notes": [
+    "Created from the owner-facing viral-dev objective command.",
+    "Efficiency selection: EXECUTE / CODING_HARNESS / MEDIUM. Selected claude with MEDIUM effort because development work requires an authenticated coding harness and the selected harness is usable.",
+    "Implemented under src/voice/: provider-neutral SpeechToTextPort, TextToSpeechPort, and AudioIoPort contracts; a runListenSession orchestrator over those ports; human-readable duration parsing (30s/2s/500ms); and a validated voice config section with 16kHz mono / 2s silence timeout defaults.",
+    "Real adapters shell out to local engines only: WhisperSpeechToText (whisper.cpp-style CLI), PiperTextToSpeech (Piper CLI), and SoxAudioIo (SoX capture with the silence effect; playback races a monitor process for barge-in). No cloud API, key, or billing path was added.",
+    "CLI: `viral-dev voice listen [--timeout <duration>] [--json]` wires the real adapters at the edge and runs the listen/transcribe/respond loop.",
+    "Tests (voice-duration, voice-config, voice-listen) exercise duration parsing, config validation, and the full orchestration loop (silence timeout ending a turn, interrupt/barge-in stopping playback, session timeout, max turns) against fakes; no network access or installed audio engines are required."
+  ],
+  "nextAction": "Finalize the verified implementation.",
+  "verificationResult": null
+}
