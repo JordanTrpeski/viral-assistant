@@ -1,14 +1,14 @@
 # Development Checkpoint
 
-- Milestone: M04_EFFICIENCY_GOVERNOR (complete)
+- Milestone: M05_VOICE_INTERFACE (in_progress)
 - Active task: None
 - Branch: feat/m05-voice
-- HEAD: c842bebe008efb6a97362ccba0520939ac94c26c
+- HEAD: 11ae572d3cb49ebb0889d9f1673fd84ca4e9ffc0
 - Working tree: dirty
 
 ## Files Changed
 - STATE.json
-- tasks/OBJ-20260911203723723.json
+- tasks/OBJ-20260912060549854.json
 
 ## Verification
 - PASS — typecheck: `pnpm run typecheck`
@@ -24,7 +24,7 @@
 - Exit: 0; timed out: false
 
 ## Blockers
-- OBJ-20260911203148743 and OBJ-20260911203723723 request identical M05 Voice Interface work (Whisper STT, Piper TTS, viral-dev voice listen) while M04_EFFICIENCY_GOVERNOR is the active milestone and is already complete. M04's own spec forbids voice/M05 work. OBJ-20260911203723723 is a duplicate resubmission of OBJ-20260911203148743's exact objective text; resubmitting it does not constitute owner approval. Awaiting an explicit owner decision to open M05 before any implementation.
+- None
 
 ## Next Action
 Await the owner's next approved objective. Do not merge main or start M05.
