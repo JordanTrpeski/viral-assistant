@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "project": "Viral",
-  "currentMilestone": "M06_VIRAL_DESKTOP",
+  "currentMilestone": "M05_VOICE_INTERFACE",
   "activeMilestones": [
     "M05_VOICE_INTERFACE",
     "M06_VIRAL_DESKTOP"
   ],
   "milestoneStatus": "in_progress",
-  "activeTask": null,
+  "activeTask": "OBJ-20261007134119584",
   "completedTasks": [
     "M00-001",
     "M01-001",
@@ -24,7 +24,7 @@
   "lastVerifiedCommit": "3a4a47e37c529a7e3b72d4f10572d142086b56fd",
   "lastCheckpoint": "CHECKPOINT.md",
   "lastHarnessRun": "runs/20260912070218929-claude-OBJ-20260912070218517.json",
-  "nextAction": "Await the owner's next approved objective. Do not merge main or start M05.",
+  "nextAction": "Active milestone switched back to M05_VOICE_INTERFACE for the voice rebuild; proceed with OBJ-20261007134119584 per milestones/M05_VOICE_INTERFACE.md.",
   "notes": [
     "Repository state is a temporary Bootstrap V0 continuity mechanism and may be replaced later.",
     "Live Claude continuation is deferred optional validation because the owner does not currently have a Claude Code subscription.",
