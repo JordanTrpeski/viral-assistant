@@ -1,6 +1,29 @@
 # Viral — Current Development State
 
-M00–M04 are complete and verified. The current milestone is now **M06 — Viral Desktop** (`milestones/M06_VIRAL_DESKTOP.md`), activated by owner approval D025 (2026-09-12). **M05 — Voice Interface is paused** (not abandoned; `milestones/M05_VOICE_INTERFACE.md` remains authoritative when resumed). Both M05 and M06 remain in `activeMilestones`.
+M00–M04 are complete and verified; M05 — Voice Interface is implemented but **not yet marked verified** (see the real-hardware status below). The current milestone is **M05 — Voice Interface** (`milestones/M05_VOICE_INTERFACE.md`), reopened on 2026-10-07 for a voice rebuild after two objectives requesting this same work were correctly blocked while `M06_VIRAL_DESKTOP` was current. M06 — Viral Desktop (`milestones/M06_VIRAL_DESKTOP.md`) already has implementation committed on this branch from an earlier session; both M05 and M06 remain in `activeMilestones` pending the owner's decision on which milestone to make current next.
+
+## M05 implemented (2026-10-07) — not yet verified
+
+`OBJ-20261007134609143` implements the full M05 spec under `src/voice/`:
+- **Ports** (`types.ts`): `SpeechToTextPort`, `TextToSpeechPort`, and `AudioPort` (capture + playback), all provider-neutral and injectable.
+- **Orchestration** (`session.ts`): `runVoiceSession` runs listen → transcribe → respond turns. A capture loop ends a turn after a configurable silence timeout (default 2s); a concurrent capture monitor during playback calls `interrupt()` on detected speech, giving barge-in support.
+- **Real adapters** (`whisper.ts`, `piper.ts`, `audio.ts`): shell out to locally installed Whisper, Piper, and a configurable capture/playback command (default `sox`), constructed only at the CLI edge (`registry.ts`). No cloud APIs, keys, or billing.
+- **WAV** (`wav.ts`): `encodeWav`/`decodeWav` plus `assertVoiceWavFormat`, which enforces 16kHz mono 16-bit PCM.
+- **Duration parsing** (`duration.ts`): human forms (`30s`, `2s`, `500ms`, `1m30s`) with clear errors on invalid input.
+- **Config** (`config.ts`): a `voice` section in `viral-dev.config.json` with validated, sensible defaults (16kHz mono, 2s silence timeout, `whisper`/`piper`/`sox` executables).
+- **CLI**: `viral-dev voice listen [--timeout <duration>] [--json]`, and `viral-dev voice --help`.
+
+Tests (`tests/voice-*.test.ts`) cover duration parsing, WAV round-trip/format rejection, config validation, the listen loop against fake ports (silence timeout ends a turn; barge-in interrupts playback; empty capture and `maxTurns` end a session cleanly), and CLI argument validation — all using fakes, with no network access or installed audio engine required. A manual smoke test confirmed the real adapters degrade gracefully (no hang, ends with `no-speech`) when `sox`/`whisper`/`piper` are not installed. The full 137-test suite, typecheck, lint, and the M02–M06 acceptance suites all pass; `acceptance:m05` was added alongside the existing per-milestone acceptance scripts.
+
+### Real-hardware status (2026-10-14)
+Voice capture and Whisper transcription are verified end to end on a Windows machine using local SoX, whisper.cpp, and Piper, with the commit history on `feat/m05-voice-clean`.
+
+Open items:
+- Junk transcripts from background noise (e.g. `[ Inaudible Remark ]`, `you`) need a filter.
+- Speaker playback of the reply is not yet confirmed.
+- Barge-in is unverified on real hardware and is off by default.
+
+**M05 is not marked verified.**
 
 ## M04 verified work
 - A provider-neutral deterministic governor selects `DETERMINISTIC`, `LOCAL_MODEL`, or `CODING_HARNESS`, plus LOW/MEDIUM/HIGH effort, from explicit facts.
