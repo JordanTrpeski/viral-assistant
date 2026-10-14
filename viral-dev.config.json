@@ -31,6 +31,11 @@
       "command": "pnpm run acceptance:m04"
     }
   ],
+  "dashboard": {
+    "host": "127.0.0.1",
+    "port": 4174,
+    "budgetStepCents": 1000
+  },
   "efficiencyGovernor": {
     "primaryHarness": "claude",
     "allowAutomaticPaidHarnessSwitch": false,

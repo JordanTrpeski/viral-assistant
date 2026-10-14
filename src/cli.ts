@@ -19,11 +19,13 @@ import { DevelopmentFinalizer } from "./finalization.js";
 import { formatSummary, formatTaskDetail, readTaskLogs, summarize } from "./efficiency/logs.js";
 import { ObjectiveRefiner } from "./efficiency/refinement.js";
 import { consoleReader, refineInteractively } from "./cli/interactive.js";
+import { loadDashboardConfig } from "./dashboard/config.js";
+import { createDashboardContext, startDashboardServer } from "./dashboard/server.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|summary|task-detail> [options]";
+const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|dashboard|summary|task-detail> [options]";
 const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--milestone <id>] [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
 
@@ -205,6 +207,18 @@ async function main(): Promise<void> {
     console.log(`Viral runtime started; polling every ${pollMs}ms.`);
     await service.start();
     console.log("Viral runtime stopped cleanly.");
+  } else if (command === "dashboard") {
+    const config = await loadDashboardConfig(root);
+    const portValue = option("--port");
+    const port = portValue === undefined ? config.port : Number(portValue);
+    if (!Number.isSafeInteger(port) || port < 0 || port > 65_535) throw new Error("--port must be an integer from 0 to 65535");
+    const dataDir = resolve(root, option("--data-dir") ?? ".viral");
+    const server = await startDashboardServer(createDashboardContext({ dataDir, budgetStepCents: config.budgetStepCents }), config.host, port);
+    const shutdown = (): void => { void server.stop().then(() => process.exit(0)); };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    const shown = server.host.includes(":") ? `[${server.host}]` : server.host;
+    console.log(`Viral dashboard on http://${shown}:${server.port} (loopback only; data in ${dataDir})`);
   } else if (command === "summary") {
     const daysArg = process.argv[3];
     const days = daysArg && !daysArg.startsWith("--") ? Number(daysArg) : 1;
