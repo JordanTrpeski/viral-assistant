@@ -2,6 +2,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget } from "./budget.js";
 import { FinanceService, type TransactionFilter } from "./finance.js";
+import { financePortFor, GroceriesService } from "./groceries.js";
 import { dashboardStatics, listen, Router, type RunningServer } from "./http.js";
 import { localIsoDate, monthOf } from "./shared/dates.js";
 import { financeSummary } from "./summary.js";
@@ -10,6 +11,7 @@ import { requireDate, requireMonth } from "./validation.js";
 /** Everything the routes need; tests build one against temp directories and a fixed clock. */
 export interface DashboardContext {
   finance: FinanceService;
+  groceries: GroceriesService;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -24,8 +26,10 @@ export interface DashboardOptions {
 
 export function createDashboardContext(options: DashboardOptions): DashboardContext {
   const clock = options.clock ?? (() => new Date());
+  const finance = FinanceService.open(join(options.dataDir, "finance"), { clock });
   return {
-    finance: FinanceService.open(join(options.dataDir, "finance"), { clock }),
+    finance,
+    groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -84,10 +88,36 @@ export function registerFinanceRoutes(router: Router, context: DashboardContext)
   });
 }
 
+export function registerGroceriesRoutes(router: Router, context: DashboardContext): void {
+  const groceries = context.groceries;
+  router.add("GET", "/api/groceries/items", () => groceries.listItems());
+  router.add("POST", "/api/groceries/items", ({ body }) => groceries.addItem(body));
+  router.add("PATCH", "/api/groceries/items/:id", ({ params, body }) => groceries.updateItem(params.id!, body));
+  router.add("DELETE", "/api/groceries/items/:id", ({ params }) => groceries.deleteItem(params.id!));
+
+  router.add("GET", "/api/groceries/templates", () => groceries.listTemplates());
+  router.add("POST", "/api/groceries/templates", ({ body }) => groceries.createTemplate(body));
+  router.add("PATCH", "/api/groceries/templates/:id", ({ params, body }) => groceries.updateTemplate(params.id!, body));
+  router.add("DELETE", "/api/groceries/templates/:id", ({ params }) => groceries.deleteTemplate(params.id!));
+  router.add("POST", "/api/groceries/templates/:id/start", ({ params }) => groceries.startTemplate(params.id!), 200);
+
+  router.add("GET", "/api/groceries/prices", () => groceries.prices());
+  router.add("POST", "/api/groceries/prices", ({ body }) => groceries.addPrice(body));
+  router.add("PATCH", "/api/groceries/prices/:id", ({ params, body }) => groceries.updatePrice(params.id!, body));
+  router.add("DELETE", "/api/groceries/prices/:id", ({ params }) => groceries.deletePrice(params.id!));
+
+  router.add("GET", "/api/groceries/trips", () => groceries.listTrips());
+  router.add("POST", "/api/groceries/trips", ({ body }) => groceries.completeTrip(body));
+  router.add("GET", "/api/groceries/trips/:id", ({ params }) => groceries.getTrip(params.id!));
+  router.add("PATCH", "/api/groceries/trips/:id", ({ params, body }) => groceries.updateTrip(params.id!, body));
+  router.add("DELETE", "/api/groceries/trips/:id", ({ params }) => groceries.deleteTrip(params.id!));
+}
+
 export function createRouter(context: DashboardContext): Router {
   const router = new Router();
   registerCoreRoutes(router, context);
   registerFinanceRoutes(router, context);
+  registerGroceriesRoutes(router, context);
   return router;
 }
 

@@ -3,8 +3,10 @@
 export class ApiError extends Error {}
 
 export async function api<T>(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", path: string, body?: unknown): Promise<T> {
-  const init: RequestInit = { method, headers: body === undefined ? {} : { "content-type": "application/json" } };
-  if (body !== undefined) init.body = JSON.stringify(body);
+  // The server only accepts JSON bodies on writes, so POST/PATCH/PUT always send one (an empty object if none given).
+  const payload = body === undefined && method !== "GET" && method !== "DELETE" ? {} : body;
+  const init: RequestInit = { method, headers: payload === undefined ? {} : { "content-type": "application/json" } };
+  if (payload !== undefined) init.body = JSON.stringify(payload);
   const response = await fetch(path, init);
   if (response.status === 204) return undefined as T;
   const data = (await response.json().catch(() => ({}))) as unknown;

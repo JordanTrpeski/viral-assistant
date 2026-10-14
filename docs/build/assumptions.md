@@ -43,3 +43,16 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 30. **Dark theme**, because the design specified no theme and dark suits the fixed category colours. — assumed, revisit
 31. **The route set** is listed in `docs/build/build-report.md`. Creation returns 201, deletion 204, an unknown route 404, and a wrong method 405. — assumed, revisit
 32. **New config.** A `dashboard` section was added to `viral-dev.config.json` with `host`, `port` (4174) and `budgetStepCents` (1000). This is the only change to that file, and the brief allows it. — assumed, revisit
+
+## M3 — Groceries
+
+33. **Groceries reaches Finance only through a small `FinancePort` connector** (create, update and delete the trip's expense), never by reading or writing `finance.json`, following the repository's connector-first rule. — assumed, revisit
+34. **Completing a trip** takes the ticked items and needs a unit price for each. It writes **one** Finance expense in the Groceries category, for Σ quantity × unit price in cents, with the note "Groceries trip — <store>" and `source: "groceries"`. It records each item's price in the price history and removes the bought items from the list; unticked items stay. — assumed, revisit
+35. **If saving the trip fails after the expense was written, the expense is deleted again**, so Finance and Groceries never disagree. The trip is also refused if the list changed in between. — assumed, revisit
+36. **The Groceries category is found by id `groceries`, or by a Flexible category named Groceries.** If neither exists, completing a trip returns 400 and asks you to create one. — assumed, revisit
+37. **Editing a trip** (date, store, or item quantities and prices) updates its expense's amount, date and note, and regenerates that trip's price entries. **Deleting a trip** deletes its expense and its price entries. If the expense was already deleted in Finance, the trip is kept and marked "Expense deleted in Finance"; deleting a trip's expense in Finance does not delete the trip. — assumed, revisit
+38. **Prices** are per unit, in cents, grouped per item case- and space-insensitively ("Bread" = "bread "). **Price watch** lists items whose latest price differs from the one before it, with the change in cents and percent (one decimal), biggest change first. Price entries can also be added, edited and deleted by hand. — assumed, revisit
+39. **New shopping-list items default to the item's latest known price**, if there is one. The price can be cleared or changed. — assumed, revisit
+40. **Template Start adds the template's items to the list, skipping any name already waiting there unbought** (case-insensitive), and says which were skipped. — assumed, revisit
+41. **Quantities are whole numbers ≥ 1.** Each trip needs at least one item; to remove the last item, delete the trip. — assumed, revisit
+42. **The browser client always sends a JSON body on POST, PATCH and PUT** (`{}` when there is nothing to send), because the server refuses writes without `application/json`. A headless-browser check found this bug on the template Start button before commit. — assumed, revisit

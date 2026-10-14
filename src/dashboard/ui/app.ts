@@ -3,6 +3,7 @@ import { localIsoDate } from "../shared/dates.js";
 import { api, type AppContext } from "./api.js";
 import { h } from "./dom.js";
 import { renderFinance } from "./finance.js";
+import { renderGroceries } from "./groceries.js";
 import { renderSettings } from "./settings.js";
 
 type Renderer = (container: HTMLElement, context: AppContext) => Promise<void>;
@@ -21,7 +22,7 @@ function placeholder(title: string, text: string): Renderer {
 const navItems: NavItem[] = [
   { route: "overview", label: "Overview", render: placeholder("Overview", "The Overview is assembled in a later milestone of this build.") },
   { route: "finance", label: "Finance", render: renderFinance },
-  { route: "groceries", label: "Groceries" },
+  { route: "groceries", label: "Groceries", render: renderGroceries },
   { route: "gym", label: "Gym" },
   { route: "reminders", label: "Reminders" },
   { route: "projects", label: "Projects" },
