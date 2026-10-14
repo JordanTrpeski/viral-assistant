@@ -31,6 +31,28 @@
       "command": "pnpm run acceptance:m04"
     }
   ],
+  "voice": {
+    "sampleRateHz": 16000,
+    "channels": 1,
+    "silenceTimeoutMs": 2000,
+    "stt": {
+      "executable": "whisper",
+      "args": [],
+      "modelPath": null
+    },
+    "tts": {
+      "executable": "piper",
+      "args": [],
+      "modelPath": null
+    },
+    "audio": {
+      "captureCommand": "sox",
+      "captureArgs": ["-d", "-q", "-t", "raw", "-r", "16000", "-e", "signed-integer", "-b", "16", "-c", "1", "-"],
+      "playbackCommand": "sox",
+      "playbackArgs": ["-q", "-t", "raw", "-r", "16000", "-e", "signed-integer", "-b", "16", "-c", "1", "-", "-d"],
+      "speechThreshold": 500
+    }
+  },
   "efficiencyGovernor": {
     "primaryHarness": "claude",
     "allowAutomaticPaidHarnessSwitch": false,

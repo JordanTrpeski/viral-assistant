@@ -19,13 +19,17 @@ import { DevelopmentFinalizer } from "./finalization.js";
 import { formatSummary, formatTaskDetail, readTaskLogs, summarize } from "./efficiency/logs.js";
 import { ObjectiveRefiner } from "./efficiency/refinement.js";
 import { consoleReader, refineInteractively } from "./cli/interactive.js";
+import { parseDuration } from "./voice/duration.js";
+import { loadVoiceConfig, createVoicePorts } from "./voice/registry.js";
+import { runVoiceSession } from "./voice/session.js";
 
 const root = resolve(process.env.VIRAL_ROOT ?? process.cwd());
 const command = process.argv[2];
 const json = process.argv.includes("--json");
-const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|summary|task-detail> [options]";
+const usage = "Usage: viral-dev <objective|finalize|doctor|status|verify|checkpoint|context|harnesses|packet|run|local-status|local-infer|local-classify|efficiency-plan|efficiency-run|efficiency-status|runtime-status|runtime-start|voice|summary|task-detail> [options]";
 const objectiveUsage = 'Usage: viral-dev objective "<development objective>" [--milestone <id>] [--plan-only] [--timeout-ms <milliseconds>] [--json]';
 const finalizeUsage = "Usage: viral-dev finalize [task-id] [--json]";
+const voiceUsage = "Usage: viral-dev voice listen [--timeout <duration>] [--json]";
 
 function option(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -205,6 +209,23 @@ async function main(): Promise<void> {
     console.log(`Viral runtime started; polling every ${pollMs}ms.`);
     await service.start();
     console.log("Viral runtime stopped cleanly.");
+  } else if (command === "voice") {
+    const subcommand = process.argv[3];
+    if (subcommand === "--help" || subcommand === "-h" || subcommand === undefined) {
+      console.log([voiceUsage, "", "Starts a local listen -> transcribe -> respond loop (local Whisper STT, local Piper TTS). Honors a 2s silence timeout by default. Barge-in (stopping a spoken reply when you talk over it) is off unless voice.bargeIn is true in viral-dev.config.json; use headphones or echo cancellation when enabling it."].join("\n"));
+    } else if (subcommand === "listen") {
+      const overallTimeoutMs = parseDuration(option("--timeout") ?? "30s");
+      const config = await loadVoiceConfig(root);
+      const ports = await createVoicePorts(root);
+      const result = await runVoiceSession(ports, { overallTimeoutMs, silenceTimeoutMs: config.silenceTimeoutMs, bargeIn: config.bargeIn });
+      console.log(json ? JSON.stringify(result, null, 2) : [
+        `Session ended: ${result.endedReason}`,
+        ...result.turns.map((turn) => `Turn ${turn.turnIndex + 1}: "${turn.transcript}" -> "${turn.replyText}"${turn.interrupted ? " (interrupted)" : ""}`)
+      ].join("\n"));
+    } else {
+      console.error(voiceUsage);
+      process.exitCode = 2;
+    }
   } else if (command === "summary") {
     const daysArg = process.argv[3];
     const days = daysArg && !daysArg.startsWith("--") ? Number(daysArg) : 1;
