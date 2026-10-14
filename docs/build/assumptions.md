@@ -66,3 +66,12 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 47. **Prepare-by entries** appear as separate grey Reminder entries ("Prepare: <label>") on the prepare-by date. Hiding "Reminder" in the legend hides them. They are "done" once their date has passed. — assumed, revisit
 48. **Clicking a calendar entry opens the module that owns it**: transactions open Finance, reminders and prepare-by entries open Reminders. That is where you change it, as the design's "change it in its module" principle requires. — assumed, revisit
 49. **Entries whose date is today or earlier are drawn slightly faded ("done")**; future entries are full colour. — assumed, revisit
+
+## M5 — Overview
+
+50. **Right column width** is 380px at 1600px and wider, and 320px below that. The calendar takes the rest. The right column scrolls by itself if its panels are taller than the screen, which can happen at 1280×800. — assumed, revisit
+51. **Next 7 days covers today plus the six following days** and shows every timeline entry in that window (bills, income, spending, reminders, prepare-by), including today's already-done entries. Each row shows date, coloured label and amount, and clicking it opens the owning module. — assumed, revisit
+52. **The Overview Reminders panel** shows open (not done) reminders and prepare-by entries that are overdue or due within the next 30 days, soonest first, at most eight. Overdue dates are red. "Open" links to the Reminders page. — assumed, revisit
+53. **The Budget panel toggles between "This week" and "This month".** The toggle state is kept only while the page is open. Its − and + change the same Finance targets as Finance > Budget, so the two always agree. — assumed, revisit
+54. **The chat placeholder is an empty dashed box labelled "Chat, coming later"** that fills the remaining height of the right column. No chat or voice code was built. — assumed, revisit
+55. **`/api/overview`** returns the right column's data (next seven days, reminders, budget) in one response. It uses the same timeline and budget functions as the calendar and Finance, so all views agree. — assumed, revisit

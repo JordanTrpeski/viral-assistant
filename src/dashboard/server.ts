@@ -8,6 +8,7 @@ import { financePortFor, GroceriesService } from "./groceries.js";
 import { dashboardStatics, listen, Router, type RunningServer } from "./http.js";
 import { colourCategories, isColourCategory, type ColourCategory } from "./shared/colours.js";
 import { localIsoDate, monthOf } from "./shared/dates.js";
+import { nextSevenDays, reminderPanel } from "./overview.js";
 import { financeSummary } from "./summary.js";
 import { prepareEntries, transactionTimelineItems, type TimelineItem } from "./timeline.js";
 import { requireDate, requireMonth, requirePositiveInteger } from "./validation.js";
@@ -145,12 +146,27 @@ export function registerTimelineRoutes(router: Router, context: DashboardContext
   });
 }
 
+export function registerOverviewRoutes(router: Router, context: DashboardContext): void {
+  router.add("GET", "/api/overview", async () => {
+    const date = today(context);
+    const items = await timelineItems(context);
+    const document = await context.finance.snapshot();
+    return {
+      today: date,
+      nextSevenDays: nextSevenDays(items, date),
+      reminders: reminderPanel(items, date),
+      budget: { date, stepCents: context.budgetStepCents, week: weekBudget(document, date), month: monthBudget(document, monthOf(date)) }
+    };
+  });
+}
+
 export function createRouter(context: DashboardContext): Router {
   const router = new Router();
   registerCoreRoutes(router, context);
   registerFinanceRoutes(router, context);
   registerGroceriesRoutes(router, context);
   registerTimelineRoutes(router, context);
+  registerOverviewRoutes(router, context);
   return router;
 }
 
