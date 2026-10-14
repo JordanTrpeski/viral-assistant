@@ -73,4 +73,38 @@ pnpm run acceptance:m03
 pnpm run acceptance:m04
 ```
 
-Bootstrap V0 currently includes development continuity, the M02 local brain, the M03 deterministic background runtime, and the M04 Efficiency Governor. It contains no cloud model API integration, voice, browser automation, desktop UI, personal data, or OS control.
+Bootstrap V0 currently includes development continuity, the M02 local brain, the M03 deterministic background runtime, and the M04 Efficiency Governor. It contains no cloud model API integration, browser automation, desktop UI, personal data, or OS control.
+
+## Voice interface (M05)
+
+`viral-dev voice listen` runs a local, offline listen → transcribe → respond loop. It shells out to three locally installed tools; nothing is sent to any cloud service.
+
+### Required tools
+
+- **SoX** — audio capture and playback. Install it and put `sox` on your PATH, or set an absolute path in config.
+- **whisper.cpp** — speech-to-text via its `whisper-cli` executable, plus a downloaded **ggml** model (for example `ggml-base.en.bin`).
+- **Piper** — text-to-speech via the `piper` executable, plus a Piper **`.onnx`** voice model.
+
+Configure executables and model paths under the `voice` section of `viral-dev.config.json`. Keep machine-specific absolute paths in a local, untracked config rather than in the committed defaults.
+
+### Run
+
+```
+npm run viral-dev -- voice listen --timeout 30s
+```
+
+### Known errors
+
+- `spawn sox ENOENT` — SoX is not installed or not on PATH; install it or set an absolute `captureCommand`/`playbackCommand`.
+- `Session ended: no-speech` — no speech was detected before the timeout (microphone muted or too quiet, or the wrong input device).
+- `Whisper transcription failed` — the `whisper-cli` executable or the ggml model path is wrong, or the model file is missing.
+- `Piper synthesis failed` (often `spawn ... ENOENT`) — the `piper` executable or the `.onnx` voice path is wrong or missing.
+- Background noise producing junk transcripts such as `[ Inaudible Remark ]` or `you` — these need a transcript filter (open item).
+- SoX `-d` failing with `no default audio device` — on Windows, replace the default-device argument with the WaveAudio driver and a device number, for example `-t waveaudio <n>` for capture.
+
+### Current limits
+
+- Barge-in (interrupting a spoken reply when you talk over it) is **off by default**; enable `voice.bargeIn` in config, and use headphones or echo cancellation when you do.
+- Speaker playback of the reply is **not yet confirmed on real hardware**.
+- Real-hardware barge-in is **unverified**.
+- Machine-specific executable and model paths belong in a **local config**, not in the committed defaults.
