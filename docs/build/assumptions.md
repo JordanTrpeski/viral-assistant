@@ -56,3 +56,13 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 40. **Template Start adds the template's items to the list, skipping any name already waiting there unbought** (case-insensitive), and says which were skipped. — assumed, revisit
 41. **Quantities are whole numbers ≥ 1.** Each trip needs at least one item; to remove the last item, delete the trip. — assumed, revisit
 42. **The browser client always sends a JSON body on POST, PATCH and PUT** (`{}` when there is nothing to send), because the server refuses writes without `application/json`. A headless-browser check found this bug on the template Start button before commit. — assumed, revisit
+
+## M4 — Calendar
+
+43. **The calendar shows whole Monday-first weeks**, including the greyed leading and trailing days of the neighbouring months, along with their entries. — assumed, revisit
+44. **Order within a day** is Bills, Income, Gym, Viral, Personal, Spending, Reminder, then label A–Z. The first two are shown, followed by "+N more". Clicking "+N more" expands that day in place, and "Show less" collapses it. — assumed, revisit
+45. **Hidden legend categories are removed from the cells before "+N more" is counted**, so N never includes hidden entries. The `/api/calendar?hidden=…` query does this on the server. — assumed, revisit
+46. **The legend's hide and show choice is a per-viewer preference kept in browser `localStorage`.** It is not saved data and is not shared. The calendar works normally if storage is unavailable. — assumed, revisit
+47. **Prepare-by entries** appear as separate grey Reminder entries ("Prepare: <label>") on the prepare-by date. Hiding "Reminder" in the legend hides them. They are "done" once their date has passed. — assumed, revisit
+48. **Clicking a calendar entry opens the module that owns it**: transactions open Finance, reminders and prepare-by entries open Reminders. That is where you change it, as the design's "change it in its module" principle requires. — assumed, revisit
+49. **Entries whose date is today or earlier are drawn slightly faded ("done")**; future entries are full colour. — assumed, revisit

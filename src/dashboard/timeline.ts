@@ -39,6 +39,27 @@ export function transactionTimelineItems(document: FinanceDocument, today: IsoDa
   }));
 }
 
+/** Days before a personal date that "prepare by" defaults to. */
+export const defaultPrepareDays = 14;
+
+/**
+ * For every item with a prepare-by date, a separate grey Reminder entry on that date ("Prepare: <label>"),
+ * so preparation shows on the calendar and in Reminders alongside the date itself.
+ */
+export function prepareEntries(items: TimelineItem[], today: IsoDate): TimelineItem[] {
+  return items.filter((item) => item.prepareBy !== null && item.source !== "prepare").map((item) => ({
+    id: `prepare:${item.sourceId}`,
+    date: item.prepareBy!,
+    source: "prepare",
+    sourceId: item.sourceId,
+    label: `Prepare: ${item.label}`,
+    colour: "reminder",
+    status: item.status === "done" || item.prepareBy! < today ? "done" : "scheduled",
+    amountCents: null,
+    prepareBy: null
+  }));
+}
+
 /** Stable display order within a day: bills, income, gym, viral, personal, spending, reminder, then label. */
 export function sortTimeline(items: TimelineItem[]): TimelineItem[] {
   const order: ColourCategory[] = ["bills", "income", "gym", "viral", "personal", "spending", "reminder"];

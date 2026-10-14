@@ -1,12 +1,16 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget } from "./budget.js";
+import { buildCalendar, itemsInWindow } from "./calendar.js";
+import { ValidationError } from "./errors.js";
 import { FinanceService, type TransactionFilter } from "./finance.js";
 import { financePortFor, GroceriesService } from "./groceries.js";
 import { dashboardStatics, listen, Router, type RunningServer } from "./http.js";
+import { colourCategories, isColourCategory, type ColourCategory } from "./shared/colours.js";
 import { localIsoDate, monthOf } from "./shared/dates.js";
 import { financeSummary } from "./summary.js";
-import { requireDate, requireMonth } from "./validation.js";
+import { prepareEntries, transactionTimelineItems, type TimelineItem } from "./timeline.js";
+import { requireDate, requireMonth, requirePositiveInteger } from "./validation.js";
 
 /** Everything the routes need; tests build one against temp directories and a fixed clock. */
 export interface DashboardContext {
@@ -113,11 +117,40 @@ export function registerGroceriesRoutes(router: Router, context: DashboardContex
   router.add("DELETE", "/api/groceries/trips/:id", ({ params }) => groceries.deleteTrip(params.id!));
 }
 
+/** Every dated entry from every source, including the derived prepare-by entries. */
+export async function timelineItems(context: DashboardContext): Promise<TimelineItem[]> {
+  const date = today(context);
+  const items = transactionTimelineItems(await context.finance.snapshot(), date);
+  return [...items, ...prepareEntries(items, date)];
+}
+
+function hiddenParam(query: URLSearchParams): Set<ColourCategory> {
+  const raw = query.get("hidden");
+  if (!raw) return new Set();
+  const values = raw.split(",").filter(Boolean);
+  const unknown = values.filter((value) => !isColourCategory(value));
+  if (unknown.length) throw new ValidationError(`hidden must list colour categories from: ${colourCategories.join(", ")} (unknown: ${unknown.join(", ")})`);
+  return new Set(values as ColourCategory[]);
+}
+
+export function registerTimelineRoutes(router: Router, context: DashboardContext): void {
+  router.add("GET", "/api/calendar", async ({ query }) => buildCalendar(await timelineItems(context), monthParam(context, query), today(context), hiddenParam(query)));
+  router.add("GET", "/api/timeline", async ({ query }) => {
+    const rawFrom = query.get("from");
+    const rawDays = query.get("days");
+    const from = rawFrom === null ? today(context) : requireDate(rawFrom, "from");
+    const days = rawDays === null ? 7 : requirePositiveInteger(Number(rawDays), "days");
+    if (days > 366) throw new ValidationError("days must be at most 366");
+    return { from, days, items: itemsInWindow(await timelineItems(context), from, days) };
+  });
+}
+
 export function createRouter(context: DashboardContext): Router {
   const router = new Router();
   registerCoreRoutes(router, context);
   registerFinanceRoutes(router, context);
   registerGroceriesRoutes(router, context);
+  registerTimelineRoutes(router, context);
   return router;
 }
 

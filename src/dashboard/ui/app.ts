@@ -4,6 +4,7 @@ import { api, type AppContext } from "./api.js";
 import { h } from "./dom.js";
 import { renderFinance } from "./finance.js";
 import { renderGroceries } from "./groceries.js";
+import { renderOverview } from "./overview.js";
 import { renderSettings } from "./settings.js";
 
 type Renderer = (container: HTMLElement, context: AppContext) => Promise<void>;
@@ -14,13 +15,9 @@ interface NavItem {
   render?: Renderer;
 }
 
-function placeholder(title: string, text: string): Renderer {
-  return async (container) => { container.replaceChildren(h("div", { class: "page" }, h("section", { class: "panel narrow" }, h("h3", {}, title), h("p", { class: "muted" }, text)))); };
-}
-
 /** Items without a renderer are shown greyed out and cannot be opened in this build. */
 const navItems: NavItem[] = [
-  { route: "overview", label: "Overview", render: placeholder("Overview", "The Overview is assembled in a later milestone of this build.") },
+  { route: "overview", label: "Overview", render: renderOverview },
   { route: "finance", label: "Finance", render: renderFinance },
   { route: "groceries", label: "Groceries", render: renderGroceries },
   { route: "gym", label: "Gym" },
