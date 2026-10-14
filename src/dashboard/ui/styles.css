@@ -179,3 +179,19 @@ button.danger { color: var(--danger); }
   .overview { grid-template-columns: minmax(0, 1fr) 320px; }
   .day { min-height: 72px; }
 }
+
+/* Reminders */
+.reminders .grid-table td:first-child { width: 44px; }
+.reminders .grid-table input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.done-row input:not([type="checkbox"]) { color: var(--muted); text-decoration: line-through; }
+.overdue-cell input { border-color: var(--danger); color: var(--danger); }
+.prepare-cell { display: flex; gap: 4px; }
+.category-select { border-left: 4px solid; }
+.upcoming { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px; align-items: center; }
+.upcoming.overdue .timeline-date { color: var(--danger); }
+.reminders .category-select { min-width: 116px; }
+.reminders .grid-table td:nth-child(2) { min-width: 180px; }
+
+@media (max-width: 1600px) {
+  .with-side { grid-template-columns: minmax(0, 1fr) 250px; }
+}

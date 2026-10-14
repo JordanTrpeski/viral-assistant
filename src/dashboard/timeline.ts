@@ -44,7 +44,8 @@ export const defaultPrepareDays = 14;
 
 /**
  * For every item with a prepare-by date, a separate grey Reminder entry on that date ("Prepare: <label>"),
- * so preparation shows on the calendar and in Reminders alongside the date itself.
+ * so preparation shows on the calendar and in Reminders alongside the date itself. It is done when its item
+ * is done or the item's own date has passed; a passed prepare-by date before the event is overdue, not done.
  */
 export function prepareEntries(items: TimelineItem[], today: IsoDate): TimelineItem[] {
   return items.filter((item) => item.prepareBy !== null && item.source !== "prepare").map((item) => ({
@@ -54,7 +55,7 @@ export function prepareEntries(items: TimelineItem[], today: IsoDate): TimelineI
     sourceId: item.sourceId,
     label: `Prepare: ${item.label}`,
     colour: "reminder",
-    status: item.status === "done" || item.prepareBy! < today ? "done" : "scheduled",
+    status: item.status === "done" || item.date < today ? "done" : "scheduled",
     amountCents: null,
     prepareBy: null
   }));

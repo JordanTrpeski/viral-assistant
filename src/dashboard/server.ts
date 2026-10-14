@@ -9,6 +9,7 @@ import { dashboardStatics, listen, Router, type RunningServer } from "./http.js"
 import { colourCategories, isColourCategory, type ColourCategory } from "./shared/colours.js";
 import { localIsoDate, monthOf } from "./shared/dates.js";
 import { nextSevenDays, reminderPanel } from "./overview.js";
+import { reminderTimelineItems, RemindersService, type ReminderStatus } from "./reminders.js";
 import { financeSummary } from "./summary.js";
 import { prepareEntries, transactionTimelineItems, type TimelineItem } from "./timeline.js";
 import { requireDate, requireMonth, requirePositiveInteger } from "./validation.js";
@@ -17,6 +18,7 @@ import { requireDate, requireMonth, requirePositiveInteger } from "./validation.
 export interface DashboardContext {
   finance: FinanceService;
   groceries: GroceriesService;
+  reminders: RemindersService;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -35,6 +37,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
   return {
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
+    reminders: RemindersService.open(join(options.dataDir, "dashboard"), { clock }),
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -121,7 +124,7 @@ export function registerGroceriesRoutes(router: Router, context: DashboardContex
 /** Every dated entry from every source, including the derived prepare-by entries. */
 export async function timelineItems(context: DashboardContext): Promise<TimelineItem[]> {
   const date = today(context);
-  const items = transactionTimelineItems(await context.finance.snapshot(), date);
+  const items = [...transactionTimelineItems(await context.finance.snapshot(), date), ...reminderTimelineItems(await context.reminders.list())];
   return [...items, ...prepareEntries(items, date)];
 }
 
@@ -146,6 +149,15 @@ export function registerTimelineRoutes(router: Router, context: DashboardContext
   });
 }
 
+export function registerReminderRoutes(router: Router, context: DashboardContext): void {
+  const reminders = context.reminders;
+  router.add("GET", "/api/reminders", ({ query }) => reminders.list((query.get("status") ?? "all") as ReminderStatus));
+  router.add("POST", "/api/reminders", ({ body }) => reminders.create(body));
+  router.add("GET", "/api/reminders/:id", ({ params }) => reminders.get(params.id!));
+  router.add("PATCH", "/api/reminders/:id", ({ params, body }) => reminders.update(params.id!, body));
+  router.add("DELETE", "/api/reminders/:id", ({ params }) => reminders.delete(params.id!));
+}
+
 export function registerOverviewRoutes(router: Router, context: DashboardContext): void {
   router.add("GET", "/api/overview", async () => {
     const date = today(context);
@@ -167,6 +179,7 @@ export function createRouter(context: DashboardContext): Router {
   registerGroceriesRoutes(router, context);
   registerTimelineRoutes(router, context);
   registerOverviewRoutes(router, context);
+  registerReminderRoutes(router, context);
   return router;
 }
 

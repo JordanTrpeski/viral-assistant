@@ -56,7 +56,9 @@ test("prepare-by: a dated item with prepare_by gets a grey 'Prepare:' entry on t
     id: "prepare:r1", date: "2026-11-17", source: "prepare", sourceId: "r1", label: "Prepare: Anna's birthday",
     colour: "reminder", status: "scheduled", amountCents: null, prepareBy: null
   });
-  assert.equal(prepareEntries([birthday], "2026-11-18")[0]?.status, "done", "a past prepare-by date is done");
+  assert.equal(prepareEntries([birthday], "2026-11-18")[0]?.status, "scheduled", "a passed prepare-by date before the event is overdue, not done");
+  assert.equal(prepareEntries([birthday], "2026-12-02")[0]?.status, "done", "once the event has passed, preparing is done");
+  assert.equal(prepareEntries([{ ...birthday, status: "done" }], "2026-11-15")[0]?.status, "done", "a done reminder's preparation is done");
   assert.equal(prepareEntries([birthday, item("2026-11-20", "bills", "x")], "2026-11-15").length, 1);
   const calendar = buildCalendar([birthday, ...prepareEntries([birthday], "2026-11-15")], "2026-11", "2026-11-15");
   assert.deepEqual(calendar.weeks.flat().find((day) => day.date === "2026-11-17")?.visible.map((entry) => entry.label), ["Prepare: Anna's birthday"]);

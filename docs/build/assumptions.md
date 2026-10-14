@@ -63,7 +63,7 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 44. **Order within a day** is Bills, Income, Gym, Viral, Personal, Spending, Reminder, then label A–Z. The first two are shown, followed by "+N more". Clicking "+N more" expands that day in place, and "Show less" collapses it. — assumed, revisit
 45. **Hidden legend categories are removed from the cells before "+N more" is counted**, so N never includes hidden entries. The `/api/calendar?hidden=…` query does this on the server. — assumed, revisit
 46. **The legend's hide and show choice is a per-viewer preference kept in browser `localStorage`.** It is not saved data and is not shared. The calendar works normally if storage is unavailable. — assumed, revisit
-47. **Prepare-by entries** appear as separate grey Reminder entries ("Prepare: <label>") on the prepare-by date. Hiding "Reminder" in the legend hides them. They are "done" once their date has passed. — assumed, revisit
+47. **Prepare-by entries** appear as separate grey Reminder entries ("Prepare: <label>") on the prepare-by date. Hiding "Reminder" in the legend hides them. *(Changed in M6:)* a prepare-by entry is done only when its reminder is done or the event date has passed. A prepare-by date that has passed before the event is **overdue**, not done, so it stays in the Reminders panel in red. — assumed, revisit
 48. **Clicking a calendar entry opens the module that owns it**: transactions open Finance, reminders and prepare-by entries open Reminders. That is where you change it, as the design's "change it in its module" principle requires. — assumed, revisit
 49. **Entries whose date is today or earlier are drawn slightly faded ("done")**; future entries are full colour. — assumed, revisit
 
@@ -75,3 +75,17 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 53. **The Budget panel toggles between "This week" and "This month".** The toggle state is kept only while the page is open. Its − and + change the same Finance targets as Finance > Budget, so the two always agree. — assumed, revisit
 54. **The chat placeholder is an empty dashed box labelled "Chat, coming later"** that fills the remaining height of the right column. No chat or voice code was built. — assumed, revisit
 55. **`/api/overview`** returns the right column's data (next seven days, reminders, budget) in one response. It uses the same timeline and budget functions as the calendar and Finance, so all views agree. — assumed, revisit
+
+## M6 — Reminders
+
+56. **The Reminders nav item is a working page** in this build. The brief listed Reminders next to the greyed-out items but also said "as a separate page", and the design says only Gym, Projects and Viral tasks are greyed out. The design is the source of truth. — assumed, revisit
+57. **A reminder's category can be any of the seven calendar colour categories**, defaulting to Reminder (grey). This lets a gym session or a Viral task be a dated reminder before those modules exist. — assumed, revisit
+58. **Prepare-by.** Personal reminders get `prepareBy` = date − 14 days unless the request sends a date, or `null` for none. Other categories default to none. `prepareBy` must be on or before the reminder date (400 otherwise). Moving the date moves a default prepare-by with it; a custom prepare-by stays where it is. Switching a reminder to Personal adds the default if it has none. — assumed, revisit
+59. **Reminders have a done flag.** Ticking it saves immediately, takes the reminder and its prepare-by entry out of the Overview panel, and fades it on the calendar. It stays on the Reminders page under Done or All. — assumed, revisit
+60. **Personal dates appear twice**: as a pink entry on the date itself and as a grey "Prepare:" entry on the prepare-by date. Both show on the calendar, in Next 7 days when in range, and in the Reminders panel. — assumed, revisit
+61. **The Reminders page lists reminders with Open, Done and All filters**, ordered by date, with an inline add row and live inline editing. A side column shows the next 30 days of open reminders and prepare-by entries, the same data as the Overview panel. — assumed, revisit
+62. **Storage:** `.viral/dashboard/reminders.json`, written with the same atomic store as everything else. — assumed, revisit
+
+## Not built (out of scope by the brief)
+
+63. Chat and voice (a placeholder box only), the Gym, Projects and Viral tasks modules (greyed out in the nav), and any connector other than Finance ↔ Groceries. — assumed, revisit

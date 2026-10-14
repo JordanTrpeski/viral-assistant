@@ -5,6 +5,7 @@ import { h } from "./dom.js";
 import { renderFinance } from "./finance.js";
 import { renderGroceries } from "./groceries.js";
 import { renderOverview } from "./overview.js";
+import { renderReminders } from "./reminders.js";
 import { renderSettings } from "./settings.js";
 
 type Renderer = (container: HTMLElement, context: AppContext) => Promise<void>;
@@ -21,7 +22,7 @@ const navItems: NavItem[] = [
   { route: "finance", label: "Finance", render: renderFinance },
   { route: "groceries", label: "Groceries", render: renderGroceries },
   { route: "gym", label: "Gym" },
-  { route: "reminders", label: "Reminders" },
+  { route: "reminders", label: "Reminders", render: renderReminders },
   { route: "projects", label: "Projects" },
   { route: "viral-tasks", label: "Viral tasks" }
 ];
