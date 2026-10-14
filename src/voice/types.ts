@@ -60,6 +60,12 @@ export interface VoiceTurn {
 export interface VoiceSessionOptions {
   overallTimeoutMs: number;
   silenceTimeoutMs: number;
+  /** Listen for barge-in during playback. Defaults to false. */
+  bargeIn?: boolean;
+  /** Playback audio ignored before barge-in detection starts, so the reply's own onset cannot trigger it. Defaults to 500ms. */
+  bargeInGraceMs?: number;
+  /** Consecutive speech required after the grace period before playback is interrupted. Defaults to 200ms. */
+  bargeInSustainMs?: number;
   respond?: (transcript: string) => string;
   maxTurns?: number;
 }

@@ -25,6 +25,9 @@ export interface VoiceConfig {
   sampleRateHz: number;
   channels: number;
   silenceTimeoutMs: number;
+  /** Stop a spoken reply when the owner talks over it. Off by default: without echo cancellation the
+   *  microphone hears Viral's own playback on speakers and would cut every reply short. */
+  bargeIn: boolean;
   stt: VoiceEngineConfig;
   tts: VoiceEngineConfig;
   audio: VoiceAudioConfig;
@@ -34,6 +37,7 @@ const defaultVoiceConfig: VoiceConfig = {
   sampleRateHz: 16_000,
   channels: 1,
   silenceTimeoutMs: 2_000,
+  bargeIn: false,
   stt: { executable: "whisper", args: [], modelPath: null },
   tts: { executable: "piper", args: [], modelPath: null },
   audio: {
@@ -90,10 +94,13 @@ export function validateVoiceConfig(value: unknown): VoiceConfig {
   if (channels !== 1) throw new Error("voice.channels must equal 1; only mono capture is supported");
   const rawSilenceTimeoutMs = value.silenceTimeoutMs === undefined ? defaultVoiceConfig.silenceTimeoutMs : value.silenceTimeoutMs;
   if (!Number.isSafeInteger(rawSilenceTimeoutMs) || (rawSilenceTimeoutMs as number) < 100) throw new Error("voice.silenceTimeoutMs must be an integer of at least 100");
+  const bargeIn = value.bargeIn === undefined ? defaultVoiceConfig.bargeIn : value.bargeIn;
+  if (typeof bargeIn !== "boolean") throw new Error("voice.bargeIn must be a boolean");
   return {
     sampleRateHz: rawSampleRateHz as number,
     channels: 1,
     silenceTimeoutMs: rawSilenceTimeoutMs as number,
+    bargeIn,
     stt: engineConfig(value.stt, "voice.stt", defaultVoiceConfig.stt),
     tts: engineConfig(value.tts, "voice.tts", defaultVoiceConfig.tts),
     audio: audioConfig(value.audio, "voice.audio", defaultVoiceConfig.audio)

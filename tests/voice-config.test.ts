@@ -10,6 +10,7 @@ test("voice config defaults to 16kHz mono with a 2s silence timeout", () => {
   assert.equal(config.stt.executable, "whisper");
   assert.equal(config.tts.executable, "piper");
   assert.equal(config.audio.captureCommand, "sox");
+  assert.equal(config.bargeIn, false);
 });
 
 test("voice config accepts partial overrides and keeps unspecified fields at their defaults", () => {
@@ -34,4 +35,5 @@ test("voice config rejects invalid shapes", () => {
   assert.throws(() => validateVoiceConfig({ stt: { executable: "" } }), /executable/);
   assert.throws(() => validateVoiceConfig({ stt: { args: ["ok", 1] } }), /args must be an array of strings/);
   assert.throws(() => validateVoiceConfig({ audio: { speechThreshold: -1 } }), /speechThreshold/);
+  assert.throws(() => validateVoiceConfig({ bargeIn: "yes" }), /bargeIn must be a boolean/);
 });

@@ -223,12 +223,12 @@ async function main(): Promise<void> {
   } else if (command === "voice") {
     const subcommand = process.argv[3];
     if (subcommand === "--help" || subcommand === "-h" || subcommand === undefined) {
-      console.log([voiceUsage, "", "Starts a local listen -> transcribe -> respond loop (local Whisper STT, local Piper TTS). Honors a 2s silence timeout by default and stops a spoken reply early on barge-in."].join("\n"));
+      console.log([voiceUsage, "", "Starts a local listen -> transcribe -> respond loop (local Whisper STT, local Piper TTS). Honors a 2s silence timeout by default. Barge-in (stopping a spoken reply when you talk over it) is off unless voice.bargeIn is true in viral-dev.config.json; use headphones or echo cancellation when enabling it."].join("\n"));
     } else if (subcommand === "listen") {
       const overallTimeoutMs = parseDuration(option("--timeout") ?? "30s");
       const config = await loadVoiceConfig(root);
       const ports = await createVoicePorts(root);
-      const result = await runVoiceSession(ports, { overallTimeoutMs, silenceTimeoutMs: config.silenceTimeoutMs });
+      const result = await runVoiceSession(ports, { overallTimeoutMs, silenceTimeoutMs: config.silenceTimeoutMs, bargeIn: config.bargeIn });
       console.log(json ? JSON.stringify(result, null, 2) : [
         `Session ended: ${result.endedReason}`,
         ...result.turns.map((turn) => `Turn ${turn.turnIndex + 1}: "${turn.transcript}" -> "${turn.replyText}"${turn.interrupted ? " (interrupted)" : ""}`)

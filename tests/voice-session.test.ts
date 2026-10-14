@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { validateVoiceConfig } from "../src/voice/config.js";
 import { runVoiceSession } from "../src/voice/session.js";
 import type {
   AudioCaptureSession, AudioFrame, AudioPlayback, AudioPort, PlaybackOutcome,
@@ -13,21 +14,32 @@ function frame(speech: boolean, durationMs = 1_000): AudioFrame {
 class FakeCapture implements AudioCaptureSession {
   private index = 0;
   private stopped = false;
-  constructor(private readonly frames: AudioFrame[]) {}
+  constructor(private readonly frames: AudioFrame[], private readonly onDrained?: () => void) {}
   async nextFrame(): Promise<AudioFrame | null> {
-    if (this.stopped || this.index >= this.frames.length) return null;
+    if (this.stopped) return null;
+    if (this.index >= this.frames.length) {
+      this.onDrained?.();
+      return null;
+    }
     return this.frames[this.index++] ?? null;
   }
   stop(): void { this.stopped = true; }
 }
 
+/** "auto" completes playback immediately; "on-drain" completes it only once the barge-in monitor has read
+ *  every queued frame, so a test can prove those frames were all inspected without interrupting. */
+type PlaybackCompletion = "auto" | "on-drain";
+
 class FakeAudioPort implements AudioPort {
   readonly sampleRateHz = 16_000;
   readonly playbacks: Array<{ wav: Buffer; interrupted: boolean }> = [];
-  constructor(private readonly captureQueue: AudioFrame[][], private readonly autoComplete = true) {}
+  captureCount = 0;
+  private completeCurrent: (() => void) | undefined;
+  constructor(private readonly captureQueue: AudioFrame[][], private readonly completion: PlaybackCompletion = "auto") {}
 
   startCapture(): AudioCaptureSession {
-    return new FakeCapture(this.captureQueue.shift() ?? []);
+    this.captureCount += 1;
+    return new FakeCapture(this.captureQueue.shift() ?? [], () => this.completeCurrent?.());
   }
 
   play(wav: Buffer): AudioPlayback {
@@ -35,7 +47,8 @@ class FakeAudioPort implements AudioPort {
     const finished = new Promise<PlaybackOutcome>((resolve) => { resolveFinished = resolve; });
     const record = { wav, interrupted: false };
     this.playbacks.push(record);
-    if (this.autoComplete) queueMicrotask(() => resolveFinished("completed"));
+    this.completeCurrent = () => resolveFinished("completed");
+    if (this.completion === "auto") queueMicrotask(() => resolveFinished("completed"));
     return {
       finished,
       interrupt: (): void => {
@@ -74,16 +87,66 @@ test("a 2s silence timeout ends a turn and produces a transcript/reply pair", as
   assert.equal(result.turns[0]?.capturedMs, 4_000);
 });
 
-test("speech detected during playback interrupts the response (barge-in)", async () => {
-  const audio = new FakeAudioPort([
-    [frame(true), frame(false), frame(false)],
-    [frame(true)]
-  ], false);
+/** 20ms frames, matching the real ProcessAudioPort frame size. */
+function frames(speech: boolean, count: number): AudioFrame[] {
+  return Array.from({ length: count }, () => frame(speech, 20));
+}
+
+const oneTurn: AudioFrame[] = [frame(true), frame(false), frame(false)];
+
+test("barge-in is off by default: no monitor capture runs and sustained speech does not interrupt playback", async () => {
+  const audio = new FakeAudioPort([oneTurn, [...frames(false, 25), ...frames(true, 50)]]);
   const result = await runVoiceSession(
-    { stt: new FakeStt("stop"), tts: new FakeTts(), audio },
+    { stt: new FakeStt("hello"), tts: new FakeTts(), audio },
     { overallTimeoutMs: 60_000, silenceTimeoutMs: 2_000, maxTurns: 1 }
   );
-  assert.equal(result.turns.length, 1);
+  assert.equal(validateVoiceConfig(undefined).bargeIn, false);
+  assert.equal(validateVoiceConfig({}).bargeIn, false);
+  assert.equal(audio.captureCount, 1, "only the turn capture should run; no barge-in monitor");
+  assert.equal(result.turns[0]?.interrupted, false);
+  assert.equal(audio.playbacks[0]?.interrupted, false);
+});
+
+test("a single speech frame after the grace period does not interrupt playback", async () => {
+  const monitor = [...frames(false, 25), frame(true, 20), ...frames(false, 25)];
+  const audio = new FakeAudioPort([oneTurn, monitor], "on-drain");
+  const result = await runVoiceSession(
+    { stt: new FakeStt("hello"), tts: new FakeTts(), audio },
+    { overallTimeoutMs: 60_000, silenceTimeoutMs: 2_000, maxTurns: 1, bargeIn: true }
+  );
+  assert.equal(audio.captureCount, 2, "the barge-in monitor should have run");
+  assert.equal(result.turns[0]?.interrupted, false);
+  assert.equal(audio.playbacks[0]?.interrupted, false);
+});
+
+test("speech inside the 500ms grace period is ignored even when sustained", async () => {
+  const monitor = [...frames(true, 25), ...frames(false, 10)];
+  const audio = new FakeAudioPort([oneTurn, monitor], "on-drain");
+  const result = await runVoiceSession(
+    { stt: new FakeStt("hello"), tts: new FakeTts(), audio },
+    { overallTimeoutMs: 60_000, silenceTimeoutMs: 2_000, maxTurns: 1, bargeIn: true }
+  );
+  assert.equal(result.turns[0]?.interrupted, false);
+});
+
+test("broken speech shorter than 200ms per run does not interrupt", async () => {
+  const run = [...frames(true, 9), frame(false, 20)];
+  const monitor = [...frames(false, 25), ...run, ...run, ...run];
+  const audio = new FakeAudioPort([oneTurn, monitor], "on-drain");
+  const result = await runVoiceSession(
+    { stt: new FakeStt("hello"), tts: new FakeTts(), audio },
+    { overallTimeoutMs: 60_000, silenceTimeoutMs: 2_000, maxTurns: 1, bargeIn: true }
+  );
+  assert.equal(result.turns[0]?.interrupted, false);
+});
+
+test("200ms of sustained speech after the grace period interrupts playback (barge-in)", async () => {
+  const monitor = [...frames(false, 25), ...frames(true, 10), ...frames(false, 25)];
+  const audio = new FakeAudioPort([oneTurn, monitor], "on-drain");
+  const result = await runVoiceSession(
+    { stt: new FakeStt("stop"), tts: new FakeTts(), audio },
+    { overallTimeoutMs: 60_000, silenceTimeoutMs: 2_000, maxTurns: 1, bargeIn: true }
+  );
   assert.equal(result.turns[0]?.interrupted, true);
   assert.equal(audio.playbacks[0]?.interrupted, true);
 });
