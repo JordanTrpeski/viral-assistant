@@ -10,7 +10,7 @@ interface Overview {
   today: string;
   nextSevenDays: TimelineItem[];
   reminders: ReminderPanelItem[];
-  budget: { stepCents: number; week: WeekBudget; month: MonthBudget };
+  budget: { week: WeekBudget; month: MonthBudget };
 }
 
 function item(date: string, label: string, source: TimelineSource = "transaction", colour: ColourCategory = "bills", status: "done" | "scheduled" = "scheduled"): TimelineItem {
@@ -51,7 +51,8 @@ test("overview: Sunday 1 November is a one-day budget week; the month shows comm
     assert.deepEqual(overview.budget.month.committed.map((bill) => bill.label), ["Rent", "Phone"]);
     assert.equal(overview.budget.month.committedCents, 97_500);
     assert.equal(overview.budget.month.spentCents, 5_234);
-    assert.equal(overview.budget.stepCents, 1_000);
+    assert.equal("stepCents" in (overview.budget as Record<string, unknown>), false, "Overview budget is read-only: no step size for − / + controls");
+    assert.doesNotMatch(JSON.stringify(overview.budget), /step/i, "Overview budget response exposes no edit controls or endpoints");
     assert.deepEqual(overview.nextSevenDays.map((entry) => [entry.date, entry.label, entry.colour, entry.amountCents]), [
       ["2026-11-01", "Rent", "bills", 95_000], ["2026-11-01", "Groceries", "spending", 1_234], ["2026-11-02", "Groceries", "spending", 4_000], ["2026-11-05", "Phone", "bills", 2_500]
     ]);
@@ -69,7 +70,7 @@ test("overview: Monday 2 November starts a full seven-day week", async () => {
   });
 });
 
-test("overview and modules stay in step: a change in Finance shows on the Overview, and the Overview's − / + changes Finance", async () => {
+test("overview reflects Finance edits: a change in Finance shows on the read-only Overview budget", async () => {
   await withServer("2026-11-10", async ({ call }) => {
     const created = await call<{ id: string }>("POST", "/api/finance/transactions", { categoryId: "groceries", amountCents: 1_000, date: "2026-11-10" });
     await call("PATCH", `/api/finance/transactions/${created.body.id}`, { amountCents: 2_500 });

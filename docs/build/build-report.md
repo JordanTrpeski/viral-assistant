@@ -67,7 +67,7 @@ Each milestone's tests cover create, read, edit, delete, validation failure (400
   - The month view: committed bills never split into weeks.
   - "+N more", with hidden legend categories excluded; the Monday-first grid; the 7-day window; the reminders panel (overdue, 30-day limit, at most 8).
   - Price watch percentages; prepare-by defaults and overdue rules.
-- **Cross-module:** a completed trip writes exactly one Finance expense and shows in the Overview budget. A failed trip save rolls the expense back. Changes in Finance appear on the Overview, and the Overview's − / + change Finance.
+- **Cross-module:** a completed trip writes exactly one Finance expense and shows in the Overview budget. A failed trip save rolls the expense back. Changes in Finance appear on the Overview; the Overview budget is read-only (no − / +), and budget targets are edited only in Finance > Budget.
 - **Routes:** 400 and 404 bodies; 405 for a wrong method; 415 for a non-JSON body; 403 for a non-loopback Host header (DNS-rebinding defence); the static allow-list.
 
 **Browser checks (not part of `pnpm run test`).** At each milestone I drove the real page in headless Chromium at 1920×1080 and 1280×800:

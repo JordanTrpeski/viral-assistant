@@ -135,8 +135,8 @@ async function budgetTab(context: AppContext, categories: Category[]): Promise<H
           h("td", {}, h("div", { class: "target-cell" }, stepper(target, "weekly")[0]!, targetInput(target, "weeklyCents"), stepper(target, "weekly")[1]!)),
           h("td", {}, h("div", { class: "target-cell" }, stepper(target, "monthly")[0]!, targetInput(target, "monthlyCents"), stepper(target, "monthly")[1]!))))))),
     h("div", { class: "two-col" },
-      h("section", { class: "panel" }, h("h3", {}, "This week"), weekView(context, budget)),
-      h("section", { class: "panel" }, h("h3", {}, "This month"), monthView(context, budget))));
+      h("section", { class: "panel" }, h("h3", {}, "This week"), weekView(context, budget, true)),
+      h("section", { class: "panel" }, h("h3", {}, "This month"), monthView(context, budget, true))));
 }
 
 function amountInputAllowZero(cents: number, onChange: (cents: number) => void, context: AppContext, key: string): HTMLInputElement {

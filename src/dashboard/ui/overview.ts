@@ -5,7 +5,7 @@ import { daysBetween } from "../shared/dates.js";
 import { formatCents } from "../shared/money.js";
 import type { TimelineItem } from "../timeline.js";
 import { api, type AppContext } from "./api.js";
-import { monthView, weekView, type BudgetResponse } from "./budget-view.js";
+import { monthView, weekView, type BudgetViewData } from "./budget-view.js";
 import { openSource, renderCalendar } from "./calendar.js";
 import { h } from "./dom.js";
 
@@ -13,7 +13,7 @@ interface OverviewResponse {
   today: string;
   nextSevenDays: TimelineItem[];
   reminders: ReminderPanelItem[];
-  budget: BudgetResponse;
+  budget: BudgetViewData;
 }
 
 const state: { budget: "week" | "month" } = { budget: "week" };
@@ -55,8 +55,11 @@ function budgetPanel(context: AppContext, data: OverviewResponse): HTMLElement {
   const toggle = (mode: "week" | "month", label: string): HTMLElement =>
     h("button", { class: `chip${state.budget === mode ? " active" : ""}`, onclick: () => { state.budget = mode; void context.refresh(); } }, label);
   return h("section", { class: "panel" },
-    h("div", { class: "panel-head" }, h("h3", {}, "Budget"), h("div", { class: "chip-group" }, toggle("week", "This week"), toggle("month", "This month"))),
-    state.budget === "week" ? weekView(context, data.budget) : monthView(context, data.budget));
+    h("div", { class: "panel-head" },
+      h("h3", {}, "Budget"),
+      h("div", { class: "chip-group" }, toggle("week", "This week"), toggle("month", "This month")),
+      h("a", { class: "small", href: "#/finance" }, "Open Finance")),
+    state.budget === "week" ? weekView(context, data.budget, false) : monthView(context, data.budget, false));
 }
 
 export async function renderOverview(container: HTMLElement, context: AppContext): Promise<void> {

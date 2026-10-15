@@ -167,7 +167,8 @@ export function registerOverviewRoutes(router: Router, context: DashboardContext
       today: date,
       nextSevenDays: nextSevenDays(items, date),
       reminders: reminderPanel(items, date),
-      budget: { date, stepCents: context.budgetStepCents, week: weekBudget(document, date), month: monthBudget(document, monthOf(date)) }
+      // Read-only on the Overview: no stepCents, so the budget widget exposes no edit control. Targets are edited in Finance.
+      budget: { date, week: weekBudget(document, date), month: monthBudget(document, monthOf(date)) }
     };
   });
 }
