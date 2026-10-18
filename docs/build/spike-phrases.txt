@@ -24,7 +24,7 @@ phone bill 35 nxt mon | proposal
 incm 100 salary | proposal
 entertanment 9.80 | proposal
 groceris 12 | proposal
-coffee 2.50 at hofer | invalid
+coffee 2.50 at hofer | question
 
 # --- 5 reworded or indirect (expect a proposal) ---
 I grabbed some transport for 2 euros | proposal

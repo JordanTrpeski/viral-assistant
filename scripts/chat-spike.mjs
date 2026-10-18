@@ -1,102 +1,114 @@
-// Live check (NOT part of pnpm run test): run docs/build/spike-phrases.txt through the REAL OllamaProposer
-// and the REAL validation, print a table, and write docs/build/spike-results.md.
+// Live check (NOT part of pnpm run test): run docs/build/spike-phrases.txt through the REAL chat path —
+// the real OllamaProposer, the ambiguity rule, validation and the thread — then write
+// docs/build/spike-results.md. One setup entry ("groceries 3 bread") is confirmed first so the "last"
+// phrases have a transaction to refer to in the same thread.
 // Usage: pnpm run build && node scripts/chat-spike.mjs
-import { readFile, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createLocalModel } from "../dist/src/local/registry.js";
 import { loadDashboardConfig } from "../dist/src/dashboard/config.js";
-import { OllamaProposer, unavailableReply } from "../dist/src/dashboard/commands/ollama.js";
 import { placeholderReply } from "../dist/src/dashboard/commands/proposer.js";
-import { validateProposal } from "../dist/src/dashboard/commands/validate.js";
-import { defaultCategories } from "../dist/src/dashboard/finance.js";
-import { localIsoDate } from "../dist/src/dashboard/shared/dates.js";
+import { unavailableReply } from "../dist/src/dashboard/commands/ollama.js";
+import { createDashboardContext } from "../dist/src/dashboard/server.js";
 
 const root = process.cwd();
 const here = dirname(fileURLToPath(import.meta.url));
 const phrasesPath = join(here, "..", "docs", "build", "spike-phrases.txt");
 const resultsPath = join(here, "..", "docs", "build", "spike-results.md");
+const setupPhrase = "groceries 3 bread";
 
 function parsePhrases(text) {
   return text.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#"))
     .map((line) => { const [phrase, expected = ""] = line.split("|").map((part) => part.trim()); return { phrase, expected: expected || "proposal" }; });
 }
 
-function classify(result, context) {
-  if (result.kind === "reply") return { outcome: result.text === unavailableReply ? "unavailable" : "plain", action: "", fields: "", preview: result.text === placeholderReply ? "(plain reply)" : result.text };
-  const validated = validateProposal(result.proposal, context);
-  const action = String(result.proposal.action ?? "");
-  const fields = JSON.stringify(result.proposal.fields ?? {});
-  return validated.ok
-    ? { outcome: "proposal", action, fields, preview: validated.preview }
-    : { outcome: "invalid", action, fields, preview: validated.errors.join(" / ") };
+function describe(posted) {
+  if (posted.outcome === "reply") return { outcome: posted.reply.text === unavailableReply ? "unavailable" : "plain", action: "", fields: "", detail: posted.reply.text === placeholderReply ? "(plain reply)" : posted.reply.text };
+  if (posted.outcome === "question") return { outcome: "question", action: "", fields: (posted.clarification?.candidates ?? []).join("/"), detail: posted.clarification?.preview ?? "" };
+  if (posted.outcome === "invalid") return { outcome: "invalid", action: "", fields: "", detail: (posted.errors ?? []).join(" / ") };
+  return { outcome: "proposal", action: posted.proposal?.action ?? "", fields: "", detail: posted.proposal?.preview ?? "" };
 }
 
 const trunc = (value, length) => { const s = String(value); return s.length > length ? `${s.slice(0, length - 1)}…` : s; };
-const cell = (value) => trunc(value, 60).replace(/\|/g, "\\|").replace(/\n/g, " ");
+const cell = (value) => trunc(value, 62).replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 async function main() {
   const config = await loadDashboardConfig(root);
-  const model = await createLocalModel(root);
-  const probe = await model.probe();
-  const proposer = new OllamaProposer(model, { model: config.model, timeoutMs: config.timeoutMs }, async () => defaultCategories);
-  const today = localIsoDate(new Date());
-  const context = { today, maxAmountCents: config.chatMaxAmountCents, categories: defaultCategories, transactions: [], targets: [], lastChatTransactionId: null };
-  const phrases = parsePhrases(await readFile(phrasesPath, "utf8"));
+  const localModel = await createLocalModel(root);
+  const probe = await localModel.probe();
+  const directory = await mkdtemp(join(tmpdir(), "viral-spike-"));
+  try {
+    const context = createDashboardContext({ dataDir: directory, budgetStepCents: 1_000, chatMaxAmountCents: config.chatMaxAmountCents, localModel, chat: { model: config.model, timeoutMs: config.timeoutMs, proposerEnabled: true } });
+    const chat = context.chat;
 
-  const rows = [];
-  for (const { phrase, expected } of phrases) {
-    const start = Date.now();
-    let result;
-    try { result = await proposer.propose({ threadId: "main", text: phrase, today }); }
-    catch (error) { result = { kind: "reply", text: `threw: ${error instanceof Error ? error.message : String(error)}` }; }
-    const ms = Date.now() - start;
-    rows.push({ phrase, expected, ...classify(result, context), ms });
+    // Setup: confirm one expense so "last" has something to refer to in this thread.
+    let setupNote = `Setup: posted "${setupPhrase}" → `;
+    const setup = await chat.postMessage("main", { text: setupPhrase });
+    if (setup.outcome === "proposal") { await chat.confirm(setup.proposal.id); setupNote += `confirmed (${setup.proposal.preview}).`; }
+    else setupNote += `outcome ${setup.outcome} (not confirmed; model may be unavailable).`;
+
+    const phrases = parsePhrases(await readFile(phrasesPath, "utf8"));
+    const rows = [];
+    for (const { phrase, expected } of phrases) {
+      const start = Date.now();
+      let posted;
+      try { posted = await chat.postMessage("main", { text: phrase }); }
+      catch (error) { posted = { outcome: "reply", reply: { text: `threw: ${error instanceof Error ? error.message : String(error)}` } }; }
+      rows.push({ phrase, expected, ...describe(posted), ms: Date.now() - start });
+    }
+
+    const summary = { total: rows.length, correct: 0, proposedWhenShouldAsk: 0, askedWhenShouldPropose: 0, unavailable: 0 };
+    for (const row of rows) {
+      if (row.outcome === "unavailable") summary.unavailable += 1;
+      if (row.outcome === row.expected) summary.correct += 1;
+      if ((row.expected === "plain" || row.expected === "question") && row.outcome === "proposal") summary.proposedWhenShouldAsk += 1;
+      if (row.expected === "proposal" && row.outcome !== "proposal") summary.askedWhenShouldPropose += 1;
+    }
+
+    const table = [
+      "| # | phrase | expected | outcome | action | detail (preview / errors / candidates) | ms |",
+      "|---|---|---|---|---|---|---|",
+      ...rows.map((row, index) => `| ${index + 1} | ${cell(row.phrase)} | ${row.expected} | ${row.outcome} | ${cell(row.action)} | ${cell(row.detail)} | ${row.ms} |`)
+    ].join("\n");
+
+    const doc = [
+      "# Chat spike results (run 2)",
+      "",
+      `Generated by \`scripts/chat-spike.mjs\` on ${new Date().toISOString()}. Not part of \`pnpm run test\`.`,
+      `Model: \`${config.model}\` · Ollama ${probe.version ?? "unknown"} · usable: ${probe.usable} · timeout ${config.timeoutMs} ms.`,
+      "Prompt and validation were NOT tuned for this run; results are recorded as they are.",
+      "",
+      `This run goes through the real chat path (OllamaProposer → ambiguity rule → validation → thread). ${setupNote}`,
+      "Run 1 (before the ambiguity rule, stateless, empty context) is kept in `spike-results-run1.md`.",
+      "Change since run 1: \"coffee 2.50 at hofer\" now expects **question** (the ambiguous-word rule), not invalid.",
+      "",
+      "## Summary (outcome-based)",
+      "",
+      `- phrases: ${summary.total}`,
+      `- outcome correct (matched expected): ${summary.correct} / ${summary.total}`,
+      `- proposed when it should have asked/declined (expected question or plain, got proposal): ${summary.proposedWhenShouldAsk}`,
+      `- not a proposal when one was expected (expected proposal, got question/plain/invalid/unavailable): ${summary.askedWhenShouldPropose}`,
+      `- unavailable (model unreachable): ${summary.unavailable}`,
+      "",
+      "> Wrong-amount / wrong-category / wrong-action are not auto-scored: the phrase file labels the expected",
+      "> *outcome* only. Inspect the action and detail columns to judge those by hand.",
+      "",
+      "## Results",
+      "",
+      table,
+      ""
+    ].join("\n");
+
+    await writeFile(resultsPath, doc, "utf8");
+    console.log(table);
+    console.log(`\n${setupNote}`);
+    console.log(`Summary: ${summary.correct}/${summary.total} outcome-correct · proposed-when-ask ${summary.proposedWhenShouldAsk} · not-proposal-when-expected ${summary.askedWhenShouldPropose} · unavailable ${summary.unavailable}`);
+    console.log(`Wrote ${resultsPath}`);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
-
-  const summary = { total: rows.length, correct: 0, proposedWhenShouldAsk: 0, askedWhenShouldPropose: 0, unavailable: 0 };
-  for (const row of rows) {
-    if (row.outcome === "unavailable") summary.unavailable += 1;
-    if (row.outcome === row.expected) summary.correct += 1;
-    if (row.expected === "plain" && row.outcome === "proposal") summary.proposedWhenShouldAsk += 1;
-    if (row.expected === "proposal" && (row.outcome === "plain" || row.outcome === "invalid" || row.outcome === "unavailable")) summary.askedWhenShouldPropose += 1;
-  }
-
-  const table = [
-    "| # | phrase | expected | outcome | action | fields | preview / errors | ms |",
-    "|---|---|---|---|---|---|---|---|",
-    ...rows.map((row, index) => `| ${index + 1} | ${cell(row.phrase)} | ${row.expected} | ${row.outcome} | ${cell(row.action)} | ${cell(row.fields)} | ${cell(row.preview)} | ${row.ms} |`)
-  ].join("\n");
-
-  const doc = [
-    "# Chat spike results",
-    "",
-    `Generated by \`scripts/chat-spike.mjs\` on ${new Date().toISOString()}. Not part of \`pnpm run test\`.`,
-    `Model: \`${config.model}\` · Ollama ${probe.version ?? "unknown"} · usable: ${probe.usable} · timeout ${config.timeoutMs} ms.`,
-    "Prompt and validation were NOT tuned for this run; results are recorded as they are.",
-    "",
-    "## Summary (outcome-based)",
-    "",
-    `- phrases: ${summary.total}`,
-    `- outcome correct (matched expected): ${summary.correct} / ${summary.total}`,
-    `- proposed when it should have asked (expected plain, got proposal): ${summary.proposedWhenShouldAsk}`,
-    `- asked/failed when it should have proposed (expected proposal, got plain/invalid/unavailable): ${summary.askedWhenShouldPropose}`,
-    `- unavailable (model unreachable): ${summary.unavailable}`,
-    "",
-    "> Wrong-amount / wrong-category / wrong-action are not auto-scored: the phrase file labels the expected",
-    "> *outcome* only, not the expected amount/category/action. Inspect the table's action and fields columns to",
-    "> judge those by hand.",
-    "",
-    "## Results",
-    "",
-    table,
-    ""
-  ].join("\n");
-
-  await writeFile(resultsPath, doc, "utf8");
-  console.log(table);
-  console.log(`\nSummary: ${summary.correct}/${summary.total} outcome-correct · proposed-when-ask ${summary.proposedWhenShouldAsk} · asked-when-propose ${summary.askedWhenShouldPropose} · unavailable ${summary.unavailable}`);
-  console.log(`Wrote ${resultsPath}`);
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; });
