@@ -3,7 +3,9 @@ import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget } from "./budget.js";
 import { buildCalendar, itemsInWindow } from "./calendar.js";
 import { ChatService } from "./chat.js";
-import type { Proposer } from "./commands/proposer.js";
+import { OllamaProposer } from "./commands/ollama.js";
+import { PlaceholderProposer, type Proposer } from "./commands/proposer.js";
+import type { LocalModel } from "../local/types.js";
 import { ValidationError } from "./errors.js";
 import { FinanceService, type TransactionFilter } from "./finance.js";
 import { financePortFor, GroceriesService } from "./groceries.js";
@@ -33,20 +35,29 @@ export interface DashboardOptions {
   budgetStepCents: number;
   /** Largest amount a chat proposal may carry, in cents (default 5000 EUR). */
   chatMaxAmountCents?: number;
-  /** Source of chat proposals; defaults to the placeholder (no model connected). Tests inject a stub. */
+  /** Explicit proposer; tests inject a stub. Overrides the model-backed/placeholder choice below. */
   proposer?: Proposer;
+  /** Loopback Ollama model for the chat proposer; when present (and enabled) the model-backed proposer is used. */
+  localModel?: LocalModel;
+  /** Chat proposer settings from config. */
+  chat?: { model: string; timeoutMs: number; proposerEnabled: boolean };
   clock?: () => Date;
 }
 
 export function createDashboardContext(options: DashboardOptions): DashboardContext {
   const clock = options.clock ?? (() => new Date());
   const finance = FinanceService.open(join(options.dataDir, "finance"), { clock });
+  // Swap point: an explicit proposer (tests) wins; otherwise the model-backed OllamaProposer when enabled; else the placeholder.
+  const proposer: Proposer = options.proposer
+    ?? (options.localModel && options.chat && options.chat.proposerEnabled
+      ? new OllamaProposer(options.localModel, { model: options.chat.model, timeoutMs: options.chat.timeoutMs }, async () => (await finance.snapshot()).categories)
+      : new PlaceholderProposer());
   return {
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
     reminders: RemindersService.open(join(options.dataDir, "dashboard"), { clock }),
     chat: new ChatService(join(options.dataDir, "dashboard", "chat"), {
-      clock, finance, ...(options.proposer ? { proposer: options.proposer } : {}), ...(options.chatMaxAmountCents ? { maxAmountCents: options.chatMaxAmountCents } : {})
+      clock, finance, proposer, ...(options.chatMaxAmountCents ? { maxAmountCents: options.chatMaxAmountCents } : {})
     }),
     budgetStepCents: options.budgetStepCents,
     clock,

@@ -9,11 +9,20 @@ export interface DashboardConfig {
   budgetStepCents: number;
   /** Largest amount a chat proposal may carry, in cents (sanity limit; default 5000 EUR). */
   chatMaxAmountCents: number;
+  /** Local model the chat proposer asks (loopback Ollama). */
+  model: string;
+  /** Timeout for one chat proposer call, in ms. */
+  timeoutMs: number;
+  /** When false, chat uses the placeholder proposer (no model); proposals never appear. */
+  proposerEnabled: boolean;
 }
 
 export const loopbackHosts = ["127.0.0.1", "::1", "localhost"] as const;
 
-export const defaultDashboardConfig: DashboardConfig = { host: "127.0.0.1", port: 4174, budgetStepCents: 1_000, chatMaxAmountCents: 500_000 };
+export const defaultDashboardConfig: DashboardConfig = {
+  host: "127.0.0.1", port: 4174, budgetStepCents: 1_000, chatMaxAmountCents: 500_000,
+  model: "qwen3:4b-instruct", timeoutMs: 30_000, proposerEnabled: true
+};
 
 export function validateDashboardConfig(value: unknown): DashboardConfig {
   if (value === undefined) return { ...defaultDashboardConfig };
@@ -32,7 +41,15 @@ export function validateDashboardConfig(value: unknown): DashboardConfig {
   if (typeof chatMaxAmountCents !== "number" || !Number.isSafeInteger(chatMaxAmountCents) || chatMaxAmountCents < 1) {
     throw new Error("dashboard.chatMaxAmountCents must be a positive whole number of cents");
   }
-  return { host, port, budgetStepCents, chatMaxAmountCents };
+  const model = value.model ?? defaultDashboardConfig.model;
+  if (typeof model !== "string" || model.trim() === "") throw new Error("dashboard.model must be a non-empty string");
+  const timeoutMs = value.timeoutMs ?? defaultDashboardConfig.timeoutMs;
+  if (typeof timeoutMs !== "number" || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000) {
+    throw new Error("dashboard.timeoutMs must be an integer of at least 1000");
+  }
+  const proposerEnabled = value.proposerEnabled ?? defaultDashboardConfig.proposerEnabled;
+  if (typeof proposerEnabled !== "boolean") throw new Error("dashboard.proposerEnabled must be true or false");
+  return { host, port, budgetStepCents, chatMaxAmountCents, model, timeoutMs, proposerEnabled };
 }
 
 export async function loadDashboardConfig(root: string): Promise<DashboardConfig> {
