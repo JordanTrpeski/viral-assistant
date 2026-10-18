@@ -141,6 +141,42 @@ Added in commit "feat(dashboard): chat command layer with validation and confirm
 - No model is connected. The production proposer always replies "Chat is not connected to a model yet.", so the confirm flow can only be exercised through the test stub until a model is connected.
 - Nothing after the cut-off in the brief was built.
 
+## Ollama connection
+
+The chat command layer is now connected to the local model. `OllamaProposer`
+(`src/dashboard/commands/ollama.ts`) implements the same `Proposer` interface the stub uses, so the
+swap is one choice in `createDashboardContext`: an explicit proposer (tests) wins, else the
+model-backed proposer when `dashboard.proposerEnabled` is true, else the placeholder. It reuses the
+existing loopback Ollama adapter in `src/local` — no second HTTP client.
+
+- **Probe.** `viral-dev local-status` reports Ollama **0.40.6**, running on loopback, with
+  `qwen3:4b-instruct` installed. Structured output via a `format` parameter would be supported at that
+  version, but the shared adapter exposes no `format` field; rather than widen that contract this step
+  requests JSON through a strict system prompt and parses robustly (strip `<think>…</think>` and code
+  fences, take the first `{…}`). Wiring `format` through the adapter is left for later.
+- **Input to the model:** the message, today (ISO), the six actions with field schemas, and the
+  category names per type. Nothing else.
+- **Validation and the confirm/undo flow are unchanged.** The proposer only produces a `RawProposal`
+  (or a reply); the existing plain-code validator is still the sole guardrail, and a model-invented
+  category or a malformed date is rejected with the same error text as before.
+- **Failure handling:** 30 s timeout from `dashboard.timeoutMs`, one call, no streaming, no retry.
+  Timeout/unreachable → "Chat could not reach the model right now." (logged); invalid JSON / unknown
+  action / "none" → the existing placeholder reply. The proposer never throws into the route.
+- **Config keys added** to the dashboard section: `model` (`qwen3:4b-instruct`), `timeoutMs` (30000),
+  `proposerEnabled` (true).
+- **Tests** inject a fake model (`tests/dashboard-ollama.test.ts`): valid JSON → proposal through
+  validation; invalid JSON, unknown action and "none" → placeholder; invented category rejected by the
+  existing validation; no invented date (defaults to today); timeout → unavailable reply without
+  throwing; reasoning block stripped; and `proposerEnabled` false uses the placeholder. All 193 suite
+  tests pass.
+- **Live check (not in the suite):** `scripts/chat-spike.mjs` runs `docs/build/spike-phrases.txt`
+  through the real model and validation and writes `docs/build/spike-results.md`. First run:
+  **24/30 outcome-correct**, 0 proposed-when-it-should-ask, 5 asked/failed-when-it-should-propose
+  (one cold-start 30 s timeout on the first call, and four "delete/edit the last …" phrases that the
+  spike's empty context correctly rejects because no chat transaction exists yet), 1 unavailable. One
+  "coffee …" phrase (no Coffee category) was mapped to Entertainment instead of being declined. The
+  prompt and validation were **not** tuned to improve the score in this step.
+
 ## Not done, and why
 
 - **Chat replies and voice:** the text chat UI and storage were added later (see Chat above), but replies are a fixed placeholder; no model and no voice are connected.
