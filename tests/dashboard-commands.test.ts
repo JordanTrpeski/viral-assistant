@@ -247,7 +247,7 @@ test("flow: invalid proposals return every error and store nothing pending; plai
 
 test("flow: cancel discards; unknown or malformed proposal ids are 404; proposals expire after 10 minutes", async () => {
   await withCommandServer(async ({ say, call, transactions, advance }) => {
-    const first = await say("coffee 3", { action: "add_expense", fields: { amount: 3, category: "Groceries" } });
+    const first = await say("groceries 3", { action: "add_expense", fields: { amount: 3, category: "Groceries" } });
     const cancelled = await call<ProposalView>("POST", `/api/chat/proposals/${first.proposal!.id}/cancel`);
     assert.deepEqual([cancelled.status, cancelled.body.status], [200, "cancelled"]);
     assert.equal((await call("POST", `/api/chat/proposals/${first.proposal!.id}/confirm`)).status, 400);
