@@ -1,12 +1,14 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import * as nodeFs from "node:fs/promises";
-import { join } from "node:path";
-import { actionNames, type ActionName } from "./commands/actions.js";
+import { dirname, join } from "node:path";
+import { actionNames, type ActionName, type RawProposal } from "./commands/actions.js";
+import { findAmbiguity } from "./commands/ambiguity.js";
 import { balanceReply, executeAction, undoAction, type ExecutionResult, type FinanceCommandPort, type UndoPlan } from "./commands/execute.js";
 import { PlaceholderProposer, placeholderReply, type Proposer } from "./commands/proposer.js";
-import { validateProposal, type ResolvedAction } from "./commands/validate.js";
+import { eurosToCents, validateProposal, type ResolvedAction } from "./commands/validate.js";
 import { NotFoundError, ValidationError } from "./errors.js";
 import { localIsoDate } from "./shared/dates.js";
+import { formatCents } from "./shared/money.js";
 import { JsonDocumentStore, type StoreFileSystem } from "./store.js";
 import { isObject, rejectUnknownFields, requireObject } from "./validation.js";
 
@@ -25,8 +27,8 @@ const proposalIdPattern = /^[0-9a-f]{8}$/;
 const undoTokenPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export type ChatRole = "user" | "assistant";
-/** text: plain reply · proposal: a pending action awaiting confirm · invalid: validation errors · result: outcome of confirm/cancel/undo. */
-export type ChatMessageKind = "text" | "proposal" | "invalid" | "result";
+/** text: plain reply · proposal: a pending action awaiting confirm · invalid: validation errors · result: outcome of confirm/cancel/undo · question: an ambiguous word awaiting a category. */
+export type ChatMessageKind = "text" | "proposal" | "invalid" | "result" | "question";
 export type ProposalStatus = "pending" | "confirmed" | "cancelled" | "undone" | "expired";
 
 export interface ChatMessage {
@@ -36,7 +38,34 @@ export interface ChatMessage {
   createdAt: string;
   kind: ChatMessageKind;
   proposalId?: string;
+  clarificationId?: string;
   errors?: string[];
+}
+
+/** An ambiguous spending word awaiting a category choice. It becomes a normal pending proposal once answered. */
+export interface StoredClarification {
+  id: string;
+  action: "add_expense" | "add_income";
+  /** Raw amount/note/date from the model proposal, minus the category the user must choose. */
+  fields: { amount: number; note?: string; date?: string };
+  word: string;
+  candidates: string[];
+  preview: string;
+  createdAt: string;
+  expiresAt: string;
+  status: "pending" | "answered" | "cancelled";
+  resolvedAt: string | null;
+}
+
+export interface ClarificationView {
+  id: string;
+  threadId: string;
+  word: string;
+  candidates: string[];
+  preview: string;
+  createdAt: string;
+  expiresAt: string;
+  status: "pending" | "answered" | "cancelled" | "expired";
 }
 
 export interface StoredProposal {
@@ -70,8 +99,15 @@ export interface ChatThreadDocument {
   updatedAt: string;
   messages: ChatMessage[];
   proposals: StoredProposal[];
+  clarifications: StoredClarification[];
   /** Transactions created from this thread, oldest first; the last one is what target "last" means. */
   chatTransactions: { transactionId: string; createdAt: string }[];
+}
+
+interface ChatRulesDocument {
+  schemaVersion: 1;
+  /** Ambiguous word → chosen category id, so the same exact word is not asked again. */
+  rules: Record<string, string>;
 }
 
 export interface ChatThreadSummary {
@@ -83,13 +119,14 @@ export interface ChatThreadSummary {
   messageCount: number;
 }
 
-export type ChatMessageView = ChatMessage & { proposal?: ProposalView };
+export type ChatMessageView = ChatMessage & { proposal?: ProposalView; clarification?: ClarificationView };
 
 export interface PostResult {
-  outcome: "reply" | "proposal" | "invalid";
+  outcome: "reply" | "proposal" | "invalid" | "question";
   message: ChatMessage;
   reply: ChatMessage;
   proposal?: ProposalView;
+  clarification?: ClarificationView;
   errors?: string[];
 }
 
@@ -115,6 +152,7 @@ function validateThread(value: unknown): ChatThreadDocument {
     if (!messageKinds.includes(kind as ChatMessageKind)) throw new Error(`messages[${index}].kind is malformed`);
     const message: ChatMessage = { id: raw.id, role: raw.role, text: raw.text, createdAt: raw.createdAt, kind: kind as ChatMessageKind };
     if (typeof raw.proposalId === "string") message.proposalId = raw.proposalId;
+    if (typeof raw.clarificationId === "string") message.clarificationId = raw.clarificationId;
     if (Array.isArray(raw.errors)) message.errors = raw.errors.map(String);
     return message;
   });
@@ -130,11 +168,39 @@ function validateThread(value: unknown): ChatThreadDocument {
       status: raw.status as StoredProposal["status"], resolvedAt: typeof raw.resolvedAt === "string" ? raw.resolvedAt : null
     };
   });
+  const clarificationStatuses = ["pending", "answered", "cancelled"] as const;
+  const clarifications = (Array.isArray(value.clarifications) ? value.clarifications : []).map((raw, index): StoredClarification => {
+    if (!isObject(raw) || typeof raw.id !== "string" || (raw.action !== "add_expense" && raw.action !== "add_income") || !isObject(raw.fields)
+      || typeof (raw.fields as Record<string, unknown>).amount !== "number" || typeof raw.word !== "string" || !Array.isArray(raw.candidates)
+      || typeof raw.preview !== "string" || typeof raw.createdAt !== "string" || typeof raw.expiresAt !== "string"
+      || !clarificationStatuses.includes(raw.status as typeof clarificationStatuses[number])) {
+      throw new Error(`clarifications[${index}] is malformed`);
+    }
+    const rawFields = raw.fields as Record<string, unknown>;
+    const fields: StoredClarification["fields"] = { amount: rawFields.amount as number };
+    if (typeof rawFields.note === "string") fields.note = rawFields.note;
+    if (typeof rawFields.date === "string") fields.date = rawFields.date;
+    return {
+      id: raw.id, action: raw.action, fields, word: raw.word, candidates: raw.candidates.map(String), preview: raw.preview,
+      createdAt: raw.createdAt, expiresAt: raw.expiresAt, status: raw.status as StoredClarification["status"], resolvedAt: typeof raw.resolvedAt === "string" ? raw.resolvedAt : null
+    };
+  });
   const chatTransactions = (Array.isArray(value.chatTransactions) ? value.chatTransactions : []).map((raw, index) => {
     if (!isObject(raw) || typeof raw.transactionId !== "string" || typeof raw.createdAt !== "string") throw new Error(`chatTransactions[${index}] is malformed`);
     return { transactionId: raw.transactionId, createdAt: raw.createdAt };
   });
-  return { schemaVersion: 1, id: value.id, name: value.name, createdAt: value.createdAt, updatedAt: value.updatedAt, messages, proposals, chatTransactions };
+  return { schemaVersion: 1, id: value.id, name: value.name, createdAt: value.createdAt, updatedAt: value.updatedAt, messages, proposals, clarifications, chatTransactions };
+}
+
+function validateRules(value: unknown): ChatRulesDocument {
+  if (!isObject(value) || value.schemaVersion !== 1 || !isObject(value.rules)) return { schemaVersion: 1, rules: {} };
+  const rules: Record<string, string> = {};
+  for (const [word, category] of Object.entries(value.rules)) if (typeof category === "string") rules[word.toLowerCase()] = category;
+  return { schemaVersion: 1, rules };
+}
+
+function emptyRules(): ChatRulesDocument {
+  return { schemaVersion: 1, rules: {} };
 }
 
 function threadName(value: unknown): string {
@@ -157,7 +223,7 @@ function summary(thread: ChatThreadDocument): ChatThreadSummary {
 }
 
 function emptyThread(id: string, name: string, timestamp: string): ChatThreadDocument {
-  return { schemaVersion: 1, id, name, createdAt: timestamp, updatedAt: timestamp, messages: [], proposals: [], chatTransactions: [] };
+  return { schemaVersion: 1, id, name, createdAt: timestamp, updatedAt: timestamp, messages: [], proposals: [], clarifications: [], chatTransactions: [] };
 }
 
 export interface ChatServiceOptions {
@@ -190,6 +256,8 @@ export class ChatService {
   private readonly proposer: Proposer;
   private readonly finance: FinanceCommandPort | undefined;
   private readonly maxAmountCents: number;
+  /** Remembered ambiguous-word → category choices, in `.viral/dashboard/chat-rules.json` (sibling of the chat dir). */
+  private readonly rulesStore: JsonDocumentStore<ChatRulesDocument>;
   /** Undo tokens live in memory only: they are valid for 10 seconds, so a restart simply ends the window. */
   private readonly undoTokens = new Map<string, UndoEntry>();
   private lastWriteToken: string | null = null;
@@ -202,6 +270,7 @@ export class ChatService {
     this.proposer = options.proposer ?? new PlaceholderProposer();
     this.finance = options.finance;
     this.maxAmountCents = options.maxAmountCents ?? 500_000;
+    this.rulesStore = new JsonDocumentStore(join(dirname(directory), "chat-rules.json"), validateRules, emptyRules, this.fs);
   }
 
   private now(): string {
@@ -308,7 +377,9 @@ export class ChatService {
     const thread = await (await this.existing(id)).read();
     return thread.messages.map((message) => {
       const proposal = message.proposalId ? thread.proposals.find((candidate) => candidate.id === message.proposalId) : undefined;
-      return proposal ? { ...message, proposal: this.view(thread.id, proposal) } : message;
+      if (proposal) return { ...message, proposal: this.view(thread.id, proposal) };
+      const clarification = message.clarificationId ? thread.clarifications.find((candidate) => candidate.id === message.clarificationId) : undefined;
+      return clarification ? { ...message, clarification: this.clarificationView(thread.id, clarification) } : message;
     });
   }
 
@@ -326,6 +397,7 @@ export class ChatService {
 
     let reply: Omit<ChatMessage, "id" | "createdAt">;
     let pending: StoredProposal | undefined;
+    let clarification: StoredClarification | undefined;
     let errors: string[] | undefined;
     if (proposed.kind === "reply") {
       reply = { role: "assistant", kind: "text", text: proposed.text || placeholderReply };
@@ -335,22 +407,46 @@ export class ChatService {
     } else {
       const snapshot = await this.finance.snapshot();
       const thread = await store.read();
-      const result = validateProposal(proposed.proposal, {
-        today, maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
-        lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
-      });
-      if (!result.ok) {
-        errors = result.errors;
-        reply = { role: "assistant", kind: "invalid", text: `I can't do that yet:\n${errors.map((error) => `• ${error}`).join("\n")}`, errors };
-      } else if (result.action.action === "get_balance") {
-        reply = { role: "assistant", kind: "text", text: await balanceReply(this.finance, today) };
-      } else {
+      const proposal = proposed.proposal;
+      const rawFields = (typeof proposal.fields === "object" && proposal.fields !== null && !Array.isArray(proposal.fields) ? proposal.fields : {}) as Record<string, unknown>;
+      const amount = rawFields.amount;
+      // Ambiguous-word rule (code, not model): for a spending add whose message uses an ambiguous word and
+      // names no category, apply a remembered category or ask — never guess. Amount/note/date come from the
+      // model proposal; only the category is in question.
+      const ambiguity = (proposal.action === "add_expense" || proposal.action === "add_income") && typeof amount === "number" && amount > 0
+        ? findAmbiguity(text, snapshot.categories) : null;
+      const remembered = ambiguity ? (await this.rulesStore.read()).rules[ambiguity.word] : undefined;
+      if (ambiguity && remembered !== undefined) rawFields.category = remembered;
+      if (ambiguity && remembered === undefined) {
         const created = this.clock();
-        pending = {
-          id: randomBytes(4).toString("hex"), action: result.action, preview: result.preview, flags: result.flags, createdAt: created.toISOString(),
-          expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+        const label = ambiguity.word.charAt(0).toUpperCase() + ambiguity.word.slice(1);
+        const questionText = `${label}, ${formatCents(eurosToCents(amount as number))}. Which category?`;
+        const fields: StoredClarification["fields"] = { amount: amount as number };
+        if (typeof rawFields.note === "string") fields.note = rawFields.note;
+        if (typeof rawFields.date === "string") fields.date = rawFields.date;
+        clarification = {
+          id: randomBytes(4).toString("hex"), action: proposal.action as "add_expense" | "add_income", fields, word: ambiguity.word, candidates: ambiguity.candidates,
+          preview: questionText, createdAt: created.toISOString(), expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
         };
-        reply = { role: "assistant", kind: "proposal", text: result.preview, proposalId: pending.id };
+        reply = { role: "assistant", kind: "question", text: questionText, clarificationId: clarification.id };
+      } else {
+        const result = validateProposal(proposal, {
+          today, maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
+          lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
+        });
+        if (!result.ok) {
+          errors = result.errors;
+          reply = { role: "assistant", kind: "invalid", text: `I can't do that yet:\n${errors.map((error) => `• ${error}`).join("\n")}`, errors };
+        } else if (result.action.action === "get_balance") {
+          reply = { role: "assistant", kind: "text", text: await balanceReply(this.finance, today) };
+        } else {
+          const created = this.clock();
+          pending = {
+            id: randomBytes(4).toString("hex"), action: result.action, preview: result.preview, flags: result.flags, createdAt: created.toISOString(),
+            expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+          };
+          reply = { role: "assistant", kind: "proposal", text: result.preview, proposalId: pending.id };
+        }
       }
     }
 
@@ -360,11 +456,80 @@ export class ChatService {
       const answer: ChatMessage = { id: randomUUID(), createdAt: timestamp, ...reply };
       thread.messages.push(message, answer);
       if (pending) thread.proposals.push(pending);
+      if (clarification) thread.clarifications.push(clarification);
       thread.updatedAt = timestamp;
       return { message, reply: answer };
     });
-    const outcome = pending ? "proposal" : errors ? "invalid" : "reply";
-    return { outcome, ...saved, ...(pending ? { proposal: this.view(id, pending) } : {}), ...(errors ? { errors } : {}) };
+    const outcome = pending ? "proposal" : clarification ? "question" : errors ? "invalid" : "reply";
+    return {
+      outcome, ...saved,
+      ...(pending ? { proposal: this.view(id, pending) } : {}),
+      ...(clarification ? { clarification: this.clarificationView(id, clarification) } : {}),
+      ...(errors ? { errors } : {})
+    };
+  }
+
+  /** Turns an answered clarification into a normal pending proposal with the chosen category. Writes nothing to Finance. */
+  answerClarification(clarificationId: string, body: unknown): Promise<{ proposal: ProposalView }> {
+    return this.serialize(async () => {
+      const finance = this.finance;
+      if (!finance) throw new ValidationError("Chat commands are not available: no Finance connection is configured");
+      const { threadId, store, clarification } = await this.findClarification(clarificationId);
+      const status = this.clarificationStatus(clarification);
+      if (status === "expired") throw new ValidationError(`Clarification ${clarification.id} expired at ${clarification.expiresAt}; send the request again`);
+      if (status !== "pending") throw new ValidationError(`Clarification ${clarification.id} is already ${status}`);
+      const input = requireObject(body);
+      rejectUnknownFields(input, ["category"]);
+      if (typeof input.category !== "string" || input.category.trim() === "") throw new ValidationError("category must be one of the suggested categories or a valid existing category");
+      const snapshot = await finance.snapshot();
+      const thread = await store.read();
+      const raw: RawProposal = { action: clarification.action, fields: { ...clarification.fields, category: input.category } };
+      const result = validateProposal(raw, {
+        today: localIsoDate(this.clock()), maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
+        lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
+      });
+      if (!result.ok) throw new ValidationError(result.errors.join("; "));
+      if (result.action.action !== "add_expense" && result.action.action !== "add_income") throw new ValidationError("A clarification can only resolve to an add.");
+      const chosenCategoryId = result.action.categoryId;
+      const created = this.clock();
+      const pending: StoredProposal = {
+        id: randomBytes(4).toString("hex"), action: result.action, preview: result.preview, flags: result.flags, createdAt: created.toISOString(),
+        expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+      };
+      const updated = await store.update((document) => {
+        const stored = document.clarifications.find((candidate) => candidate.id === clarificationId)!;
+        stored.status = "answered";
+        stored.resolvedAt = this.now();
+        document.proposals.push(pending);
+        document.messages.push({ id: randomUUID(), role: "assistant", kind: "proposal", text: result.preview, createdAt: this.now(), proposalId: pending.id });
+        document.updatedAt = this.now();
+        return pending;
+      });
+      // Remember the exact word → chosen category id, so the same word is not asked again.
+      await this.rulesStore.update((rules) => { rules.rules[clarification.word] = chosenCategoryId; });
+      return { proposal: this.view(threadId, updated) };
+    });
+  }
+
+  private clarificationStatus(clarification: StoredClarification): ClarificationView["status"] {
+    return clarification.status === "pending" && Date.parse(clarification.expiresAt) <= this.clock().getTime() ? "expired" : clarification.status;
+  }
+
+  private clarificationView(threadId: string, clarification: StoredClarification): ClarificationView {
+    return {
+      id: clarification.id, threadId, word: clarification.word, candidates: clarification.candidates, preview: clarification.preview,
+      createdAt: clarification.createdAt, expiresAt: clarification.expiresAt, status: this.clarificationStatus(clarification)
+    };
+  }
+
+  private async findClarification(id: string): Promise<{ threadId: string; store: JsonDocumentStore<ChatThreadDocument>; clarification: StoredClarification }> {
+    if (!proposalIdPattern.test(id)) throw new NotFoundError("clarification", id);
+    for (const threadId of await this.threadIds()) {
+      const store = this.store(threadId);
+      const clarification = (await store.read()).clarifications.find((candidate) => candidate.id === id);
+      if (clarification) return { threadId, store, clarification };
+    }
+    throw new NotFoundError("clarification", id);
   }
 
   /** Finds a proposal by its short id across all threads. */
