@@ -1,0 +1,41 @@
+# Chat spike phrases. One per line: "<phrase> | <expected outcome>".
+# Expected outcome is one of: proposal, plain, invalid. Lines starting with # are ignored.
+# Categories available to the model: Rent, Phone, Subscriptions (fixed); Groceries, Entertainment, Transport (flexible); Salary (income).
+
+# --- 10 clean and typical (expect a confident proposal) ---
+today I spent 10 on groceries | proposal
+spent 4.50 on transport | proposal
+rent is 190 | proposal
+add income 2000 salary | proposal
+paid 35 for phone yesterday | proposal
+set groceries weekly target to 80 | proposal
+delete the last transaction | proposal
+what's my balance | proposal
+spent 25 on entertainment today | proposal
+subscriptions 12 today | proposal
+
+# --- 10 with typos and abbreviations (expect a proposal) ---
+spnt 7.75 on grocries | proposal
+transprt 3.20 today | proposal
+pd rent 190 | proposal
+set grocery wkly tgt 90 | proposal
+del last txn | proposal
+phone bill 35 nxt mon | proposal
+incm 100 salary | proposal
+entertanment 9.80 | proposal
+groceris 12 | proposal
+coffee 2.50 at hofer | invalid
+
+# --- 5 reworded or indirect (expect a proposal) ---
+I grabbed some transport for 2 euros | proposal
+put down 15 for groceries | proposal
+move my weekly groceries budget to 100 | proposal
+that last one was actually 20 | proposal
+scratch the last entry | proposal
+
+# --- 5 vague (should NOT produce a confident proposal) ---
+the usual | plain
+money stuff | plain
+hmm not sure | plain
+help | plain
+what can you do | plain
