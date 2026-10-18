@@ -141,11 +141,10 @@ function resolveTarget(value: unknown, context: ValidationContext, errors: strin
   return found;
 }
 
-/** Future dates are allowed only for bills (Fixed categories); they are flagged in the preview. */
-function checkFuture(date: IsoDate | undefined, category: Category | undefined, context: ValidationContext, errors: string[], flags: string[]): void {
-  if (date === undefined || date <= context.today || category === undefined) return;
-  if (category.kind === "fixed") flags.push("future date");
-  else errors.push(`date ${date} is in the future; only bills in a Fixed category can be dated in the future.`);
+/** Future dates are allowed everywhere; a future date is only flagged in the preview, never rejected. (Owner decided.) */
+function checkFuture(date: IsoDate | undefined, context: ValidationContext, flags: string[]): void {
+  if (date === undefined || date <= context.today) return;
+  flags.push("future date");
 }
 
 function describeDate(date: IsoDate, today: IsoDate): string {
@@ -188,7 +187,7 @@ export function validateProposal(raw: RawProposal, context: ValidationContext): 
       const category = has("category") ? resolveCategory(given.category, name === "add_income" ? income : spending, name === "add_income" ? "Income" : "Fixed or Flexible", errors) : undefined;
       const date = has("date") ? resolveDate(given.date, context, errors) : context.today;
       const note = has("note") ? resolveNote(given.note, errors) : "";
-      checkFuture(date, category, context, errors, flags);
+      checkFuture(date, context, flags);
       if (errors.length || amountCents === undefined || !category || date === undefined || note === undefined) return { ok: false, errors };
       const verb = name === "add_income" ? "Add income" : category.kind === "fixed" ? "Add bill" : "Add expense";
       return { ok: true, action: { action: name, categoryId: category.id, amountCents, date, note }, flags,
@@ -204,7 +203,7 @@ export function validateProposal(raw: RawProposal, context: ValidationContext): 
       const category = has("category") ? resolveCategory(given.category, group, !current ? "" : current.kind === "income" ? "Income" : "Fixed or Flexible", errors) : undefined;
       const date = has("date") ? resolveDate(given.date, context, errors) : undefined;
       const note = has("note") ? resolveNote(given.note, errors) : undefined;
-      checkFuture(date ?? transaction?.date, category ?? current, context, errors, flags);
+      checkFuture(date ?? transaction?.date, context, flags);
       if (errors.length || !transaction) return { ok: false, errors };
       const parts: string[] = [];
       if (amountCents !== undefined) { changes.amountCents = amountCents; parts.push(`amount → ${formatCents(amountCents)}`); }

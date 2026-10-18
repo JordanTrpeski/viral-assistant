@@ -123,7 +123,7 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 74. **Dates.**
     - Words: "today", "yesterday" and "tomorrow". A weekday name means its most recent occurrence on or before today. "last <weekday>" is strictly before today; "next <weekday>" is strictly after.
     - ISO `YYYY-MM-DD` is accepted. Years before 2000 are rejected.
-    - **A future date is allowed only for bills (Fixed categories)**, and is flagged "(future date)" in the preview. This is a strict reading of "future dates allowed for bills". Flexible expenses and income cannot be future-dated from chat, although Finance itself still allows it. — assumed, revisit
+    - **Future dates are allowed everywhere** (flexible expenses, income and bills alike). Anything dated after today passes validation and is flagged "(future date)" in the preview; nothing is rejected for being in the future. — decided by owner
 75. **Target "last"** is the most recent transaction created by a confirmed chat proposal *in this thread*. It does not fall back to an older one: if that transaction no longer exists, the proposal is rejected. An undone add is removed from the thread's list, so "last" then means the one before it. — assumed, revisit
 76. **get_balance is read-only and answered directly in the reply**, with no proposal and no confirm. — assumed, revisit
 77. **Proposals.**

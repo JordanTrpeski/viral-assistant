@@ -124,7 +124,7 @@ Added in commit "feat(dashboard): chat command layer with validation and confirm
   - shape: the action is allowed, required fields are present, there are no unknown fields;
   - amount: greater than 0, finite, at most the configured €5,000 limit, rounded to cents;
   - category: exact, then case-insensitive, per type, and never created;
-  - date: words, weekdays and ISO; years before 2000 are rejected; a future date is allowed only for bills and is flagged;
+  - date: words, weekdays and ISO; years before 2000 are rejected; future dates are allowed everywhere and flagged "(future date)" in the preview;
   - target: "last" in this thread, or an existing id.
 
   Every failed check comes back as its own sentence.

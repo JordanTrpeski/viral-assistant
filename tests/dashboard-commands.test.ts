@@ -86,7 +86,7 @@ test("validate category: exact, then case-insensitive, per type; never created f
   assert.match(bill.preview, /^Add bill €950\.00 · Rent · 2026-10-14 \(today\)$/);
 });
 
-test("validate dates: words and weekdays resolve from today; ISO accepted; before 2000 rejected; future only for bills, flagged", () => {
+test("validate dates: words and weekdays resolve from today; ISO accepted; before 2000 rejected; future dates allowed everywhere, flagged", () => {
   assert.deepEqual(["today", "yesterday", "tomorrow", "Monday", "wednesday", "sunday", "last wednesday", "next wednesday", "next monday", "last friday", "2026-02-28"].map((word) => resolveDateWord(word, today)),
     ["2026-10-14", "2026-10-13", "2026-10-15", "2026-10-12", "2026-10-14", "2026-10-11", "2026-10-07", "2026-10-21", "2026-10-19", "2026-10-09", "2026-02-28"]);
   assert.equal(resolveDateWord("2026-02-30", today), null);
@@ -95,8 +95,10 @@ test("validate dates: words and weekdays resolve from today; ISO accepted; befor
   assert.equal(okOf(add("yesterday")).action.action === "add_expense" && (okOf(add("yesterday")).action as { date: string }).date, "2026-10-13");
   assert.deepEqual(errorsOf(add("1999-12-31")), ["date 1999-12-31 is before 2000; earlier dates are not accepted."]);
   assert.deepEqual(errorsOf(add(20261014)), ["date must be text such as \"today\", \"yesterday\", a weekday name or YYYY-MM-DD, not 20261014."]);
-  assert.deepEqual(errorsOf(add("tomorrow")), ["date 2026-10-15 is in the future; only bills in a Fixed category can be dated in the future."]);
-  assert.deepEqual(errorsOf(validateProposal({ action: "add_income", fields: { amount: 5, category: "Salary", date: "next monday" } }, context())).length, 1);
+  const futureExpense = okOf(add("tomorrow"));
+  assert.deepEqual(futureExpense.flags, ["future date"], "a future-dated flexible expense is allowed, flagged in the preview");
+  assert.equal(futureExpense.preview, "Add expense €5.00 · Groceries · 2026-10-15 (tomorrow) (future date)");
+  assert.deepEqual(okOf(validateProposal({ action: "add_income", fields: { amount: 5, category: "Salary", date: "next monday" } }, context())).flags, ["future date"], "future-dated income is allowed, flagged");
   const futureBill = okOf(add("next monday", "Phone"));
   assert.deepEqual(futureBill.flags, ["future date"]);
   assert.equal(futureBill.preview, "Add bill €5.00 · Phone · 2026-10-19 (future date)");
@@ -115,8 +117,9 @@ test("validate targets: \"last\" is the latest transaction added in this thread;
   const edit = okOf(validateProposal({ action: "edit_transaction", fields: { target: "t1", amount: 15, note: "Lidl + Aldi" } }, context()));
   assert.deepEqual(edit.action, { action: "edit_transaction", transactionId: "t1", changes: { amountCents: 1_500, note: "Lidl + Aldi" } });
   assert.equal(edit.preview, "Edit \"Lidl\" €12.50 · Groceries · 2026-10-13: amount → €15.00, note → \"Lidl + Aldi\"");
-  assert.deepEqual(errorsOf(validateProposal({ action: "edit_transaction", fields: { target: "t1", date: "tomorrow" } }, context())),
-    ["date 2026-10-15 is in the future; only bills in a Fixed category can be dated in the future."]);
+  const futureEdit = okOf(validateProposal({ action: "edit_transaction", fields: { target: "t1", date: "tomorrow" } }, context()));
+  assert.deepEqual(futureEdit.flags, ["future date"], "editing a flexible expense to a future date is allowed, flagged");
+  assert.equal(futureEdit.preview, "Edit \"Lidl\" €12.50 · Groceries · 2026-10-13: date → 2026-10-15 (tomorrow) (future date)");
   assert.equal(errorsOf(validateProposal({ action: "edit_transaction", fields: { target: "t1", category: "Salary" } }, context())).length, 1, "an expense cannot move to an Income category");
 });
 
@@ -195,6 +198,30 @@ test("flow: a valid proposal is stored as pending and writes nothing; confirm wr
     const messages = (await call<ChatMessageView[]>("GET", "/api/chat/threads/main/messages")).body;
     assert.deepEqual(messages.map((message) => [message.role, message.kind]), [["user", "text"], ["assistant", "proposal"], ["assistant", "result"]]);
     assert.equal(messages[1]?.proposal?.status, "confirmed");
+  });
+});
+
+test("future dates: a future-dated flexible expense and income validate, the preview flags (future date), and confirm writes them; before 2000 is rejected", async () => {
+  await withCommandServer(async ({ say, call, transactions }) => {
+    const expense = await say("groceries next monday", { action: "add_expense", fields: { amount: 20, category: "groceries", date: "next monday" } });
+    assert.equal(expense.outcome, "proposal");
+    assert.match(expense.proposal!.preview, /\(future date\)$/);
+    const confirmedExpense = await call<ConfirmResult>("POST", `/api/chat/proposals/${expense.proposal!.id}/confirm`);
+    assert.equal(confirmedExpense.status, 200);
+    assert.equal((confirmedExpense.body.entry as Transaction).date, "2026-10-19");
+
+    const income = await say("salary tomorrow", { action: "add_income", fields: { amount: 100, category: "salary", date: "tomorrow" } });
+    assert.equal(income.outcome, "proposal");
+    assert.match(income.proposal!.preview, /\(future date\)$/);
+    const confirmedIncome = await call<ConfirmResult>("POST", `/api/chat/proposals/${income.proposal!.id}/confirm`);
+    assert.equal(confirmedIncome.status, 200);
+    assert.equal((confirmedIncome.body.entry as Transaction).date, "2026-10-15");
+
+    assert.deepEqual((await transactions()).map((entry) => entry.date).sort(), ["2026-10-15", "2026-10-19"]);
+
+    const tooOld = await say("old expense", { action: "add_expense", fields: { amount: 5, category: "groceries", date: "1999-12-31" } });
+    assert.equal(tooOld.outcome, "invalid");
+    assert.match(tooOld.reply.text, /before 2000/);
   });
 });
 
