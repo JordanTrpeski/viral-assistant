@@ -177,6 +177,34 @@ existing loopback Ollama adapter in `src/local` — no second HTTP client.
   "coffee …" phrase (no Coffee category) was mapped to Entertainment instead of being declined. The
   prompt and validation were **not** tuned to improve the score in this step.
 
+## Ambiguity and clarification
+
+Some spending words name a thing, not a category ("coffee", "dinner", "drinks"). Rather than let the
+model guess, a small code rule asks. `src/dashboard/commands/ambiguity.ts` holds a short map of such
+words to candidate category names; candidates are filtered to the live category list at request time
+(so with today's defaults "Spending"/"Personal" are dropped, and "gift" ends up with no candidates and
+never asks).
+
+- **Rule:** the model proposer runs first; then, for a spending add whose message uses an ambiguous
+  word and names no existing category, the chat returns a **question** ("Coffee, €2.50. Which
+  category?") with the surviving candidates — it does **not** create a proposal and writes nothing. The
+  amount/note/date come from the model proposal; only the category is withheld.
+- **Answer:** `POST /api/chat/clarifications/:id/answer` takes a candidate or any valid existing
+  category, runs it through the **existing** validation (invalid → the same category error), and turns
+  the clarification into a normal pending proposal that goes through the usual confirm. The answer
+  itself writes nothing.
+- **Remember once:** a successful answer stores word → category id in
+  `.viral/dashboard/chat-rules.json`; the same exact word then proposes directly and is not asked
+  again. Clarifications expire after 10 minutes like proposals (400 when expired/answered, 404 for an
+  unknown id).
+- **Spike re-run.** `scripts/chat-spike.mjs` now runs the real chat path and confirms one setup entry
+  ("groceries 3 bread") first, so the "last …" phrases have a transaction to reference. Run 2:
+  **29/30 outcome-correct** (see `docs/build/spike-results.md`; run 1 kept in
+  `spike-results-run1.md`). The four "last" phrases now propose (they were invalid in run 1's empty
+  context), "coffee 2.50 at hofer" is now a question, and "what's my balance" is answered directly as a
+  plain reply (its label still says proposal, so it reads as the one mismatch). Prompt and validation
+  were not tuned.
+
 ## Not done, and why
 
 - **Chat replies and voice:** the text chat UI and storage were added later (see Chat above), but replies are a fixed placeholder; no model and no voice are connected.
