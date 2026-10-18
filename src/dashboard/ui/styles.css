@@ -223,3 +223,8 @@ button.danger { color: var(--danger); }
 @media (max-width: 1600px) {
   .with-side { grid-template-columns: minmax(0, 1fr) 250px; }
 }
+.proposal-actions { display: flex; gap: 6px; margin-top: 8px; }
+.proposal-status { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.proposal-status.status-confirmed { color: var(--positive); }
+.from-reply.kind-proposal .bubble { color: var(--text); border-color: var(--accent); }
+.from-reply.kind-invalid .bubble { color: var(--text); border-color: var(--danger); }

@@ -34,7 +34,8 @@
   "dashboard": {
     "host": "127.0.0.1",
     "port": 4174,
-    "budgetStepCents": 1000
+    "budgetStepCents": 1000,
+    "chatMaxAmountCents": 500000
   },
   "efficiencyGovernor": {
     "primaryHarness": "claude",

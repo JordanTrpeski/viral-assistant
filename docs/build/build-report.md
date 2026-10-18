@@ -114,6 +114,33 @@ Added after M6 in commit "feat(dashboard): text chat UI with placeholder replies
 - There is no retention rule and no automatic deletion.
 - At 1280×800 the pane in the right column only shows about two messages, so Expand is the practical way to use it at that size.
 
+## Chat commands (actions, validation, confirm flow; no model)
+
+Added in commit "feat(dashboard): chat command layer with validation and confirm flow". The brief for this step was cut off mid-sentence; see assumption 69.
+
+**Works:**
+- **Action list** (`src/dashboard/commands/actions.ts`): add_expense, add_income, edit_transaction, delete_transaction, set_budget_target, get_balance. Each has a name, a description and a field schema.
+- **Validation** (`src/dashboard/commands/validate.ts`) is plain code. It checks:
+  - shape: the action is allowed, required fields are present, there are no unknown fields;
+  - amount: greater than 0, finite, at most the configured €5,000 limit, rounded to cents;
+  - category: exact, then case-insensitive, per type, and never created;
+  - date: words, weekdays and ISO; years before 2000 are rejected; a future date is allowed only for bills and is flagged;
+  - target: "last" in this thread, or an existing id.
+
+  Every failed check comes back as its own sentence.
+- **Confirm flow:**
+  - Posting a message returns a reply, a pending proposal with a preview line, or the validation errors, and never writes Finance data.
+  - `POST /api/chat/proposals/:id/confirm` is the only chat path that writes. It returns the saved entry and a 10-second undo token.
+  - `POST /api/chat/proposals/:id/cancel` discards a proposal.
+  - `POST /api/chat/undo/:token` reverses the most recent chat write.
+  - Proposals expire after 10 minutes.
+- **UI:** Confirm and Cancel on proposals, Undo for 10 seconds, and validation errors listed in the reply.
+- **Tests:** `tests/dashboard-commands.test.ts`, 14 / 0 / 0.
+
+**Placeholder or not built:**
+- No model is connected. The production proposer always replies "Chat is not connected to a model yet.", so the confirm flow can only be exercised through the test stub until a model is connected.
+- Nothing after the cut-off in the brief was built.
+
 ## Not done, and why
 
 - **Chat replies and voice:** the text chat UI and storage were added later (see Chat above), but replies are a fixed placeholder; no model and no voice are connected.

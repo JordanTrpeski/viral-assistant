@@ -213,7 +213,7 @@ async function main(): Promise<void> {
     const port = portValue === undefined ? config.port : Number(portValue);
     if (!Number.isSafeInteger(port) || port < 0 || port > 65_535) throw new Error("--port must be an integer from 0 to 65535");
     const dataDir = resolve(root, option("--data-dir") ?? ".viral");
-    const server = await startDashboardServer(createDashboardContext({ dataDir, budgetStepCents: config.budgetStepCents }), config.host, port);
+    const server = await startDashboardServer(createDashboardContext({ dataDir, budgetStepCents: config.budgetStepCents, chatMaxAmountCents: config.chatMaxAmountCents }), config.host, port);
     const shutdown = (): void => { void server.stop().then(() => process.exit(0)); };
     process.once("SIGINT", shutdown);
     process.once("SIGTERM", shutdown);

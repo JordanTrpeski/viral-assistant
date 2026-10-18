@@ -7,11 +7,13 @@ export interface DashboardConfig {
   port: number;
   /** Step for the budget − and + controls, in cents. */
   budgetStepCents: number;
+  /** Largest amount a chat proposal may carry, in cents (sanity limit; default 5000 EUR). */
+  chatMaxAmountCents: number;
 }
 
 export const loopbackHosts = ["127.0.0.1", "::1", "localhost"] as const;
 
-export const defaultDashboardConfig: DashboardConfig = { host: "127.0.0.1", port: 4174, budgetStepCents: 1_000 };
+export const defaultDashboardConfig: DashboardConfig = { host: "127.0.0.1", port: 4174, budgetStepCents: 1_000, chatMaxAmountCents: 500_000 };
 
 export function validateDashboardConfig(value: unknown): DashboardConfig {
   if (value === undefined) return { ...defaultDashboardConfig };
@@ -26,7 +28,11 @@ export function validateDashboardConfig(value: unknown): DashboardConfig {
   if (typeof budgetStepCents !== "number" || !Number.isSafeInteger(budgetStepCents) || budgetStepCents < 1) {
     throw new Error("dashboard.budgetStepCents must be a positive whole number of cents");
   }
-  return { host, port, budgetStepCents };
+  const chatMaxAmountCents = value.chatMaxAmountCents ?? defaultDashboardConfig.chatMaxAmountCents;
+  if (typeof chatMaxAmountCents !== "number" || !Number.isSafeInteger(chatMaxAmountCents) || chatMaxAmountCents < 1) {
+    throw new Error("dashboard.chatMaxAmountCents must be a positive whole number of cents");
+  }
+  return { host, port, budgetStepCents, chatMaxAmountCents };
 }
 
 export async function loadDashboardConfig(root: string): Promise<DashboardConfig> {

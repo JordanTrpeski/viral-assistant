@@ -110,7 +110,8 @@ test("budget: this month commits every fixed bill with its due date and counts f
 });
 
 test("config: the dashboard only binds to loopback and validates the budget step", () => {
-  assert.deepEqual(validateDashboardConfig(undefined), { host: "127.0.0.1", port: 4174, budgetStepCents: 1_000 });
+  assert.deepEqual(validateDashboardConfig(undefined), { host: "127.0.0.1", port: 4174, budgetStepCents: 1_000, chatMaxAmountCents: 500_000 });
+  assert.throws(() => validateDashboardConfig({ chatMaxAmountCents: 0 }), /chatMaxAmountCents/);
   assert.equal(validateDashboardConfig({ host: "::1", port: 0 }).host, "::1");
   assert.throws(() => validateDashboardConfig({ host: "0.0.0.0" }), /loopback/);
   assert.throws(() => validateDashboardConfig({ budgetStepCents: 0 }), /budgetStepCents/);

@@ -103,3 +103,39 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
    - Rename is by the ✎ button or by double-clicking a tab. Delete (✕) is immediate, with no confirmation, and returns you to Main.
    - The thread you are viewing and an unsent draft are kept only while the page is open.
    — assumed, revisit
+
+## Chat commands (actions, validation, confirm flow; no model)
+
+69. **The brief for this step was cut off** mid-sentence at "Undo of an edit restores the…". Undo was completed in the obvious way: an add is removed, an edit gets its previous values back, a delete gets the same record back (same id), and a budget target gets its previous value. Nothing after the cut-off was built. — assumed, revisit
+70. **No model is connected.** The production proposer (`PlaceholderProposer`) never proposes anything and only replies "Chat is not connected to a model yet." Tests inject `StubProposer`, which returns whatever proposal the test sets. In the real app, proposals therefore cannot appear until a model is connected. — assumed, revisit
+71. **The action list is the six actions in `src/dashboard/commands/actions.ts`, and nothing else is accepted.** `add_income` takes the same fields as `add_expense`; note and date are optional, and date defaults to today. `edit_transaction` must change at least one of amount, category, note or date. `get_balance` takes no fields. — assumed, revisit
+72. **Category types per action:**
+    - `add_expense` accepts Fixed categories (saved as a bill) and Flexible categories (saved as an expense).
+    - `add_income` accepts only Income categories.
+    - `set_budget_target` accepts only Flexible categories.
+    - An edit's new category must stay in the same group: Income, or Fixed/Flexible.
+    - Matching is the exact name or id first, then a case-insensitive, trimmed match. A proposal never creates a category; a miss is rejected with the list of valid names. — assumed, revisit
+73. **Amounts.**
+    - An amount must be a JSON number; strings like "12.50" are rejected.
+    - It must be finite, greater than 0, and at least 1 cent after rounding half-up to cents. It must be at most `dashboard.chatMaxAmountCents`, a new config key defaulting to 500000 (€5,000).
+    - A budget target set from chat must also be greater than 0.
+    - **New config key** in `viral-dev.config.json`: `dashboard.chatMaxAmountCents`. — assumed, revisit
+74. **Dates.**
+    - Words: "today", "yesterday" and "tomorrow". A weekday name means its most recent occurrence on or before today. "last <weekday>" is strictly before today; "next <weekday>" is strictly after.
+    - ISO `YYYY-MM-DD` is accepted. Years before 2000 are rejected.
+    - **A future date is allowed only for bills (Fixed categories)**, and is flagged "(future date)" in the preview. This is a strict reading of "future dates allowed for bills". Flexible expenses and income cannot be future-dated from chat, although Finance itself still allows it. — assumed, revisit
+75. **Target "last"** is the most recent transaction created by a confirmed chat proposal *in this thread*. It does not fall back to an older one: if that transaction no longer exists, the proposal is rejected. An undone add is removed from the thread's list, so "last" then means the one before it. — assumed, revisit
+76. **get_balance is read-only and answered directly in the reply**, with no proposal and no confirm. — assumed, revisit
+77. **Proposals.**
+    - Each has an 8-hex-character id, a preview line, flags and a status, stored in the thread file.
+    - A proposal expires 10 minutes after it is created; "expired" is derived from that time when the thread is read, nothing is deleted.
+    - Confirming or cancelling a proposal that is expired, confirmed, cancelled or undone returns 400. An unknown or malformed id returns 404.
+    - `POST …/messages` returns `outcome: "reply" | "proposal" | "invalid"` along with the stored messages. It writes only to the chat thread, never to Finance. — assumed, revisit
+78. **Confirm re-checks the data through Finance.** If the target was deleted or the category removed in the meantime, it returns 400 "This proposal can no longer be applied: …" and the proposal stays pending. Confirm, cancel and undo run one at a time, so a proposal is applied at most once. If the thread cannot be saved after a write, the write is reversed. — assumed, revisit
+79. **Undo.**
+    - Tokens are held in memory only, so a restart ends the 10-second window. Each token works once.
+    - Only the most recent chat write can be undone.
+    - An undo is refused (400) if the entry no longer has the exact values the chat write left, for example because it was edited in Finance since. Comparing values rather than timestamps matters: a test caught that two edits within the same millisecond share a timestamp.
+    - Undo of a delete puts back the original record, using the new `FinanceService.restoreTransaction`. — assumed, revisit
+80. **Transactions created from chat have `source: "chat"`.** This is a new source value, next to manual and groceries. — assumed, revisit
+81. **The UI change is the minimum needed to act on a proposal.** Proposal messages show Confirm and Cancel. A confirmed write shows Undo for its 10 seconds. Validation errors are listed in the reply. Confirm, cancel and undo routes return 200. — assumed, revisit

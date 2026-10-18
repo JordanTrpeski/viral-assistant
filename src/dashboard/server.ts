@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget } from "./budget.js";
 import { buildCalendar, itemsInWindow } from "./calendar.js";
 import { ChatService } from "./chat.js";
+import type { Proposer } from "./commands/proposer.js";
 import { ValidationError } from "./errors.js";
 import { FinanceService, type TransactionFilter } from "./finance.js";
 import { financePortFor, GroceriesService } from "./groceries.js";
@@ -30,6 +31,10 @@ export interface DashboardOptions {
   /** Base data directory; finance lives in `<dataDir>/finance`, other modules in `<dataDir>/dashboard`. */
   dataDir: string;
   budgetStepCents: number;
+  /** Largest amount a chat proposal may carry, in cents (default 5000 EUR). */
+  chatMaxAmountCents?: number;
+  /** Source of chat proposals; defaults to the placeholder (no model connected). Tests inject a stub. */
+  proposer?: Proposer;
   clock?: () => Date;
 }
 
@@ -40,7 +45,9 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
     reminders: RemindersService.open(join(options.dataDir, "dashboard"), { clock }),
-    chat: new ChatService(join(options.dataDir, "dashboard", "chat"), { clock }),
+    chat: new ChatService(join(options.dataDir, "dashboard", "chat"), {
+      clock, finance, ...(options.proposer ? { proposer: options.proposer } : {}), ...(options.chatMaxAmountCents ? { maxAmountCents: options.chatMaxAmountCents } : {})
+    }),
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -169,6 +176,9 @@ export function registerChatRoutes(router: Router, context: DashboardContext): v
   router.add("DELETE", "/api/chat/threads/:id", ({ params }) => chat.deleteThread(params.id!));
   router.add("GET", "/api/chat/threads/:id/messages", ({ params }) => chat.listMessages(params.id!));
   router.add("POST", "/api/chat/threads/:id/messages", ({ params, body }) => chat.postMessage(params.id!, body));
+  router.add("POST", "/api/chat/proposals/:id/confirm", ({ params }) => chat.confirm(params.id!), 200);
+  router.add("POST", "/api/chat/proposals/:id/cancel", ({ params }) => chat.cancel(params.id!), 200);
+  router.add("POST", "/api/chat/undo/:token", ({ params }) => chat.undo(params.token!), 200);
 }
 
 export function registerOverviewRoutes(router: Router, context: DashboardContext): void {

@@ -1,11 +1,11 @@
 // Text chat pane for the Overview: threads, messages, composer and expand toggle. No model: replies are a placeholder.
-import type { ChatMessage, ChatThreadSummary } from "../chat.js";
+import type { ChatMessageView, ChatThreadSummary, ConfirmResult } from "../chat.js";
 import { api, save, type AppContext } from "./api.js";
 import { focusKey, h } from "./dom.js";
 
 const expandedKey = "viral.chat.expanded";
-const state: { threadId: string; draft: string; creating: boolean; renamingId: string | null; sending: boolean } = {
-  threadId: "main", draft: "", creating: false, renamingId: null, sending: false
+const state: { threadId: string; draft: string; creating: boolean; renamingId: string | null; sending: boolean; undo: { token: string; proposalId: string; expiresAt: number } | null } = {
+  threadId: "main", draft: "", creating: false, renamingId: null, sending: false, undo: null
 };
 
 /** Expanded state is a per-browser preference; the pane works normally if storage is unavailable. */
@@ -66,9 +66,33 @@ function threadTab(context: AppContext, thread: ChatThreadSummary): HTMLElement 
     }, "✕") : null);
 }
 
-function messageBubble(message: ChatMessage): HTMLElement {
-  return h("div", { class: `message ${message.role === "user" ? "from-user" : "from-reply"}` },
-    h("div", { class: "bubble" }, message.text),
+/** Confirm / Cancel for a pending proposal: the only way chat writes data. */
+function proposalControls(context: AppContext, message: ChatMessageView): HTMLElement | null {
+  const proposal = message.proposal;
+  if (!proposal || message.kind !== "proposal") return null;
+  if (proposal.status !== "pending") return h("div", { class: `proposal-status status-${proposal.status}` }, proposal.status === "expired" ? "Expired — send the request again" : proposal.status[0]!.toUpperCase() + proposal.status.slice(1));
+  return h("div", { class: "proposal-actions" },
+    h("button", {
+      class: "primary", onclick: () => save(context, async () => {
+        const result = await api<ConfirmResult>("POST", `/api/chat/proposals/${proposal.id}/confirm`);
+        state.undo = { token: result.undo.token, proposalId: proposal.id, expiresAt: Date.parse(result.undo.expiresAt) };
+        window.setTimeout(() => { if (state.undo?.token === result.undo.token) { state.undo = null; void context.refresh(); } }, Math.max(0, Date.parse(result.undo.expiresAt) - Date.now()));
+      })
+    }, "Confirm"),
+    h("button", { onclick: () => save(context, () => api("POST", `/api/chat/proposals/${proposal.id}/cancel`)) }, "Cancel"));
+}
+
+function undoControl(context: AppContext, message: ChatMessageView): HTMLElement | null {
+  const undo = state.undo;
+  if (!undo || message.kind !== "result" || message.proposalId !== undo.proposalId || !message.text.startsWith("Done:") || Date.now() > undo.expiresAt) return null;
+  return h("div", { class: "proposal-actions" }, h("button", {
+    onclick: () => save(context, async () => { state.undo = null; await api("POST", `/api/chat/undo/${undo.token}`); })
+  }, "Undo"));
+}
+
+function messageBubble(context: AppContext, message: ChatMessageView): HTMLElement {
+  return h("div", { class: `message ${message.role === "user" ? "from-user" : "from-reply"} kind-${message.kind}` },
+    h("div", { class: "bubble" }, message.text, proposalControls(context, message), undoControl(context, message)),
     h("div", { class: "message-time" }, new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })));
 }
 
@@ -90,10 +114,10 @@ async function send(context: AppContext): Promise<void> {
 export async function renderChat(context: AppContext): Promise<HTMLElement> {
   const threads = await api<ChatThreadSummary[]>("GET", "/api/chat/threads");
   if (!threads.some((thread) => thread.id === state.threadId)) state.threadId = "main";
-  const messages = await api<ChatMessage[]>("GET", `/api/chat/threads/${state.threadId}/messages`);
+  const messages = await api<ChatMessageView[]>("GET", `/api/chat/threads/${state.threadId}/messages`);
   const expanded = isChatExpanded();
   const list = h("div", { class: "message-list", role: "log", "aria-live": "polite" },
-    ...messages.map(messageBubble),
+    ...messages.map((message) => messageBubble(context, message)),
     messages.length ? null : h("p", { class: "muted small empty-chat" }, "No messages in this thread yet."));
   const input = h("textarea", {
     ...focusKey("chat-input"), class: "chat-input", rows: 2, maxlength: 2000, placeholder: "Message (Enter to send, Shift+Enter for a new line)", value: state.draft,

@@ -17,7 +17,7 @@ export type TransactionKind = typeof transactionKinds[number];
 export const transactionFilters = ["all", "fixed", "flexible", "income"] as const;
 export type TransactionFilter = typeof transactionFilters[number];
 
-export type TransactionSource = "manual" | "groceries";
+export type TransactionSource = "manual" | "groceries" | "chat";
 
 export interface Category {
   id: string;
@@ -108,7 +108,7 @@ function validateTransaction(value: unknown, index: number): Transaction {
     date: requireDate(value.date, `${label}.date`),
     note: optionalText(value.note, `${label}.note`),
     fixed: value.fixed,
-    source: requireOneOf(value.source, ["manual", "groceries"] as const, `${label}.source`),
+    source: requireOneOf(value.source, ["manual", "groceries", "chat"] as const, `${label}.source`),
     createdAt: value.createdAt,
     updatedAt: value.updatedAt
   };
@@ -276,7 +276,7 @@ export class FinanceService {
     const amountCents = requirePositiveCents(input.amountCents);
     const date = requireDate(input.date);
     const note = optionalText(input.note, "note");
-    const source = input.source === undefined ? "manual" : requireOneOf(input.source, ["manual", "groceries"] as const, "source");
+    const source = input.source === undefined ? "manual" : requireOneOf(input.source, ["manual", "groceries", "chat"] as const, "source");
     return this.store.update((document) => {
       const category = requireKnownCategory(document, input.categoryId);
       const kind = checkKind(category, input.kind);
@@ -307,6 +307,18 @@ export class FinanceService {
       if (date !== undefined) transaction.date = date;
       if (note !== undefined) transaction.note = note;
       transaction.updatedAt = this.clock().toISOString();
+      return transaction;
+    });
+  }
+
+  /** Puts back an exact transaction record (same id and timestamps), e.g. to undo a delete. Its category must still exist. */
+  async restoreTransaction(record: Transaction): Promise<Transaction> {
+    const transaction = validateTransaction(record, 0);
+    return this.store.update((document) => {
+      if (document.transactions.some((candidate) => candidate.id === transaction.id)) throw new ValidationError(`Transaction ${transaction.id} already exists`);
+      const category = requireKnownCategory(document, transaction.categoryId);
+      checkKind(category, transaction.kind);
+      document.transactions.push(transaction);
       return transaction;
     });
   }
