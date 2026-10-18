@@ -2,6 +2,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget } from "./budget.js";
 import { buildCalendar, itemsInWindow } from "./calendar.js";
+import { ChatService } from "./chat.js";
 import { ValidationError } from "./errors.js";
 import { FinanceService, type TransactionFilter } from "./finance.js";
 import { financePortFor, GroceriesService } from "./groceries.js";
@@ -19,6 +20,7 @@ export interface DashboardContext {
   finance: FinanceService;
   groceries: GroceriesService;
   reminders: RemindersService;
+  chat: ChatService;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -38,6 +40,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
     reminders: RemindersService.open(join(options.dataDir, "dashboard"), { clock }),
+    chat: new ChatService(join(options.dataDir, "dashboard", "chat"), { clock }),
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -158,6 +161,16 @@ export function registerReminderRoutes(router: Router, context: DashboardContext
   router.add("DELETE", "/api/reminders/:id", ({ params }) => reminders.delete(params.id!));
 }
 
+export function registerChatRoutes(router: Router, context: DashboardContext): void {
+  const chat = context.chat;
+  router.add("GET", "/api/chat/threads", () => chat.listThreads());
+  router.add("POST", "/api/chat/threads", ({ body }) => chat.createThread(body));
+  router.add("PATCH", "/api/chat/threads/:id", ({ params, body }) => chat.renameThread(params.id!, body));
+  router.add("DELETE", "/api/chat/threads/:id", ({ params }) => chat.deleteThread(params.id!));
+  router.add("GET", "/api/chat/threads/:id/messages", ({ params }) => chat.listMessages(params.id!));
+  router.add("POST", "/api/chat/threads/:id/messages", ({ params, body }) => chat.postMessage(params.id!, body));
+}
+
 export function registerOverviewRoutes(router: Router, context: DashboardContext): void {
   router.add("GET", "/api/overview", async () => {
     const date = today(context);
@@ -181,6 +194,7 @@ export function createRouter(context: DashboardContext): Router {
   registerTimelineRoutes(router, context);
   registerOverviewRoutes(router, context);
   registerReminderRoutes(router, context);
+  registerChatRoutes(router, context);
   return router;
 }
 

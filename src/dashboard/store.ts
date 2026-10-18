@@ -71,4 +71,17 @@ export class JsonDocumentStore<T> {
     this.queue = next.catch(() => undefined);
     return next;
   }
+
+  /** Deletes the file (after any pending update) and forgets the cached document. A missing file is fine. */
+  remove(): Promise<void> {
+    const run = async (): Promise<void> => {
+      await this.fs.unlink(this.path).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+      this.cache = undefined;
+    };
+    const next = this.queue.then(run, run);
+    this.queue = next.catch(() => undefined);
+    return next;
+  }
 }

@@ -1,4 +1,4 @@
-// Overview: month calendar in the centre; right column with Next 7 days, Reminders, Budget and the chat placeholder.
+// Overview: month calendar in the centre; right column with Next 7 days, Reminders, Budget and the chat pane.
 import type { ReminderPanelItem } from "../overview.js";
 import { colourInfo } from "../shared/colours.js";
 import { daysBetween } from "../shared/dates.js";
@@ -7,6 +7,7 @@ import type { TimelineItem } from "../timeline.js";
 import { api, type AppContext } from "./api.js";
 import { monthView, weekView, type BudgetViewData } from "./budget-view.js";
 import { openSource, renderCalendar } from "./calendar.js";
+import { isChatExpanded, renderChat } from "./chat.js";
 import { h } from "./dom.js";
 
 interface OverviewResponse {
@@ -63,12 +64,14 @@ function budgetPanel(context: AppContext, data: OverviewResponse): HTMLElement {
 }
 
 export async function renderOverview(container: HTMLElement, context: AppContext): Promise<void> {
-  const [calendar, data] = await Promise.all([renderCalendar(context), api<OverviewResponse>("GET", "/api/overview")]);
-  container.replaceChildren(h("div", { class: "overview" },
-    calendar,
+  const [calendar, data, chat] = await Promise.all([renderCalendar(context), api<OverviewResponse>("GET", "/api/overview"), renderChat(context)]);
+  // Expanded chat takes the Overview area; the calendar and the other right-column panels collapse out of the way.
+  const expanded = isChatExpanded();
+  container.replaceChildren(h("div", { class: `overview${expanded ? " chat-expanded" : ""}` },
+    expanded ? null : calendar,
     h("div", { class: "right-column" },
-      nextSevenPanel(context, data),
-      remindersPanel(context, data),
-      budgetPanel(context, data),
-      h("section", { class: "panel chat-placeholder", "aria-label": "Chat placeholder" }, h("span", {}, "Chat, coming later")))));
+      expanded ? null : nextSevenPanel(context, data),
+      expanded ? null : remindersPanel(context, data),
+      expanded ? null : budgetPanel(context, data),
+      chat)));
 }

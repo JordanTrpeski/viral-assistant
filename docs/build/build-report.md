@@ -96,9 +96,27 @@ These scripts were throwaway and are not in the repo, so **the UI has no automat
 `GET /api/calendar` (`?month&hidden=bills,…`) · `GET /api/timeline` (`?from&days`) · `GET /api/overview` ·
 `GET|POST /api/reminders` (`?status=open|done|all`), `GET|PATCH|DELETE /api/reminders/:id`
 
+## Chat (text, UI only)
+
+Added after M6 in commit "feat(dashboard): text chat UI with placeholder replies". It needs no setup beyond the commands above.
+
+**Works:**
+- The chat pane replaces the old placeholder at the bottom of the Overview's right column.
+- Threads: "Main" always exists; "+ New" creates a named thread (1–40 characters); click a tab to switch; rename with ✎ or a double-click; delete with ✕ (immediate). Main cannot be renamed or deleted.
+- Messages: a scrolling list, with your messages on the right and replies on the left. Enter sends and Shift+Enter adds a new line, or use Send. Text is trimmed and must be 1–2000 characters.
+- Expand / Collapse: the chat takes over the Overview area, and the calendar and other panels collapse. The choice is remembered in this browser.
+- Storage: one atomic JSON file per thread in `.viral/dashboard/chat/`. The note "Kept until you delete it. Retention rule not decided yet." appears under the tabs.
+- Routes: `GET|POST /api/chat/threads`, `PATCH|DELETE /api/chat/threads/:id`, `GET|POST /api/chat/threads/:id/messages` (POST returns `{ message, reply }`). Bad names or text return 400, unknown thread ids return 404, and changes to Main return 400.
+- Tests: `tests/dashboard-chat.test.ts`, 7 / 0 / 0.
+
+**Placeholder or not built:**
+- Every reply is the fixed text "Chat is not connected to a model yet." There is no Ollama or other model connection, no action parsing, and no voice.
+- There is no retention rule and no automatic deletion.
+- At 1280×800 the pane in the right column only shows about two messages, so Expand is the practical way to use it at that size.
+
 ## Not done, and why
 
-- **Chat and voice:** excluded by the brief. Only the "Chat, coming later" placeholder box exists.
+- **Chat replies and voice:** the text chat UI and storage were added later (see Chat above), but replies are a fixed placeholder; no model and no voice are connected.
 - **Gym, Projects, Viral tasks:** greyed out and non-functional, as designed. Reminders is functional; see assumption 56 for how I read the brief's wording.
 - **Today's token count:** shows "n/a". Viral records no token usage anywhere (the efficiency telemetry has no token fields), so there is nothing truthful to display. Wiring a real source is a separate change.
 - **Served by "the existing daemon":** there is no HTTP daemon on `main`. The desktop daemon lives only on the unmerged `feat/m06-desktop-final` and `feat/m05-voice-clean` branches. This build adds its own small loopback server (`viral-dev dashboard`). If the desktop daemon is merged later, the router in `src/dashboard/server.ts` can be mounted there (assumption 7).

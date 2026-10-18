@@ -88,4 +88,18 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 
 ## Not built (out of scope by the brief)
 
-63. Chat and voice (a placeholder box only), the Gym, Projects and Viral tasks modules (greyed out in the nav), and any connector other than Finance ↔ Groceries. — assumed, revisit
+63. Model-backed chat replies and voice (see the Chat section below: the text chat UI exists, but replies are a fixed placeholder), the Gym, Projects and Viral tasks modules (greyed out in the nav), and any connector other than Finance ↔ Groceries. — assumed, revisit
+
+## Chat (text, UI only)
+
+64. **Chat is UI and storage only.** There are threads (a permanent "Main" plus named threads that can be created, renamed and deleted), a message list, a composer and the routes under `/api/chat`. Ollama and every other model are not connected, and no model calls are made. — assumed, revisit
+65. **Every reply is the fixed placeholder "Chat is not connected to a model yet."** It is stored as an ordinary `assistant` message, written in the same atomic write as the user's message, so the flow can be tested end to end. — assumed, revisit
+66. **Retention is undecided; nothing is deleted automatically.** A thread and its messages stay in `.viral/dashboard/chat/<thread-id>.json` until the owner deletes the thread. The pane says "Kept until you delete it. Retention rule not decided yet." — assumed, revisit
+67. **The expanded or normal state of the chat pane is stored per browser** (`localStorage`, key `viral.chat.expanded`). It is not shared, and it falls back to normal size if storage is unavailable. When expanded, the calendar and the other right-column panels are removed from the Overview and the chat fills it, up to 1100px wide. — assumed, revisit
+68. **Details decided while building the chat:**
+   - Thread names are trimmed and must be 1–40 characters; duplicate names are allowed. Message text is trimmed and must be 1–2000 characters.
+   - Main is created on first use and cannot be renamed or deleted (400).
+   - Thread ids are `main` or a UUID. Anything else is a 404 before any file access, so an id cannot point at another file.
+   - Rename is by the ✎ button or by double-clicking a tab. Delete (✕) is immediate, with no confirmation, and returns you to Main.
+   - The thread you are viewing and an unsent draft are kept only while the page is open.
+   — assumed, revisit
