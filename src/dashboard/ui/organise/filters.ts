@@ -14,8 +14,8 @@ export function emptyFilters(): FilterState {
   return { project_id: "", status: "", from: "", to: "" };
 }
 
-export function filterQuery(filters: FilterState): string {
-  const params = new URLSearchParams();
+export function filterQuery(filters: FilterState, extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams(extra);
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
   const text = params.toString();
   return text ? `?${text}` : "";

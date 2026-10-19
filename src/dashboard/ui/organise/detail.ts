@@ -38,7 +38,9 @@ export async function renderDetail(context: AppContext, id: string, items: Organ
   const vocab = await meta();
   const patch = (body: Record<string, unknown>): Promise<void> => patchItem(context, item.id, body);
   const projects = items.filter((candidate) => candidate.type === "project" && candidate.id !== item.id);
-  const statuses = item.type === "list_item" ? null : vocab.statuses[item.type] ?? null;
+  const statuses = item.type === "list_item" && item.list_id
+    ? (await api<{ statuses: string[] }>("GET", `/api/organise/lists/${item.list_id}`)).statuses
+    : vocab.statuses[item.type] ?? null;
   const linkable = items.filter((candidate) => candidate.id !== item.id && !item.links.includes(candidate.id));
   const fields: (HTMLElement | null)[] = [
     field(item.type === "project" ? "Name" : "Title", textField(context, item.title, `d:${item.id}:title`, (value) => patch({ title: value ?? "" }), { maxlength: item.type === "project" ? 100 : 200 })),

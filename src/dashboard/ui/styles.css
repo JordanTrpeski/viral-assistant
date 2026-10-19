@@ -267,3 +267,7 @@ button.danger { color: var(--danger); }
 .checklist-entry button { padding: 2px 4px; }
 .category-personal { color: var(--personal); }
 .category-bill { color: var(--bills); }
+.note-compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.note-compose input { grid-column: 1 / -1; }
+.lists-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
+.new-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }

@@ -7,6 +7,7 @@ import { isObject, rejectUnknownFields, requireObject } from "../validation.js";
 import { createCandidate, maxTitleLength, normaliseItem, patchCandidate, validateItemsDocument, type ItemType, type ModelContext, type OrganiseItem } from "./model.js";
 import type { JsonObject } from "../validation.js";
 import { applyReminderRules, nextOccurrence } from "./reminders.js";
+import { listName, listStatuses, newListFields } from "./lists.js";
 
 export interface OrganiseList {
   id: string;
@@ -169,6 +170,67 @@ export class OrganiseService {
 
   async listLists(): Promise<OrganiseList[]> {
     return (await this.lists.read()).lists;
+  }
+
+  async getList(id: string): Promise<OrganiseList> {
+    const list = (await this.lists.read()).lists.find((candidate) => candidate.id === id);
+    if (!list) throw new NotFoundError("list", id);
+    return list;
+  }
+
+  async createList(body: unknown): Promise<OrganiseList> {
+    const fields = newListFields(body);
+    const timestamp = this.clock().toISOString();
+    return this.lists.update((document) => {
+      const list: OrganiseList = { id: randomUUID(), ...fields, created_at: timestamp, updated_at: timestamp };
+      document.lists.push(list);
+      return list;
+    });
+  }
+
+  /**
+   * Renames a list or changes its statuses. A status still used by one of its rows cannot be removed. Afterwards
+   * each row's done_at follows the (possibly new) last status.
+   */
+  async updateList(id: string, body: unknown): Promise<OrganiseList> {
+    const input = requireObject(body);
+    rejectUnknownFields(input, ["name", "statuses"]);
+    const name = input.name === undefined ? undefined : listName(input.name);
+    const statuses = input.statuses === undefined ? undefined : listStatuses(input.statuses);
+    const rows = (await this.items.read()).items.filter((item) => item.type === "list_item" && item.list_id === id);
+    const updated = await this.lists.update((document) => {
+      const list = document.lists.find((candidate) => candidate.id === id);
+      if (!list) throw new NotFoundError("list", id);
+      if (statuses) {
+        const removed = [...new Set(rows.map((row) => row.status))].filter((status): status is string => status !== null && !statuses.includes(status));
+        if (removed.length) throw new ValidationError(`Cannot remove status(es) still in use: ${removed.join(", ")}`);
+        list.statuses = statuses;
+      }
+      if (name !== undefined) list.name = name;
+      list.updated_at = this.clock().toISOString();
+      return list;
+    });
+    if (statuses) {
+      const last = updated.statuses.at(-1)!;
+      await this.items.update((document) => {
+        for (const item of document.items) {
+          if (item.type !== "list_item" || item.list_id !== id) continue;
+          if (item.status === last && item.done_at === null) item.done_at = this.clock().toISOString();
+          if (item.status !== last && item.done_at !== null) item.done_at = null;
+        }
+      });
+    }
+    return updated;
+  }
+
+  /** A list can only be deleted once it has no rows. */
+  async deleteList(id: string): Promise<void> {
+    const rows = (await this.items.read()).items.filter((item) => item.type === "list_item" && item.list_id === id).length;
+    await this.lists.update((document) => {
+      if (!document.lists.some((list) => list.id === id)) throw new NotFoundError("list", id);
+      if (rows) throw new ValidationError(`Cannot delete a list with ${rows} row(s); move or delete them first`);
+      document.lists = document.lists.filter((list) => list.id !== id);
+    });
   }
 
   /** Deletes an item and removes it from every other item's links. */

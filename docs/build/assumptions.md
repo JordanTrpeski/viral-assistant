@@ -219,3 +219,10 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 124. **Calendar colours for Organise reminders:** Personal is pink (Personal), Bill is amber (Bills), and Study, Work, Health and Other are grey (Reminder). They enter the existing timeline as reminder entries with an optional `origin: "organise"`. That puts them on the calendar, in Next 7 days and in the dashboard Overview's Reminders panel, along with their grey "Prepare:" entries, without changing that code. Clicking one opens it under Organise > Reminders. — assumed, revisit
 125. **The earlier dashboard Reminders page** (M6, `.viral/dashboard/reminders.json`) is neither deleted nor migrated. Its entry leaves the nav in favour of Organise > Reminders, but the page is still reachable at `#/reminders`, its reminders still show on the calendar, and clicking one still opens it. Merging the two stores is left for a later decision. — assumed, revisit
 126. **`GET /api/organise/reminders`** (not in the spec's route list) returns Overdue, Upcoming and Done groups, with the same filters as items. — assumed, revisit
+
+### Step 5 — notes and lists
+
+127. **Presets** are named status sets: `default` (to do, doing, done), `books` (to read, reading, finished) and `films` (to watch, watching, watched); films is my addition as a second example. A list may instead take its own `statuses`: 1 to 10 names, each 1–40 characters, case-insensitively distinct, in order. **The last status counts as done.** Lists live in `lists.json`. — assumed, revisit
+128. **Changing a list's statuses** (rename, reorder, add) is allowed, but a status still used by one of its rows cannot be removed (400). Afterwards each row's `done_at` follows the new last status: set if the row now sits on it, cleared if not. — assumed, revisit
+129. **A list cannot be deleted while it has rows** (400 with the count). — assumed, revisit
+130. **List rows are ordinary `list_item` items.** They are created and edited through `/api/organise/items`. A row starts at its list's first status and only accepts its list's statuses. — assumed, revisit

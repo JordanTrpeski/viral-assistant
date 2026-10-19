@@ -4,13 +4,14 @@ import { requireDate, requireOneOf } from "../validation.js";
 import { itemTypes, priorities, recurrences, reminderCategories, typeStatuses } from "./model.js";
 import { organiseModules } from "./modules/registry.js";
 import type { ItemFilter, OrganiseService } from "./service.js";
+import { listPresets } from "./lists.js";
 import { groupReminders } from "./reminders.js";
 import { groupTasks } from "./tasks.js";
 
 /** Organise routes: loopback JSON like the rest of the dashboard; 400 for validation, 404 for unknown ids. */
 export function registerOrganiseRoutes(router: Router, organise: OrganiseService): void {
   // The model's fixed vocabularies, so the browser UI never duplicates them.
-  router.add("GET", "/api/organise/meta", () => ({ types: itemTypes, statuses: typeStatuses, reminderCategories, recurrences, priorities, modules: organiseModules }));
+  router.add("GET", "/api/organise/meta", () => ({ types: itemTypes, statuses: typeStatuses, reminderCategories, recurrences, priorities, listPresets, modules: organiseModules }));
   router.add("GET", "/api/organise/reminders", async ({ query }) => groupReminders(await organise.listItems({ ...filterParams(query), type: "reminder" }), organise.today()));
   router.add("GET", "/api/organise/tasks", async ({ query }) => groupTasks(await organise.listItems({ ...filterParams(query), type: "task" }), organise.today()));
   router.add("GET", "/api/organise/items", ({ query }) => organise.listItems(filterParams(query)));
@@ -24,6 +25,10 @@ export function registerOrganiseRoutes(router: Router, organise: OrganiseService
   router.add("POST", "/api/organise/inbox/:id/sort", ({ params, body }) => organise.sortInbox(params.id!, body), 200);
 
   router.add("GET", "/api/organise/lists", () => organise.listLists());
+  router.add("POST", "/api/organise/lists", ({ body }) => organise.createList(body));
+  router.add("GET", "/api/organise/lists/:id", ({ params }) => organise.getList(params.id!));
+  router.add("PATCH", "/api/organise/lists/:id", ({ params, body }) => organise.updateList(params.id!, body));
+  router.add("DELETE", "/api/organise/lists/:id", ({ params }) => organise.deleteList(params.id!));
 }
 
 /** Query filters: type, project_id, status, from, to (dates, inclusive). */
