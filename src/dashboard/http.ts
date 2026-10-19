@@ -12,6 +12,11 @@ export interface RouteRequest {
   body: unknown;
 }
 
+/** A non-JSON route result (e.g. a CSV download). */
+export class RawResponse {
+  constructor(readonly body: string | Buffer, readonly contentType: string, readonly filename?: string) {}
+}
+
 export type RouteHandler = (request: RouteRequest) => Promise<unknown> | unknown;
 
 interface Route {
@@ -134,6 +139,10 @@ export async function handleRequest(router: Router, statics: StaticResolver, req
       body = await readBody(request);
     }
     const result = await matched.route.handler({ params: matched.params, query: url.searchParams, body });
+    if (result instanceof RawResponse) {
+      response.writeHead(200, { "content-type": result.contentType, "cache-control": "no-store", ...(result.filename ? { "content-disposition": `attachment; filename="${result.filename}"` } : {}) }).end(result.body);
+      return;
+    }
     sendJson(response, matched.route.status, result ?? {});
   } catch (error) {
     if (error instanceof ValidationError) sendJson(response, 400, { error: error.message });

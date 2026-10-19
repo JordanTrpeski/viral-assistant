@@ -1,4 +1,4 @@
-import type { Router } from "../http.js";
+import { RawResponse, type Router } from "../http.js";
 import { ValidationError } from "../errors.js";
 import { requireDate, requireOneOf } from "../validation.js";
 import { itemTypes, priorities, recurrences, reminderCategories, typeStatuses } from "./model.js";
@@ -36,6 +36,11 @@ export function registerOrganiseRoutes(router: Router, organise: OrganiseService
   router.add("GET", "/api/organise/inbox", () => organise.inbox());
   router.add("POST", "/api/organise/inbox", ({ body }) => organise.addToInbox(body));
   router.add("POST", "/api/organise/inbox/:id/sort", ({ params, body }) => organise.sortInbox(params.id!, body), 200);
+
+  router.add("GET", "/api/organise/today", () => organise.todayView());
+  router.add("GET", "/api/organise/search", ({ query }) => organise.search(query.get("q") ?? ""));
+  router.add("GET", "/api/organise/overview", () => organise.overview());
+  router.add("GET", "/api/organise/export.csv", async () => new RawResponse(await organise.exportCsv(), "text/csv; charset=utf-8", "organise-export.csv"));
 
   router.add("GET", "/api/organise/rules", () => organise.getRules());
   router.add("PATCH", "/api/organise/rules", ({ body }) => organise.updateRules(body));

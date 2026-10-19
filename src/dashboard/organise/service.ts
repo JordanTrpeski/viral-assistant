@@ -10,6 +10,7 @@ import { applyReminderRules, nextOccurrence } from "./reminders.js";
 import { listName, listStatuses, newListFields } from "./lists.js";
 import { projectPage, type ProjectPage, type ProjectTracker } from "./projects.js";
 import { weeklyReview, type WeeklyReview } from "./review.js";
+import { exportCsv, maxQueryLength, overviewPanels, searchItems, todayStrip, type OverviewPanels, type SearchResult, type TodayStrip } from "./overview.js";
 import { datePatternLabels, emptyRules, muteAfter, requirePattern, rulesPatch, suggestionsFor, validateRulesDocument, type PatternStats, type RulesDocument, type Suggestion } from "./suggest.js";
 import { entryFields, trackerFields, trackerView, validateTrackersDocument, type Tracker, type TrackerEntry, type TrackersDocument, type TrackerView } from "./trackers.js";
 
@@ -306,6 +307,25 @@ export class OrganiseService {
 
   protected async projectTrackers(): Promise<ProjectTracker[]> {
     return (await this.trackers.read()).trackers;
+  }
+
+  async search(query: string): Promise<SearchResult> {
+    if (query.length > maxQueryLength) throw new ValidationError(`q must be at most ${maxQueryLength} characters`);
+    return searchItems((await this.items.read()).items, query);
+  }
+
+  async todayView(): Promise<TodayStrip> {
+    return todayStrip((await this.items.read()).items, this.today());
+  }
+
+  async overview(): Promise<OverviewPanels & { today: TodayStrip }> {
+    const [items, lists, trackers] = await Promise.all([this.items.read(), this.lists.read(), this.listTrackers()]);
+    return { ...overviewPanels(items.items, lists.lists, trackers, this.today()), today: todayStrip(items.items, this.today()) };
+  }
+
+  async exportCsv(): Promise<string> {
+    const [items, lists] = await Promise.all([this.items.read(), this.lists.read()]);
+    return exportCsv(items.items, lists.lists);
   }
 
   /** The rolling 7-day review ending on `end` (default today). */

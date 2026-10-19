@@ -70,3 +70,47 @@ Test counts are pass / fail / skipped for the full suite at that step's commit.
 - **Routes:** `GET|PATCH /api/organise/rules`; `POST /api/organise/suggest/:id/accept`, `/dismiss`, `/unmute`. `GET /api/organise/inbox` now carries each item's suggestions.
 - **Tests:** `organise-suggest`, 6 cases: each date pattern alone (including the next-year and next-month cases) and turned off; the verb signal alone; both signals in order; no signal; accept records a count and does not apply anything; muting after three dismissals in a row (across items, reset by an accept, per pattern), the chip hidden per item, unmute; settings for verbs and date patterns with validation; routes.
 - **UI:** suggestion chips with Accept and Dismiss on inbox rows (Accept opens the sort form pre-filled; a mute shows a message), and the "Organise suggestions" section in Settings (verbs, date-pattern toggles, muted list with Unmute). Browser-checked at 1920 and 1280: no console errors, no overflow; chips, accept, mute after three, unmute, toggle and verb edit all worked.
+
+### Step 10 — search, filters, Today strip, export, Overview panels: done (suite 262 / 0 / 2)
+- **Files:** `src/dashboard/organise/{overview,service,routes}.ts`; `src/dashboard/http.ts` (`RawResponse` for the CSV); `src/dashboard/ui/organise/{overview,panels,panel-types,panel-tasks,panel-reminders,panel-notes,panel-trackers,panel-review,notes,trackers}.ts`; `styles.css`; `tests/organise-overview.test.ts`; assumptions; this report.
+- **Routes:** `GET /api/organise/today`, `GET /api/organise/search?q=`, `GET /api/organise/export.csv`; `GET /api/organise/overview` is an addition (assumption 153).
+- **Tests:** `organise-overview`, 5 cases: search across title, notes, checklist and project name, grouped, with limits; filter combinations over HTTP; Today strip contents; export BOM, header, quoting, newlines, formula neutralising and headers; Overview counts.
+- **UI:** the Organise overview (inbox with chips and badge, Today strip, search with grouped results, then the registered panels), plus filters on list rows and trackers. Browser-checked at 1920 and 1280: no console errors, no overflow; order, Today strip, panel order and counts, search and click-through, list-row filter and export bytes all worked.
+
+## Summary
+
+| Step | Commit | Status | New tests | Full suite (pass / fail / skipped) | Browser-checked |
+|---|---|---|---|---|---|
+| 0 Spec | `359441a` | done | — | 206 / 0 / 2 (baseline) | — |
+| 1 Item model and store | `87090b7` | done | 8 | 214 / 0 / 2 | yes |
+| 2 Inbox | `cb0e7d9` | done | 5 | 219 / 0 / 2 | yes |
+| 3 Tasks | `917fdc3` | done | 6 | 225 / 0 / 2 | yes |
+| 4 Reminders | `f555b1c` | done | 6 | 231 / 0 / 2 | yes |
+| 5 Notes and lists | `8f09aaf` | done | 5 | 236 / 0 / 2 | yes |
+| 6 Projects | `228f5ac` | done | 4 | 240 / 0 / 2 | yes |
+| 7 Trackers | `c9ce8e8` | done | 6 | 246 / 0 / 2 | yes |
+| 8 Weekly review | `320c67c` | done | 5 | 251 / 0 / 2 | yes |
+| 9 Auto-suggest and rules | `0c241be` | done | 6 | 257 / 0 / 2 | yes |
+| 10 Search, filters, Today, export, Overview | this commit | done | 5 | 262 / 0 / 2 | yes |
+
+- **Existing tests:** all 208 pre-existing tests (206 pass, 2 skipped) kept passing at every step. No step needed the three-attempt failure rule, and none is partial or blocked.
+- **Browser checks:** every step was checked in headless Chromium at 1920×1080 and 1280×800 before its commit, with a throwaway script that is not in the repo. No step is "UI not browser-checked". The UI itself still has no automated tests in `pnpm run test`; only the server, model and calculations do.
+
+### Hard rules
+- **Not touched:** the chat command layer (`chat.ts`, `commands/`), Finance and its validation, the action list, confirm/undo, the reply text, `STATE.json`, `STATE.md`, `CHECKPOINT.md`, `verification/`, `runs/`, `tasks/`, `packets/`, `.claude/` and `viral-dev.config.json`. No new setting was needed.
+- **No model:** Ollama is not connected and no model is called. The "Ask Viral (connect a model later)" box is disabled and not wired. The future contract stays as the spec documents it: a model would receive only the selected item's fields and could call only named actions from the module registry (`src/dashboard/organise/modules/`) or named queries, never reading the store.
+- **Existing dashboard files changed:**
+  - `http.ts`: `/assets/ui/organise/` static path, and `RawResponse`.
+  - `server.ts`: Organise service, routes, and reminders on the timeline.
+  - `timeline.ts`: an optional `origin` field.
+  - `ui/calendar.ts`: Organise reminders open in Organise.
+  - `ui/app.ts`: nav group, badge, routes.
+  - `ui/settings.ts`: the suggestions section.
+  - `ui/styles.css`.
+
+### Not done, and why
+- **The earlier dashboard Reminders store** (`reminders.json`, M6) is not merged with Organise reminders. Merging would migrate user data and was not asked for. Its page leaves the nav but still works, and its reminders still show on the calendar (assumption 125). This is the one design question the spec does not settle; it is recorded as a default to revisit rather than a blocker.
+- **Additions the spec did not list**, all recorded in assumptions: the routes `/meta`, `GET /inbox`, `/tasks`, `/reminders`, `/projects/:id` and `/overview`, and the internal `recurrence_anchor` field for leap-day birthdays.
+
+### Questions
+None. Every gap was covered by a recorded default, so `docs/build/organise-questions.md` was not needed.

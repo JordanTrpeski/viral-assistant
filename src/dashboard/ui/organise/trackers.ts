@@ -6,6 +6,7 @@ import type { OrganiseItem } from "./common.js";
 
 const draft = { name: "", unit: "", target: "", period: "weekly" };
 const entryDraft = { date: "", value: "", note: "" };
+const trackerFilter = { project_id: "" };
 
 function openTrackerId(): string | null {
   const match = /[?&]tracker=([0-9a-f-]{36})/.exec(location.hash);
@@ -91,7 +92,8 @@ export async function renderTrackers(container: HTMLElement, context: AppContext
       context.navigate(`organise-trackers?tracker=${tracker.id}`);
     });
   };
-  const cards = await Promise.all(trackers.map(async (tracker) => h("section", { class: `panel tracker${tracker.id === openId ? " open" : ""}` },
+  const shown = trackers.filter((tracker) => !trackerFilter.project_id || tracker.project_id === trackerFilter.project_id);
+  const cards = await Promise.all(shown.map(async (tracker) => h("section", { class: `panel tracker${tracker.id === openId ? " open" : ""}` },
     h("div", { class: "panel-head" },
       h("a", { href: tracker.id === openId ? "#/organise-trackers" : `#/organise-trackers?tracker=${tracker.id}`, class: "tracker-name" }, tracker.name),
       h("span", { class: "muted small" }, `${tracker.period}${tracker.project_id ? ` · ${items.find((project) => project.id === tracker.project_id)?.title ?? ""}` : ""}`)),
@@ -105,6 +107,10 @@ export async function renderTrackers(container: HTMLElement, context: AppContext
           h("input", { class: "unit-input", placeholder: "unit", maxlength: 30, value: draft.unit, oninput: (event: Event) => { draft.unit = (event.target as HTMLInputElement).value; } }),
           h("input", { class: "unit-input", type: "number", min: 0, step: "any", placeholder: "target", value: draft.target, oninput: (event: Event) => { draft.target = (event.target as HTMLInputElement).value; } }),
           h("select", { value: draft.period, onchange: (event: Event) => { draft.period = (event.target as HTMLSelectElement).value; } }, ...["weekly", "monthly", "yearly"].map((period) => h("option", { value: period }, period))),
-          h("button", { class: "primary", onclick: create }, "Add tracker"))),
+          h("button", { class: "primary", onclick: create }, "Add tracker")),
+        h("div", { class: "toolbar filters" },
+          h("select", { "aria-label": "Project", value: trackerFilter.project_id, onchange: (event: Event) => { trackerFilter.project_id = (event.target as HTMLSelectElement).value; void context.refresh(); } },
+            h("option", { value: "" }, "All projects"), ...items.map((project) => h("option", { value: project.id }, project.title))),
+          h("span", { class: "muted small" }, "Trackers have no status or date of their own; their entries are dated."))),
       ...(cards.length ? cards : [h("p", { class: "muted" }, "No trackers yet.")]))));
 }

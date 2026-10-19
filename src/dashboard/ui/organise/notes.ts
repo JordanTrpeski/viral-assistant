@@ -11,6 +11,7 @@ const noteDraft = { title: "", text: "" };
 const listDraft = { name: "", preset: "default" };
 let rowDraft = "";
 const filters = emptyFilters();
+const rowFilters = emptyFilters();
 
 function notesTab(context: AppContext, notes: OrganiseItem[], projects: OrganiseItem[], selected: string | null): HTMLElement[] {
   const add = (): Promise<void> => (noteDraft.title.trim() || noteDraft.text.trim()
@@ -58,7 +59,16 @@ function listRows(context: AppContext, list: OrganiseList, rows: OrganiseItem[],
       : h("p", { class: "muted small" }, "No rows yet."));
 }
 
-async function listsTab(context: AppContext, lists: OrganiseList[], rows: OrganiseItem[], selected: string | null): Promise<HTMLElement[]> {
+function rowMatches(row: OrganiseItem): boolean {
+  if (rowFilters.project_id && row.project_id !== rowFilters.project_id) return false;
+  if (rowFilters.status && row.status !== rowFilters.status) return false;
+  if ((rowFilters.from || rowFilters.to) && row.date === null) return false;
+  if (rowFilters.from && row.date! < rowFilters.from) return false;
+  if (rowFilters.to && row.date! > rowFilters.to) return false;
+  return true;
+}
+
+async function listsTab(context: AppContext, lists: OrganiseList[], rows: OrganiseItem[], projects: OrganiseItem[], selected: string | null): Promise<HTMLElement[]> {
   const presets = (await api<{ listPresets: Record<string, string[]> }>("GET", "/api/organise/meta")).listPresets;
   if (state.listId && !lists.some((list) => list.id === state.listId)) state.listId = null;
   state.listId ??= lists[0]?.id ?? null;
@@ -77,7 +87,11 @@ async function listsTab(context: AppContext, lists: OrganiseList[], rows: Organi
           h("select", { "aria-label": "Preset", value: listDraft.preset, onchange: (event: Event) => { listDraft.preset = (event.target as HTMLSelectElement).value; } },
             ...Object.entries(presets).map(([key, statuses]) => h("option", { value: key }, `${key}: ${statuses.join(", ")}`))),
           h("button", { class: "primary", onclick: create }, "Create list"))),
-      current ? listRows(context, current, rows.filter((row) => row.list_id === current.id), selected) : h("section", { class: "panel" }, h("p", { class: "muted" }, "Create a list to start.")))
+      current
+        ? h("div", { class: "organise-main" },
+          filterBar(context, rowFilters, projects, current.statuses),
+          listRows(context, current, rows.filter((row) => row.list_id === current.id && rowMatches(row)), selected))
+        : h("section", { class: "panel" }, h("p", { class: "muted" }, "Create a list to start.")))
   ];
 }
 
@@ -90,7 +104,7 @@ export async function renderNotesAndLists(container: HTMLElement, context: AppCo
   const projects = items.filter((item) => item.type === "project");
   const selected = selectedItemId();
   const tabs = (["notes", "lists"] as const).map((tab) => h("button", { class: `tab${state.tab === tab ? " active" : ""}`, onclick: () => { state.tab = tab; void context.refresh(); } }, tab === "notes" ? "Notes" : "Lists"));
-  const body = state.tab === "notes" ? notesTab(context, notes, projects, selected) : await listsTab(context, lists, items.filter((item) => item.type === "list_item"), selected);
+  const body = state.tab === "notes" ? notesTab(context, notes, projects, selected) : await listsTab(context, lists, items.filter((item) => item.type === "list_item"), projects, selected);
   container.replaceChildren(h("div", { class: `page organise${selected ? " with-detail" : ""}` },
     h("div", { class: "organise-main" }, h("div", { class: "tabs" }, ...tabs), ...body),
     selected ? await renderDetail(context, selected, items) : null));

@@ -269,3 +269,22 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 146. **Accept** (`POST /api/organise/suggest/:id/accept` with `{ pattern }`; `:id` is the inbox item) records the accept and returns `{ type, prefill }`. It never changes the item: the UI opens the sort form on that type with the date pre-filled, and nothing is saved until Save. — assumed, revisit
 147. **For unmute, the route's `:id` is the pattern itself** (`POST /api/organise/suggest/verb%3Abuy/unmute`), because muting is per pattern and the spec gives all three suggest routes an `:id`. Unmuting a pattern that is not muted returns 404. — assumed, revisit
 148. **Rules live in `rules.json`:** the verb list (editable; single words of 1–30 letters, lower-cased and de-duplicated, at most 100), on/off flags per date pattern, per-pattern counts, and per-item dismissals. The settings appear in a new "Organise suggestions" section on the existing Settings page. — assumed, revisit
+
+### Step 10 — search, filters, Today strip, export, Overview panels
+
+149. **Search** (`GET /api/organise/search?q=`) is a case-insensitive substring match on title, notes, checklist text and the item's project name; a project also matches on its own name. Results are grouped by type and sorted by title. An empty `q` returns nothing; more than 200 characters returns 400. It runs when you press Enter in the search box. — assumed, revisit
+150. **Filters per subpanel**, where the field exists:
+    - Tasks and Reminders: project, status and date range.
+    - Notes: project and date range, since notes have no status.
+    - List rows: project, the list's own statuses, and date range.
+    - Projects: status.
+    - Trackers: project only. Trackers have no status or date of their own; their entries are dated. — assumed, revisit
+151. **The Today strip lists a reminder under "Prepare" only while its date is still to come.** That is: open, `prepare_by` today or earlier, date after today. A reminder dated today or overdue appears once, under Reminders. — assumed, revisit
+152. **No Finance CSV export exists on `main`,** so "the same CSV style as Finance" was implemented exactly as the spec spells it out: a UTF-8 byte-order mark, a header row, every field quoted with quotes doubled, and CRLF line ends. The file has one row per Organise item; trackers and entries are not included. Text fields that start with `=`, `+`, `-` or `@` get a leading `'` so a spreadsheet does not run them as formulas. The HTTP layer gained a small `RawResponse` type so a route can return a non-JSON body. — assumed, revisit
+153. **Overview panels come from a UI panel registry** (`src/dashboard/ui/organise/panels.ts`, one file per panel). The Overview only iterates it, so adding a module's panel never edits the Overview. The panels read `GET /api/organise/overview` (an addition):
+    - Tasks: open, due this week (today to day 6), overdue.
+    - Reminders: the next 30 days with "Prepare:" entries, first 8 shown.
+    - Notes and lists: counts.
+    - Trackers: current progress.
+    - Weekly review: a link.
+    - The step 1 "items by type" list and quick-create were removed from the Overview, since capture is the inbox. — assumed, revisit
