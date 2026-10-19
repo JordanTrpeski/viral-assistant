@@ -3,6 +3,7 @@ import * as nodeFs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { actionNames, type ActionName, type RawProposal } from "./commands/actions.js";
 import { findAmbiguity } from "./commands/ambiguity.js";
+import { evaluateArithmetic } from "./commands/arithmetic.js";
 import { balanceReply, executeAction, undoAction, type ExecutionResult, type FinanceCommandPort, type UndoPlan } from "./commands/execute.js";
 import { PlaceholderProposer, placeholderReply, type Proposer } from "./commands/proposer.js";
 import { eurosToCents, validateProposal, type ResolvedAction } from "./commands/validate.js";
@@ -244,6 +245,26 @@ interface UndoEntry {
   expiresAt: number;
 }
 
+const typedAmountRe = /(?:€\s*)?(\d+(?:\.\d+)?)/g;
+
+/** The last concrete number a user typed, in cents, or null — used as the reference for a relative amount. */
+function lastTypedAmountCents(text: string): number | null {
+  let last: number | null = null;
+  typedAmountRe.lastIndex = 0;
+  for (let match = typedAmountRe.exec(text); match; match = typedAmountRe.exec(text)) {
+    const value = Number(match[1]);
+    if (Number.isFinite(value)) last = eurosToCents(value);
+  }
+  return last;
+}
+
+/** The amount a resolved action carries, in cents, or null when it has none (delete, get_balance, edit without amount). */
+function amountCentsOf(action: ResolvedAction): number | null {
+  if (action.action === "add_expense" || action.action === "add_income" || action.action === "set_budget_target") return action.amountCents;
+  if (action.action === "edit_transaction") return action.changes.amountCents ?? null;
+  return null;
+}
+
 /**
  * Text chat threads, one JSON file per thread in `.viral/dashboard/chat/`. Messages may turn into proposed
  * actions, which are validated in plain code and stored as pending; only confirming a proposal writes data.
@@ -330,6 +351,29 @@ export class ChatService {
     return { id: proposal.id, threadId, action: proposal.action.action, preview: proposal.preview, flags: proposal.flags, createdAt: proposal.createdAt, expiresAt: proposal.expiresAt, status: this.status(proposal) };
   }
 
+  /**
+   * The reference amount for a relative phrase: the most recent concrete amount in the thread — a number the
+   * user typed, or a confirmed proposal's amount — walking newest to oldest. The model's own output is never
+   * used, and a prior message that is itself a relative phrase is skipped so one guess cannot seed another.
+   */
+  private lastAmount(thread: ChatThreadDocument): number | null {
+    for (let index = thread.messages.length - 1; index >= 0; index -= 1) {
+      const message = thread.messages[index]!;
+      if (message.role === "user" && message.kind === "text") {
+        if (evaluateArithmetic(message.text, 0) !== null) continue;
+        const cents = lastTypedAmountCents(message.text);
+        if (cents !== null) return cents;
+      } else if (message.role === "assistant" && message.kind === "proposal" && message.proposalId) {
+        const proposal = thread.proposals.find((item) => item.id === message.proposalId);
+        if (proposal && proposal.status === "confirmed") {
+          const cents = amountCentsOf(proposal.action);
+          if (cents !== null) return cents;
+        }
+      }
+    }
+    return null;
+  }
+
   /** Main first, then the other threads oldest first. */
   async listThreads(): Promise<ChatThreadSummary[]> {
     const threads = await Promise.all((await this.threadIds()).map(async (id) => summary(await this.store(id).read())));
@@ -409,43 +453,65 @@ export class ChatService {
       const thread = await store.read();
       const proposal = proposed.proposal;
       const rawFields = (typeof proposal.fields === "object" && proposal.fields !== null && !Array.isArray(proposal.fields) ? proposal.fields : {}) as Record<string, unknown>;
-      const amount = rawFields.amount;
-      // Ambiguous-word rule (code, not model): for a spending add whose message uses an ambiguous word and
-      // names no category, apply a remembered category or ask — never guess. Amount/note/date come from the
-      // model proposal; only the category is in question.
-      const ambiguity = (proposal.action === "add_expense" || proposal.action === "add_income") && typeof amount === "number" && amount > 0
-        ? findAmbiguity(text, snapshot.categories) : null;
-      const remembered = ambiguity ? (await this.rulesStore.read()).rules[ambiguity.word] : undefined;
-      if (ambiguity && remembered !== undefined) rawFields.category = remembered;
-      if (ambiguity && remembered === undefined) {
-        const created = this.clock();
-        const label = ambiguity.word.charAt(0).toUpperCase() + ambiguity.word.slice(1);
-        const questionText = `${label}, ${formatCents(eurosToCents(amount as number))}. Which category?`;
-        const fields: StoredClarification["fields"] = { amount: amount as number };
-        if (typeof rawFields.note === "string") fields.note = rawFields.note;
-        if (typeof rawFields.date === "string") fields.date = rawFields.date;
-        clarification = {
-          id: randomBytes(4).toString("hex"), action: proposal.action as "add_expense" | "add_income", fields, word: ambiguity.word, candidates: ambiguity.candidates,
-          preview: questionText, createdAt: created.toISOString(), expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
-        };
-        reply = { role: "assistant", kind: "question", text: questionText, clarificationId: clarification.id };
+      // Arithmetic in code (not the model): a relative amount in the message is computed here and replaces the
+      // model's amount; the model's output is never used as the reference. "split" is not calculated — it asks.
+      const arithmetic = evaluateArithmetic(text, this.lastAmount(thread));
+      let working: string | undefined;
+      if (arithmetic?.kind === "split") {
+        const question = `Do you want your share of ${formatCents(arithmetic.amountCents)}, or the total for everyone?`;
+        errors = [question];
+        reply = { role: "assistant", kind: "invalid", text: question, errors };
+      } else if (arithmetic?.kind === "needs-reference") {
+        const question = "Which amount should I use? There's no earlier amount in this chat yet — tell me the number.";
+        errors = [question];
+        reply = { role: "assistant", kind: "invalid", text: question, errors };
       } else {
-        const result = validateProposal(proposal, {
-          today, maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
-          lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
-        });
-        if (!result.ok) {
-          errors = result.errors;
-          reply = { role: "assistant", kind: "invalid", text: `I can't do that yet:\n${errors.map((error) => `• ${error}`).join("\n")}`, errors };
-        } else if (result.action.action === "get_balance") {
-          reply = { role: "assistant", kind: "text", text: await balanceReply(this.finance, today) };
-        } else {
+        if (arithmetic?.kind === "value" && (proposal.action === "add_expense" || proposal.action === "add_income" || proposal.action === "set_budget_target")) {
+          const modelCents = typeof rawFields.amount === "number" ? eurosToCents(rawFields.amount) : null;
+          if (modelCents !== null && modelCents !== arithmetic.valueCents) {
+            console.error(`[chat] arithmetic override: model amount ${modelCents}c replaced by code result ${arithmetic.valueCents}c for "${text}"`);
+          }
+          rawFields.amount = arithmetic.valueCents / 100;
+          working = arithmetic.working;
+        }
+        const amount = rawFields.amount;
+        // Ambiguous-word rule (code, not model): for a spending add whose message uses an ambiguous word and
+        // names no category, apply a remembered category or ask — never guess.
+        const ambiguity = (proposal.action === "add_expense" || proposal.action === "add_income") && typeof amount === "number" && amount > 0
+          ? findAmbiguity(text, snapshot.categories) : null;
+        const remembered = ambiguity ? (await this.rulesStore.read()).rules[ambiguity.word] : undefined;
+        if (ambiguity && remembered !== undefined) rawFields.category = remembered;
+        if (ambiguity && remembered === undefined) {
           const created = this.clock();
-          pending = {
-            id: randomBytes(4).toString("hex"), action: result.action, preview: result.preview, flags: result.flags, createdAt: created.toISOString(),
-            expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+          const label = ambiguity.word.charAt(0).toUpperCase() + ambiguity.word.slice(1);
+          const questionText = `${label}, ${formatCents(eurosToCents(amount as number))}. Which category?`;
+          const fields: StoredClarification["fields"] = { amount: amount as number };
+          if (typeof rawFields.note === "string") fields.note = rawFields.note;
+          if (typeof rawFields.date === "string") fields.date = rawFields.date;
+          clarification = {
+            id: randomBytes(4).toString("hex"), action: proposal.action as "add_expense" | "add_income", fields, word: ambiguity.word, candidates: ambiguity.candidates,
+            preview: questionText, createdAt: created.toISOString(), expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
           };
-          reply = { role: "assistant", kind: "proposal", text: result.preview, proposalId: pending.id };
+          reply = { role: "assistant", kind: "question", text: questionText, clarificationId: clarification.id };
+        } else {
+          const result = validateProposal(proposal, {
+            today, maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
+            lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
+          });
+          if (!result.ok) {
+            errors = result.errors;
+            reply = { role: "assistant", kind: "invalid", text: `I can't do that yet:\n${errors.map((error) => `• ${error}`).join("\n")}`, errors };
+          } else if (result.action.action === "get_balance") {
+            reply = { role: "assistant", kind: "text", text: await balanceReply(this.finance, today) };
+          } else {
+            const created = this.clock();
+            const preview = working ? `${result.preview} (${working})` : result.preview;
+            pending = {
+              id: randomBytes(4).toString("hex"), action: result.action, preview, flags: result.flags, createdAt: created.toISOString(),
+              expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+            };
+            reply = { role: "assistant", kind: "proposal", text: preview, proposalId: pending.id };
+          }
         }
       }
     }
