@@ -255,3 +255,13 @@ button.danger { color: var(--danger); }
 .inbox-row { border-bottom: 1px solid var(--line); padding: 6px 0; }
 .inbox-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sort-form { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); max-width: 640px; }
+.task-row { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-bottom: 1px solid var(--line); }
+.task-row.selected { background: var(--panel-2); }
+.task-row.done .task-title { color: var(--muted); text-decoration: line-through; }
+.task-row input[type="checkbox"], .checklist-entry input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); }
+.task-title { border: none; background: none; padding: 0; text-align: left; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.priority-high { font-size: 12px; color: var(--bills); }
+.filters { margin: 8px 0 0; }
+.checklist-editor { display: flex; flex-direction: column; gap: 4px; }
+.checklist-entry { display: grid; grid-template-columns: 20px minmax(0, 1fr) 28px; gap: 6px; align-items: center; }
+.checklist-entry button { padding: 2px 4px; }

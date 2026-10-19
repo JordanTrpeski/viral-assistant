@@ -198,3 +198,11 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 113. **Sorting an item that is not in the inbox returns 400.** A failed sort changes nothing. — assumed, revisit
 114. **The reminder sort form opens with today's date pre-filled.** A reminder needs a date, and the inbox never forces a decision before Sort is pressed. — assumed, revisit
 115. **`GET /api/organise/lists` (read-only) arrives in this step** so the list-item sort target can offer lists. Creating and editing lists comes in step 5. — assumed, revisit
+
+### Step 3 — tasks
+
+116. **"Open" in the task groups means not done**, so `in_progress` tasks appear in Today, This week and Later alongside `open` ones. — assumed, revisit
+117. **Order within a group:** due date (undated last), then priority (high, normal, low), then title. Done is ordered newest `done_at` first. — assumed, revisit
+118. **Ticking every checklist entry does not complete the task**; completing is always an explicit step. Checklist edits send the whole list. Entries keep their ids, and new entries get one from the server. — assumed, revisit
+119. **`GET /api/organise/tasks`** (not in the spec's route list) returns the four groups, accepting the same filters as `GET /api/organise/items`. The filters are `project_id`, `status`, and `from`/`to` (inclusive, on the item's date). A date range excludes undated items, and `from` after `to` returns 400. — assumed, revisit
+120. **Module registry.** `src/dashboard/organise/modules/` holds one file per module, exporting `type`, `label`, `fields`, `statuses` and `actions` (`{ name, description, fieldSchema }`). The registry lists them, and `/api/organise/meta` exposes them under `modules`. Each step adds its own module. The actions are declarations only; nothing calls them. — assumed, revisit

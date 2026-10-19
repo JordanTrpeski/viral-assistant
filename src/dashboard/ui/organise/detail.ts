@@ -1,7 +1,8 @@
 // Detail panel for any Organise item: live edits of the fields its type has, delete, and the Ask Viral slot.
 import type { AppContext } from "../api.js";
 import { api, save } from "../api.js";
-import { h } from "../dom.js";
+import { focusKey, h } from "../dom.js";
+import type { ChecklistEntry } from "../../organise/model.js";
 import { dateField, field, meta, patchItem, selectField, statusLabel, textField, typeLabels, type OrganiseItem } from "./common.js";
 
 /** Item ids are opened in the detail panel through `?item=<id>` on the hash, so any page can open any item. */
@@ -13,6 +14,22 @@ export function selectedItemId(): string | null {
 export function openItem(id: string | null): void {
   const base = location.hash.replace(/[?&]item=[0-9a-f-]{36}/, "");
   location.hash = id ? `${base}${base.includes("?") ? "&" : "?"}item=${id}` : base;
+}
+
+/** Checklist entries live inside the task (not separate items); every change saves the whole list. */
+function checklistEditor(id: string, entries: ChecklistEntry[], patch: (body: Record<string, unknown>) => Promise<void>): HTMLElement {
+  // New entries are sent without an id; the server assigns one.
+  const put = (next: (ChecklistEntry | { text: string; done: boolean })[]): Promise<void> => patch({ checklist: next });
+  let draft = "";
+  const add = (): Promise<void> => (draft.trim() ? put([...entries, { text: draft.trim(), done: false }]) : Promise.resolve());
+  const done = entries.filter((entry) => entry.done).length;
+  return h("div", { class: "checklist-editor" },
+    entries.length ? h("div", { class: "muted small" }, `${done} of ${entries.length} done`) : null,
+    ...entries.map((entry) => h("div", { class: "checklist-entry" },
+      h("input", { type: "checkbox", checked: entry.done, "aria-label": `Done: ${entry.text}`, onchange: (event: Event) => put(entries.map((other) => (other.id === entry.id ? { ...other, done: (event.target as HTMLInputElement).checked } : other))) }),
+      h("input", { ...focusKey(`d:${id}:cl:${entry.id}`), value: entry.text, maxlength: 200, onchange: (event: Event) => put(entries.map((other) => (other.id === entry.id ? { ...other, text: (event.target as HTMLInputElement).value } : other))) }),
+      h("button", { "aria-label": `Remove ${entry.text}`, onclick: () => put(entries.filter((other) => other.id !== entry.id)) }, "✕"))),
+    h("input", { ...focusKey(`d:${id}:cl:new`), placeholder: "Add a step and press Enter", maxlength: 200, oninput: (event: Event) => { draft = (event.target as HTMLInputElement).value; }, onkeydown: (event: KeyboardEvent) => { if (event.key === "Enter") void add(); } }));
 }
 
 export async function renderDetail(context: AppContext, id: string, items: OrganiseItem[]): Promise<HTMLElement> {
@@ -33,6 +50,7 @@ export async function renderDetail(context: AppContext, id: string, items: Organ
     item.type === "reminder" ? field("Repeats", selectField(item.recurrence, vocab.recurrences.map((value) => ({ value, label: value })), `d:${item.id}:recurrence`, (value) => patch(value === "custom" ? { recurrence: value, interval_days: item.interval_days ?? 30 } : { recurrence: value, interval_days: null }))) : null,
     item.type === "reminder" && item.recurrence === "custom" ? field("Every (days)", h("input", { type: "number", min: 1, max: 365, value: item.interval_days ?? 30, onchange: (event: Event) => patch({ interval_days: Number((event.target as HTMLInputElement).value) }) })) : null,
     item.type !== "project" && item.type !== "inbox" ? field("Project", selectField(item.project_id, projects.map((project) => ({ value: project.id, label: project.title })), `d:${item.id}:project`, (value) => patch({ project_id: value }), true)) : null,
+    item.type === "task" ? field("Checklist", checklistEditor(item.id, item.checklist ?? [], patch)) : null,
     field(item.type === "project" ? "Description" : "Notes", textField(context, item.notes, `d:${item.id}:notes`, (value) => patch({ notes: value ?? "" }), { multiline: true, maxlength: 5000 })),
     field("Links", h("div", { class: "links" },
       ...item.links.map((link) => {

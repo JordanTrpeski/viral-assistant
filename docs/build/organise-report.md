@@ -29,3 +29,9 @@ Test counts are pass / fail / skipped for the full suite at that step's commit.
 - **Routes:** `POST /api/organise/inbox`, `POST /api/organise/inbox/:id/sort`; `GET /api/organise/inbox` and read-only `GET /api/organise/lists` are additions (assumptions 111 and 115).
 - **Tests:** `organise-inbox`, 5 cases: add and count; each sort target (task, reminder, note, list item) keeping the id; sort-form validation; delete; routes.
 - **UI:** the inbox at the top of the Organise overview (Enter adds), Sort with a per-type form, Delete, and the unsorted badge on the Organise nav item. Browser-checked at 1920 and 1280: no console errors, no overflow; capture, badge, sort to task, sort to reminder and delete all worked.
+
+### Step 3 — tasks: done (suite 225 / 0 / 2)
+- **Files:** `src/dashboard/organise/{tasks,service,routes}.ts`; `src/dashboard/organise/modules/{types,tasks,registry}.ts`; `src/dashboard/ui/organise/{tasks,filters,detail}.ts`; `src/dashboard/ui/{app.ts,styles.css}`; `tests/organise-tasks.test.ts`; assumptions; this report.
+- **Routes:** `GET /api/organise/tasks` (addition, assumption 119). `GET /api/organise/items` gains `project_id`, `status`, `from` and `to` filters.
+- **Tests:** `organise-tasks`, 6 cases: grouping boundaries (overdue, today, day 1, day 6, day 7, undated); complete and reopen; Done order; priority order; checklist changes with n of m; filters alone and combined; routes; the module registry.
+- **UI:** the Tasks page with Today, This week, Later and Done, an overdue flag, n of m progress, priority, complete by checkbox, Reopen, and the filter bar; the checklist editor in the detail panel. Browser-checked at 1920 and 1280: no console errors, no overflow; grouping, complete and reopen, checklist tick and add, and the project filter all worked.

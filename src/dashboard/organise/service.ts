@@ -36,8 +36,23 @@ export interface OrganiseServiceOptions {
   fs?: StoreFileSystem;
 }
 
+/** Filters shared by every subpanel: type, project, status and a date range (on the item's date). */
 export interface ItemFilter {
   type?: ItemType;
+  project_id?: string;
+  status?: string;
+  from?: IsoDate;
+  to?: IsoDate;
+}
+
+export function matchesFilter(item: OrganiseItem, filter: ItemFilter): boolean {
+  if (filter.type !== undefined && item.type !== filter.type) return false;
+  if (filter.project_id !== undefined && item.project_id !== filter.project_id) return false;
+  if (filter.status !== undefined && item.status !== filter.status) return false;
+  if ((filter.from !== undefined || filter.to !== undefined) && item.date === null) return false;
+  if (filter.from !== undefined && item.date! < filter.from) return false;
+  if (filter.to !== undefined && item.date! > filter.to) return false;
+  return true;
 }
 
 /**
@@ -72,7 +87,7 @@ export class OrganiseService {
 
   async listItems(filter: ItemFilter = {}): Promise<OrganiseItem[]> {
     const items = (await this.items.read()).items;
-    return items.filter((item) => filter.type === undefined || item.type === filter.type).sort((left, right) => left.created_at.localeCompare(right.created_at));
+    return items.filter((item) => matchesFilter(item, filter)).sort((left, right) => left.created_at.localeCompare(right.created_at));
   }
 
   async getItem(id: string): Promise<OrganiseItem> {

@@ -5,6 +5,7 @@ import { h } from "./dom.js";
 import { renderFinance } from "./finance.js";
 import { renderGroceries } from "./groceries.js";
 import { renderOrganiseOverview } from "./organise/overview.js";
+import { renderTasks } from "./organise/tasks.js";
 import { renderOverview } from "./overview.js";
 import { renderReminders } from "./reminders.js";
 import { renderSettings } from "./settings.js";
@@ -28,7 +29,7 @@ const navItems: NavItem[] = [
   { route: "groceries", label: "Groceries", render: renderGroceries },
   { route: "reminders", label: "Reminders", render: renderReminders },
   { route: "organise", label: "Overview", render: renderOrganiseOverview, group: "Organise" },
-  { route: "organise-tasks", label: "Tasks", group: "Organise" },
+  { route: "organise-tasks", label: "Tasks", render: renderTasks, group: "Organise" },
   { route: "organise-reminders", label: "Reminders", group: "Organise" },
   { route: "organise-notes", label: "Notes and lists", group: "Organise" },
   { route: "organise-projects", label: "Projects", group: "Organise" },
