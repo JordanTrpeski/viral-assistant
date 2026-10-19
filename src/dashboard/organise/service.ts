@@ -9,6 +9,7 @@ import type { JsonObject } from "../validation.js";
 import { applyReminderRules, nextOccurrence } from "./reminders.js";
 import { listName, listStatuses, newListFields } from "./lists.js";
 import { projectPage, type ProjectPage, type ProjectTracker } from "./projects.js";
+import { entryFields, trackerFields, trackerView, validateTrackersDocument, type Tracker, type TrackerEntry, type TrackersDocument, type TrackerView } from "./trackers.js";
 
 export interface OrganiseList {
   id: string;
@@ -65,12 +66,14 @@ export function matchesFilter(item: OrganiseItem, filter: ItemFilter): boolean {
 export class OrganiseService {
   readonly items: JsonDocumentStore<ItemsDocument>;
   readonly lists: JsonDocumentStore<ListsDocument>;
+  readonly trackers: JsonDocumentStore<TrackersDocument>;
   readonly clock: () => Date;
 
   constructor(readonly directory: string, options: OrganiseServiceOptions = {}) {
     this.clock = options.clock ?? (() => new Date());
     this.items = new JsonDocumentStore(join(directory, "items.json"), validateItemsDocument, () => ({ schemaVersion: 1, items: [] }), options.fs);
     this.lists = new JsonDocumentStore(join(directory, "lists.json"), validateListsDocument, () => ({ schemaVersion: 1, lists: [] }), options.fs);
+    this.trackers = new JsonDocumentStore(join(directory, "trackers.json"), validateTrackersDocument, () => ({ schemaVersion: 1, trackers: [], entries: [] }), options.fs);
   }
 
   today(): IsoDate {
@@ -234,9 +237,96 @@ export class OrganiseService {
     });
   }
 
-  /** Trackers that may belong to projects; replaced once trackers exist. */
   protected async projectTrackers(): Promise<ProjectTracker[]> {
-    return [];
+    return (await this.trackers.read()).trackers;
+  }
+
+  // Trackers: entries are stored separately from the tracker, in the same trackers.json.
+
+  private async requireProject(projectId: string | null | undefined): Promise<void> {
+    if (projectId === null || projectId === undefined) return;
+    const project = (await this.items.read()).items.find((item) => item.id === projectId);
+    if (!project || project.type !== "project") throw new ValidationError(`project_id ${projectId} is not an existing project`);
+  }
+
+  async listTrackers(): Promise<TrackerView[]> {
+    const document = await this.trackers.read();
+    return document.trackers.map((tracker) => trackerView(tracker, document.entries, this.today()));
+  }
+
+  async getTracker(id: string): Promise<TrackerView> {
+    const document = await this.trackers.read();
+    const tracker = document.trackers.find((candidate) => candidate.id === id);
+    if (!tracker) throw new NotFoundError("tracker", id);
+    return trackerView(tracker, document.entries, this.today());
+  }
+
+  async createTracker(body: unknown): Promise<TrackerView> {
+    const fields = trackerFields(body, false);
+    await this.requireProject(fields.project_id);
+    const timestamp = this.clock().toISOString();
+    const tracker = await this.trackers.update((document) => {
+      const created = { id: randomUUID(), ...fields, created_at: timestamp, updated_at: timestamp } as Tracker;
+      document.trackers.push(created);
+      return created;
+    });
+    return this.getTracker(tracker.id);
+  }
+
+  async updateTracker(id: string, body: unknown): Promise<TrackerView> {
+    const fields = trackerFields(body, true);
+    await this.requireProject(fields.project_id);
+    await this.trackers.update((document) => {
+      const tracker = document.trackers.find((candidate) => candidate.id === id);
+      if (!tracker) throw new NotFoundError("tracker", id);
+      Object.assign(tracker, fields, { updated_at: this.clock().toISOString() });
+    });
+    return this.getTracker(id);
+  }
+
+  /** Deleting a tracker deletes its entries too. */
+  async deleteTracker(id: string): Promise<void> {
+    await this.trackers.update((document) => {
+      if (!document.trackers.some((tracker) => tracker.id === id)) throw new NotFoundError("tracker", id);
+      document.trackers = document.trackers.filter((tracker) => tracker.id !== id);
+      document.entries = document.entries.filter((entry) => entry.tracker_id !== id);
+    });
+  }
+
+  async listEntries(trackerId: string): Promise<TrackerEntry[]> {
+    const document = await this.trackers.read();
+    if (!document.trackers.some((tracker) => tracker.id === trackerId)) throw new NotFoundError("tracker", trackerId);
+    return document.entries.filter((entry) => entry.tracker_id === trackerId).sort((left, right) => right.date.localeCompare(left.date) || right.created_at.localeCompare(left.created_at));
+  }
+
+  async addEntry(trackerId: string, body: unknown): Promise<TrackerEntry> {
+    const fields = entryFields(body, false, this.today());
+    const timestamp = this.clock().toISOString();
+    return this.trackers.update((document) => {
+      if (!document.trackers.some((tracker) => tracker.id === trackerId)) throw new NotFoundError("tracker", trackerId);
+      const entry = { id: randomUUID(), tracker_id: trackerId, ...fields, created_at: timestamp, updated_at: timestamp } as TrackerEntry;
+      document.entries.push(entry);
+      return entry;
+    });
+  }
+
+  async updateEntry(trackerId: string, entryId: string, body: unknown): Promise<TrackerEntry> {
+    const fields = entryFields(body, true, this.today());
+    return this.trackers.update((document) => {
+      const entry = document.entries.find((candidate) => candidate.id === entryId && candidate.tracker_id === trackerId);
+      if (!document.trackers.some((tracker) => tracker.id === trackerId)) throw new NotFoundError("tracker", trackerId);
+      if (!entry) throw new NotFoundError("tracker entry", entryId);
+      Object.assign(entry, fields, { updated_at: this.clock().toISOString() });
+      return entry;
+    });
+  }
+
+  async deleteEntry(trackerId: string, entryId: string): Promise<void> {
+    await this.trackers.update((document) => {
+      if (!document.trackers.some((tracker) => tracker.id === trackerId)) throw new NotFoundError("tracker", trackerId);
+      if (!document.entries.some((entry) => entry.id === entryId && entry.tracker_id === trackerId)) throw new NotFoundError("tracker entry", entryId);
+      document.entries = document.entries.filter((entry) => entry.id !== entryId);
+    });
   }
 
   async projectPage(id: string): Promise<ProjectPage> {

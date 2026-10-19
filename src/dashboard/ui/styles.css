@@ -276,3 +276,10 @@ button.danger { color: var(--danger); }
 .item-row.done-item .item-title { color: var(--muted); text-decoration: line-through; }
 a.item-row { color: var(--text); text-decoration: none; }
 .project-head a { color: var(--accent); }
+.tracker { display: flex; flex-direction: column; gap: 8px; }
+.tracker-name { color: var(--text); font-weight: 600; text-decoration: none; }
+.tracker-progress .bar-fill.complete { background: var(--positive); }
+.tracker-detail { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.unit-input { width: 90px; }
+.history { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.history-cell { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; text-align: center; font-variant-numeric: tabular-nums; }

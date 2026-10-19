@@ -237,3 +237,15 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
     - Lists: the project's list rows, grouped by list, with rows not yet on the list's last status first.
     - "Open of total" counts every section except notes. — assumed, revisit
 133. **Lists themselves do not belong to projects** (a list is a name and statuses only). The Lists section shows list rows whose `project_id` is the project. — assumed, revisit
+
+### Step 7 — trackers
+
+134. **Tracker weeks run Monday to Sunday and are not cut at month ends**, unlike the Finance budget weeks, because the spec states plain Monday-to-Sunday weeks for trackers. — assumed, revisit
+135. **Fields.**
+    - Name: 1–100 characters. Unit: up to 30 characters, may be empty.
+    - Target: a number greater than 0, or null for no target. In the UI, clearing it or entering 0 removes the target.
+    - Project: optional, and must exist.
+    - Entry value: a number of 0 or more (0 is allowed). Entry date defaults to today. Note: up to 500 characters.
+    - Totals are rounded to 6 decimals. Percent has one decimal. "Remaining" is never negative. — assumed, revisit
+136. **History is the last 8 periods ending with the current one, oldest first.** It is computed on the fly; nothing is stored. — assumed, revisit
+137. **Deleting a tracker deletes its entries.** Trackers and their entries share `trackers.json`, with entries stored apart from the tracker records as the spec requires. — assumed, revisit
