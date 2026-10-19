@@ -190,6 +190,7 @@ export function registerChatRoutes(router: Router, context: DashboardContext): v
   router.add("POST", "/api/chat/proposals/:id/confirm", ({ params }) => chat.confirm(params.id!), 200);
   router.add("POST", "/api/chat/proposals/:id/cancel", ({ params }) => chat.cancel(params.id!), 200);
   router.add("POST", "/api/chat/clarifications/:id/answer", ({ params, body }) => chat.answerClarification(params.id!, body), 200);
+  router.add("POST", "/api/chat/target-questions/:id/answer", ({ params, body }) => chat.answerTargetQuestion(params.id!, body), 200);
   router.add("POST", "/api/chat/undo/:token", ({ params }) => chat.undo(params.token!), 200);
 }
 
