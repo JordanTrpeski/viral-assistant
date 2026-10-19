@@ -3,11 +3,12 @@ import * as nodeFs from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { actionNames, type ActionName, type RawProposal } from "./commands/actions.js";
 import { findAmbiguity } from "./commands/ambiguity.js";
-import { evaluateArithmetic } from "./commands/arithmetic.js";
+import { evaluateArithmetic, type ArithmeticOutcome } from "./commands/arithmetic.js";
 import { balanceReply, executeAction, undoAction, type ExecutionResult, type FinanceCommandPort, type UndoPlan } from "./commands/execute.js";
 import { PlaceholderProposer, placeholderReply, type Proposer } from "./commands/proposer.js";
 import { eurosToCents, validateProposal, type ResolvedAction } from "./commands/validate.js";
 import { NotFoundError, ValidationError } from "./errors.js";
+import type { Category, FinanceDocument } from "./finance.js";
 import { localIsoDate } from "./shared/dates.js";
 import { formatCents } from "./shared/money.js";
 import { JsonDocumentStore, type StoreFileSystem } from "./store.js";
@@ -40,6 +41,7 @@ export interface ChatMessage {
   kind: ChatMessageKind;
   proposalId?: string;
   clarificationId?: string;
+  targetQuestionId?: string;
   errors?: string[];
 }
 
@@ -64,6 +66,45 @@ export interface ClarificationView {
   word: string;
   candidates: string[];
   preview: string;
+  createdAt: string;
+  expiresAt: string;
+  status: "pending" | "answered" | "cancelled" | "expired";
+}
+
+/** One suggested target button on a which-target question: a category and period, with a human label. */
+export interface TargetOption {
+  categoryId: string;
+  categoryName: string;
+  period: "week" | "month";
+  label: string;
+  /** True for the single button pre-selected by default (the target changed most recently in this thread). */
+  default: boolean;
+}
+
+/**
+ * A computed amount (e.g. "80 ÷ 4 = 20") that still needs a target. It carries the value and its working, the
+ * suggested buttons, and becomes a normal pending set_budget_target proposal once answered.
+ */
+export interface StoredTargetQuestion {
+  id: string;
+  valueCents: number;
+  working: string;
+  options: TargetOption[];
+  preview: string;
+  createdAt: string;
+  expiresAt: string;
+  status: "pending" | "answered" | "cancelled";
+  resolvedAt: string | null;
+}
+
+export interface TargetQuestionView {
+  id: string;
+  threadId: string;
+  preview: string;
+  working: string;
+  options: TargetOption[];
+  /** The "Other…" escape hatch: any valid Flexible category and period may be typed instead of a button. */
+  allowOther: boolean;
   createdAt: string;
   expiresAt: string;
   status: "pending" | "answered" | "cancelled" | "expired";
@@ -101,6 +142,8 @@ export interface ChatThreadDocument {
   messages: ChatMessage[];
   proposals: StoredProposal[];
   clarifications: StoredClarification[];
+  /** Computed amounts awaiting a target choice; each becomes a pending proposal once answered. */
+  targetQuestions: StoredTargetQuestion[];
   /** Transactions created from this thread, oldest first; the last one is what target "last" means. */
   chatTransactions: { transactionId: string; createdAt: string }[];
 }
@@ -120,7 +163,7 @@ export interface ChatThreadSummary {
   messageCount: number;
 }
 
-export type ChatMessageView = ChatMessage & { proposal?: ProposalView; clarification?: ClarificationView };
+export type ChatMessageView = ChatMessage & { proposal?: ProposalView; clarification?: ClarificationView; targetQuestion?: TargetQuestionView };
 
 export interface PostResult {
   outcome: "reply" | "proposal" | "invalid" | "question";
@@ -128,6 +171,7 @@ export interface PostResult {
   reply: ChatMessage;
   proposal?: ProposalView;
   clarification?: ClarificationView;
+  targetQuestion?: TargetQuestionView;
   errors?: string[];
 }
 
@@ -154,6 +198,7 @@ function validateThread(value: unknown): ChatThreadDocument {
     const message: ChatMessage = { id: raw.id, role: raw.role, text: raw.text, createdAt: raw.createdAt, kind: kind as ChatMessageKind };
     if (typeof raw.proposalId === "string") message.proposalId = raw.proposalId;
     if (typeof raw.clarificationId === "string") message.clarificationId = raw.clarificationId;
+    if (typeof raw.targetQuestionId === "string") message.targetQuestionId = raw.targetQuestionId;
     if (Array.isArray(raw.errors)) message.errors = raw.errors.map(String);
     return message;
   });
@@ -186,11 +231,31 @@ function validateThread(value: unknown): ChatThreadDocument {
       createdAt: raw.createdAt, expiresAt: raw.expiresAt, status: raw.status as StoredClarification["status"], resolvedAt: typeof raw.resolvedAt === "string" ? raw.resolvedAt : null
     };
   });
+  const targetQuestionStatuses = ["pending", "answered", "cancelled"] as const;
+  const periods = ["week", "month"] as const;
+  const targetQuestions = (Array.isArray(value.targetQuestions) ? value.targetQuestions : []).map((raw, index): StoredTargetQuestion => {
+    if (!isObject(raw) || typeof raw.id !== "string" || typeof raw.valueCents !== "number" || typeof raw.working !== "string" || !Array.isArray(raw.options)
+      || typeof raw.preview !== "string" || typeof raw.createdAt !== "string" || typeof raw.expiresAt !== "string"
+      || !targetQuestionStatuses.includes(raw.status as typeof targetQuestionStatuses[number])) {
+      throw new Error(`targetQuestions[${index}] is malformed`);
+    }
+    const options = raw.options.map((option, optionIndex): TargetOption => {
+      if (!isObject(option) || typeof option.categoryId !== "string" || typeof option.categoryName !== "string"
+        || !periods.includes(option.period as typeof periods[number]) || typeof option.label !== "string") {
+        throw new Error(`targetQuestions[${index}].options[${optionIndex}] is malformed`);
+      }
+      return { categoryId: option.categoryId, categoryName: option.categoryName, period: option.period as "week" | "month", label: option.label, default: option.default === true };
+    });
+    return {
+      id: raw.id, valueCents: raw.valueCents, working: raw.working, options, preview: raw.preview,
+      createdAt: raw.createdAt, expiresAt: raw.expiresAt, status: raw.status as StoredTargetQuestion["status"], resolvedAt: typeof raw.resolvedAt === "string" ? raw.resolvedAt : null
+    };
+  });
   const chatTransactions = (Array.isArray(value.chatTransactions) ? value.chatTransactions : []).map((raw, index) => {
     if (!isObject(raw) || typeof raw.transactionId !== "string" || typeof raw.createdAt !== "string") throw new Error(`chatTransactions[${index}] is malformed`);
     return { transactionId: raw.transactionId, createdAt: raw.createdAt };
   });
-  return { schemaVersion: 1, id: value.id, name: value.name, createdAt: value.createdAt, updatedAt: value.updatedAt, messages, proposals, clarifications, chatTransactions };
+  return { schemaVersion: 1, id: value.id, name: value.name, createdAt: value.createdAt, updatedAt: value.updatedAt, messages, proposals, clarifications, targetQuestions, chatTransactions };
 }
 
 function validateRules(value: unknown): ChatRulesDocument {
@@ -224,7 +289,7 @@ function summary(thread: ChatThreadDocument): ChatThreadSummary {
 }
 
 function emptyThread(id: string, name: string, timestamp: string): ChatThreadDocument {
-  return { schemaVersion: 1, id, name, createdAt: timestamp, updatedAt: timestamp, messages: [], proposals: [], clarifications: [], chatTransactions: [] };
+  return { schemaVersion: 1, id, name, createdAt: timestamp, updatedAt: timestamp, messages: [], proposals: [], clarifications: [], targetQuestions: [], chatTransactions: [] };
 }
 
 export interface ChatServiceOptions {
@@ -245,6 +310,15 @@ interface UndoEntry {
   expiresAt: number;
 }
 
+/** The pieces an answered message resolves to; the caller persists them and shapes the PostResult. */
+interface ResolvedOutcome {
+  reply: Omit<ChatMessage, "id" | "createdAt">;
+  pending?: StoredProposal;
+  clarification?: StoredClarification;
+  targetQuestion?: StoredTargetQuestion;
+  errors?: string[];
+}
+
 const typedAmountRe = /(?:€\s*)?(\d+(?:\.\d+)?)/g;
 
 /** The last concrete number a user typed, in cents, or null — used as the reference for a relative amount. */
@@ -263,6 +337,34 @@ function amountCentsOf(action: ResolvedAction): number | null {
   if (action.action === "add_expense" || action.action === "add_income" || action.action === "set_budget_target") return action.amountCents;
   if (action.action === "edit_transaction") return action.changes.amountCents ?? null;
   return null;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * What the owner wants a computed amount applied to, decided in code (no model). A target needs the word
+ * "target"/"budget", a Flexible category and a period; a named spending/income category without a target word
+ * is an expense/income; anything else is "bare" and must ask which target.
+ */
+export type AmountIntent =
+  | { kind: "target"; category: Category; period: "week" | "month" }
+  | { kind: "expense"; category: Category }
+  | { kind: "income"; category: Category }
+  | { kind: "bare" };
+
+export function interpretAmountTarget(text: string, categories: readonly Category[]): AmountIntent {
+  const lower = text.toLowerCase();
+  const period: "week" | "month" | undefined = /\b(weekly|week)\b/.test(lower) ? "week" : /\b(monthly|month)\b/.test(lower) ? "month" : undefined;
+  const hasTargetWord = /\b(target|budget)\b/.test(lower);
+  // Longest name first so "Groceries" wins over a hypothetical "Gro" and partial names do not shadow it.
+  const named = [...categories].sort((left, right) => right.name.length - left.name.length)
+    .find((category) => new RegExp(`\\b${escapeRegExp(category.name.toLowerCase())}\\b`).test(lower));
+  if (hasTargetWord && named && named.kind === "flexible" && period) return { kind: "target", category: named, period };
+  if (named && named.kind === "income") return { kind: "income", category: named };
+  if (named) return { kind: "expense", category: named };
+  return { kind: "bare" };
 }
 
 /**
@@ -423,7 +525,9 @@ export class ChatService {
       const proposal = message.proposalId ? thread.proposals.find((candidate) => candidate.id === message.proposalId) : undefined;
       if (proposal) return { ...message, proposal: this.view(thread.id, proposal) };
       const clarification = message.clarificationId ? thread.clarifications.find((candidate) => candidate.id === message.clarificationId) : undefined;
-      return clarification ? { ...message, clarification: this.clarificationView(thread.id, clarification) } : message;
+      if (clarification) return { ...message, clarification: this.clarificationView(thread.id, clarification) };
+      const targetQuestion = message.targetQuestionId ? thread.targetQuestions.find((candidate) => candidate.id === message.targetQuestionId) : undefined;
+      return targetQuestion ? { ...message, targetQuestion: this.targetQuestionView(thread.id, targetQuestion) } : message;
     });
   }
 
@@ -437,85 +541,33 @@ export class ChatService {
     rejectUnknownFields(input, ["text"]);
     const text = messageText(input.text);
     const today = localIsoDate(this.clock());
-    const proposed = await this.proposer.propose({ threadId: id, text, today });
 
-    let reply: Omit<ChatMessage, "id" | "createdAt">;
-    let pending: StoredProposal | undefined;
-    let clarification: StoredClarification | undefined;
-    let errors: string[] | undefined;
-    if (proposed.kind === "reply") {
-      reply = { role: "assistant", kind: "text", text: proposed.text || placeholderReply };
-    } else if (!this.finance) {
-      errors = ["Chat commands are not available: no Finance connection is configured."];
-      reply = { role: "assistant", kind: "invalid", text: errors[0]!, errors };
-    } else {
+    let resolved: ResolvedOutcome;
+    if (this.finance) {
       const snapshot = await this.finance.snapshot();
       const thread = await store.read();
-      const proposal = proposed.proposal;
-      const rawFields = (typeof proposal.fields === "object" && proposal.fields !== null && !Array.isArray(proposal.fields) ? proposal.fields : {}) as Record<string, unknown>;
-      // Arithmetic in code (not the model): a relative amount in the message is computed here and replaces the
-      // model's amount; the model's output is never used as the reference. "split" is not calculated — it asks.
+      // Arithmetic is decided in code BEFORE the model, so a bare "divide that by 4" is never lost when the
+      // model declines (it returns action "none"). Only non-arithmetic messages are sent to the model.
       const arithmetic = evaluateArithmetic(text, this.lastAmount(thread));
-      let working: string | undefined;
-      if (arithmetic?.kind === "split") {
-        const question = `Do you want your share of ${formatCents(arithmetic.amountCents)}, or the total for everyone?`;
-        errors = [question];
-        reply = { role: "assistant", kind: "invalid", text: question, errors };
-      } else if (arithmetic?.kind === "needs-reference") {
-        const question = "Which amount should I use? There's no earlier amount in this chat yet — tell me the number.";
-        errors = [question];
-        reply = { role: "assistant", kind: "invalid", text: question, errors };
+      if (arithmetic) {
+        resolved = await this.resolveArithmetic(arithmetic, text, snapshot, thread, today);
       } else {
-        if (arithmetic?.kind === "value" && (proposal.action === "add_expense" || proposal.action === "add_income" || proposal.action === "set_budget_target")) {
-          const modelCents = typeof rawFields.amount === "number" ? eurosToCents(rawFields.amount) : null;
-          if (modelCents !== null && modelCents !== arithmetic.valueCents) {
-            console.error(`[chat] arithmetic override: model amount ${modelCents}c replaced by code result ${arithmetic.valueCents}c for "${text}"`);
-          }
-          rawFields.amount = arithmetic.valueCents / 100;
-          working = arithmetic.working;
-        }
-        const amount = rawFields.amount;
-        // Ambiguous-word rule (code, not model): for a spending add whose message uses an ambiguous word and
-        // names no category, apply a remembered category or ask — never guess.
-        const ambiguity = (proposal.action === "add_expense" || proposal.action === "add_income") && typeof amount === "number" && amount > 0
-          ? findAmbiguity(text, snapshot.categories) : null;
-        const remembered = ambiguity ? (await this.rulesStore.read()).rules[ambiguity.word] : undefined;
-        if (ambiguity && remembered !== undefined) rawFields.category = remembered;
-        if (ambiguity && remembered === undefined) {
-          const created = this.clock();
-          const label = ambiguity.word.charAt(0).toUpperCase() + ambiguity.word.slice(1);
-          const questionText = `${label}, ${formatCents(eurosToCents(amount as number))}. Which category?`;
-          const fields: StoredClarification["fields"] = { amount: amount as number };
-          if (typeof rawFields.note === "string") fields.note = rawFields.note;
-          if (typeof rawFields.date === "string") fields.date = rawFields.date;
-          clarification = {
-            id: randomBytes(4).toString("hex"), action: proposal.action as "add_expense" | "add_income", fields, word: ambiguity.word, candidates: ambiguity.candidates,
-            preview: questionText, createdAt: created.toISOString(), expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
-          };
-          reply = { role: "assistant", kind: "question", text: questionText, clarificationId: clarification.id };
-        } else {
-          const result = validateProposal(proposal, {
-            today, maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
-            lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
-          });
-          if (!result.ok) {
-            errors = result.errors;
-            reply = { role: "assistant", kind: "invalid", text: `I can't do that yet:\n${errors.map((error) => `• ${error}`).join("\n")}`, errors };
-          } else if (result.action.action === "get_balance") {
-            reply = { role: "assistant", kind: "text", text: await balanceReply(this.finance, today) };
-          } else {
-            const created = this.clock();
-            const preview = working ? `${result.preview} (${working})` : result.preview;
-            pending = {
-              id: randomBytes(4).toString("hex"), action: result.action, preview, flags: result.flags, createdAt: created.toISOString(),
-              expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
-            };
-            reply = { role: "assistant", kind: "proposal", text: preview, proposalId: pending.id };
-          }
-        }
+        const proposed = await this.proposer.propose({ threadId: id, text, today });
+        resolved = proposed.kind === "reply"
+          ? { reply: { role: "assistant", kind: "text", text: proposed.text || placeholderReply } }
+          : await this.resolveProposal(proposed.proposal, text, snapshot, thread, today);
+      }
+    } else {
+      const proposed = await this.proposer.propose({ threadId: id, text, today });
+      if (proposed.kind === "reply") {
+        resolved = { reply: { role: "assistant", kind: "text", text: proposed.text || placeholderReply } };
+      } else {
+        const errors = ["Chat commands are not available: no Finance connection is configured."];
+        resolved = { reply: { role: "assistant", kind: "invalid", text: errors[0]!, errors }, errors };
       }
     }
 
+    const { reply, pending, clarification, targetQuestion, errors } = resolved;
     const saved = await store.update((thread) => {
       const timestamp = this.now();
       const message: ChatMessage = { id: randomUUID(), role: "user", kind: "text", text, createdAt: timestamp };
@@ -523,16 +575,126 @@ export class ChatService {
       thread.messages.push(message, answer);
       if (pending) thread.proposals.push(pending);
       if (clarification) thread.clarifications.push(clarification);
+      if (targetQuestion) thread.targetQuestions.push(targetQuestion);
       thread.updatedAt = timestamp;
       return { message, reply: answer };
     });
-    const outcome = pending ? "proposal" : clarification ? "question" : errors ? "invalid" : "reply";
+    const outcome = pending ? "proposal" : (clarification || targetQuestion) ? "question" : errors ? "invalid" : "reply";
     return {
       outcome, ...saved,
       ...(pending ? { proposal: this.view(id, pending) } : {}),
       ...(clarification ? { clarification: this.clarificationView(id, clarification) } : {}),
+      ...(targetQuestion ? { targetQuestion: this.targetQuestionView(id, targetQuestion) } : {}),
       ...(errors ? { errors } : {})
     };
+  }
+
+  /**
+   * Turns a raw proposal into a pending proposal, a category clarification, a balance reply, or validation
+   * errors. The ambiguity rule and validation are unchanged; `working` (from arithmetic) is appended to the
+   * preview of a resulting proposal. Only called when Finance is connected.
+   */
+  private async resolveProposal(proposal: RawProposal, text: string, snapshot: FinanceDocument, thread: ChatThreadDocument, today: string, working?: string): Promise<ResolvedOutcome> {
+    const finance = this.finance!;
+    const rawFields = (typeof proposal.fields === "object" && proposal.fields !== null && !Array.isArray(proposal.fields) ? proposal.fields : {}) as Record<string, unknown>;
+    const amount = rawFields.amount;
+    // Ambiguous-word rule (code, not model): for a spending add whose message uses an ambiguous word and
+    // names no category, apply a remembered category or ask — never guess.
+    const ambiguity = (proposal.action === "add_expense" || proposal.action === "add_income") && typeof amount === "number" && amount > 0
+      ? findAmbiguity(text, snapshot.categories) : null;
+    const remembered = ambiguity ? (await this.rulesStore.read()).rules[ambiguity.word] : undefined;
+    if (ambiguity && remembered !== undefined) rawFields.category = remembered;
+    if (ambiguity && remembered === undefined) {
+      const created = this.clock();
+      const label = ambiguity.word.charAt(0).toUpperCase() + ambiguity.word.slice(1);
+      const questionText = `${label}, ${formatCents(eurosToCents(amount as number))}. Which category?`;
+      const fields: StoredClarification["fields"] = { amount: amount as number };
+      if (typeof rawFields.note === "string") fields.note = rawFields.note;
+      if (typeof rawFields.date === "string") fields.date = rawFields.date;
+      const clarification: StoredClarification = {
+        id: randomBytes(4).toString("hex"), action: proposal.action as "add_expense" | "add_income", fields, word: ambiguity.word, candidates: ambiguity.candidates,
+        preview: questionText, createdAt: created.toISOString(), expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+      };
+      return { reply: { role: "assistant", kind: "question", text: questionText, clarificationId: clarification.id }, clarification };
+    }
+    const result = validateProposal(proposal, {
+      today, maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
+      lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
+    });
+    if (!result.ok) {
+      const errors = result.errors;
+      return { reply: { role: "assistant", kind: "invalid", text: `I can't do that yet:\n${errors.map((error) => `• ${error}`).join("\n")}`, errors }, errors };
+    }
+    if (result.action.action === "get_balance") {
+      return { reply: { role: "assistant", kind: "text", text: await balanceReply(finance, today) } };
+    }
+    const created = this.clock();
+    const preview = working ? `${result.preview} (${working})` : result.preview;
+    const pending: StoredProposal = {
+      id: randomBytes(4).toString("hex"), action: result.action, preview, flags: result.flags, createdAt: created.toISOString(),
+      expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+    };
+    return { reply: { role: "assistant", kind: "proposal", text: preview, proposalId: pending.id }, pending };
+  }
+
+  /**
+   * Decides in code — never the model — what a computed amount applies to: a split stays a share-or-total
+   * question; a missing reference asks for the number; a named target or a named spending/income category
+   * becomes a proposal (with the working appended); a bare phrase asks which target.
+   */
+  private async resolveArithmetic(arithmetic: NonNullable<ArithmeticOutcome>, text: string, snapshot: FinanceDocument, thread: ChatThreadDocument, today: string): Promise<ResolvedOutcome> {
+    if (arithmetic.kind === "split") {
+      const question = `Do you want your share of ${formatCents(arithmetic.amountCents)}, or the total for everyone?`;
+      return { reply: { role: "assistant", kind: "invalid", text: question, errors: [question] }, errors: [question] };
+    }
+    if (arithmetic.kind === "needs-reference") {
+      const question = "Which amount should I use? There's no earlier amount in this chat yet — tell me the number.";
+      return { reply: { role: "assistant", kind: "invalid", text: question, errors: [question] }, errors: [question] };
+    }
+    const intent = interpretAmountTarget(text, snapshot.categories);
+    const amount = arithmetic.valueCents / 100;
+    if (intent.kind === "target") {
+      return this.resolveProposal({ action: "set_budget_target", fields: { category: intent.category.name, period: intent.period, amount } }, text, snapshot, thread, today, arithmetic.working);
+    }
+    if (intent.kind === "expense" || intent.kind === "income") {
+      const action = intent.kind === "expense" ? "add_expense" : "add_income";
+      return this.resolveProposal({ action, fields: { amount, category: intent.category.name } }, text, snapshot, thread, today, arithmetic.working);
+    }
+    return this.buildTargetQuestion(arithmetic.valueCents, arithmetic.working, snapshot, thread);
+  }
+
+  /** The which-target question: "€20.00 for which target?" with Groceries weekly/monthly buttons (plus "Other…"). */
+  private buildTargetQuestion(valueCents: number, working: string, snapshot: FinanceDocument, thread: ChatThreadDocument): ResolvedOutcome {
+    const groceries = snapshot.categories.find((category) => category.kind === "flexible" && category.name.toLowerCase() === "groceries")
+      ?? snapshot.categories.find((category) => category.kind === "flexible");
+    const categoryId = groceries?.id ?? "groceries";
+    const categoryName = groceries?.name ?? "Groceries";
+    const last = this.lastChangedTarget(thread);
+    const options: TargetOption[] = (["week", "month"] as const).map((period) => {
+      const isDefault = last !== null && last.categoryId === categoryId && last.period === period;
+      const base = `${categoryName} ${period === "week" ? "weekly" : "monthly"} target`;
+      return { categoryId, categoryName, period, label: isDefault ? `${base} (last changed)` : base, default: isDefault };
+    });
+    const created = this.clock();
+    const preview = `${formatCents(valueCents)} for which target?`;
+    const targetQuestion: StoredTargetQuestion = {
+      id: randomBytes(4).toString("hex"), valueCents, working, options, preview,
+      createdAt: created.toISOString(), expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+    };
+    return { reply: { role: "assistant", kind: "question", text: preview, targetQuestionId: targetQuestion.id }, targetQuestion };
+  }
+
+  /** The target changed most recently in this thread (a confirmed set_budget_target), or null if none was. */
+  private lastChangedTarget(thread: ChatThreadDocument): { categoryId: string; period: "week" | "month" } | null {
+    let best: { categoryId: string; period: "week" | "month" } | null = null;
+    let bestAt = -1;
+    for (const proposal of thread.proposals) {
+      if (proposal.status === "confirmed" && proposal.action.action === "set_budget_target" && proposal.resolvedAt) {
+        const at = Date.parse(proposal.resolvedAt);
+        if (at >= bestAt) { bestAt = at; best = { categoryId: proposal.action.categoryId, period: proposal.action.period }; }
+      }
+    }
+    return best;
   }
 
   /** Turns an answered clarification into a normal pending proposal with the chosen category. Writes nothing to Finance. */
@@ -596,6 +758,71 @@ export class ChatService {
       if (clarification) return { threadId, store, clarification };
     }
     throw new NotFoundError("clarification", id);
+  }
+
+  /**
+   * Answers a which-target question: the chosen button sends its category and period, "Other…" sends a typed
+   * category and period. Both are validated by the existing rules (so an invalid category or period returns the
+   * existing error) and turned into a normal pending set_budget_target proposal. Writes nothing to Finance.
+   */
+  answerTargetQuestion(targetQuestionId: string, body: unknown): Promise<{ proposal: ProposalView }> {
+    return this.serialize(async () => {
+      const finance = this.finance;
+      if (!finance) throw new ValidationError("Chat commands are not available: no Finance connection is configured");
+      const { threadId, store, question } = await this.findTargetQuestion(targetQuestionId);
+      const status = this.targetQuestionStatus(question);
+      if (status === "expired") throw new ValidationError(`Target question ${question.id} expired at ${question.expiresAt}; send the request again`);
+      if (status !== "pending") throw new ValidationError(`Target question ${question.id} is already ${status}`);
+      const input = requireObject(body);
+      rejectUnknownFields(input, ["category", "period"]);
+      if (typeof input.category !== "string" || input.category.trim() === "") throw new ValidationError("category must be one of the suggested targets or a valid existing Flexible category");
+      if (input.period !== "week" && input.period !== "month") throw new ValidationError('period must be "week" or "month"');
+      const snapshot = await finance.snapshot();
+      const thread = await store.read();
+      const raw: RawProposal = { action: "set_budget_target", fields: { category: input.category, period: input.period, amount: question.valueCents / 100 } };
+      const result = validateProposal(raw, {
+        today: localIsoDate(this.clock()), maxAmountCents: this.maxAmountCents, categories: snapshot.categories, transactions: snapshot.transactions, targets: snapshot.targets,
+        lastChatTransactionId: thread.chatTransactions.at(-1)?.transactionId ?? null
+      });
+      if (!result.ok) throw new ValidationError(result.errors.join("; "));
+      const created = this.clock();
+      const preview = `${result.preview} (${question.working})`;
+      const pending: StoredProposal = {
+        id: randomBytes(4).toString("hex"), action: result.action, preview, flags: result.flags, createdAt: created.toISOString(),
+        expiresAt: new Date(created.getTime() + proposalLifetimeMs).toISOString(), status: "pending", resolvedAt: null
+      };
+      const updated = await store.update((document) => {
+        const stored = document.targetQuestions.find((candidate) => candidate.id === targetQuestionId)!;
+        stored.status = "answered";
+        stored.resolvedAt = this.now();
+        document.proposals.push(pending);
+        document.messages.push({ id: randomUUID(), role: "assistant", kind: "proposal", text: preview, createdAt: this.now(), proposalId: pending.id });
+        document.updatedAt = this.now();
+        return pending;
+      });
+      return { proposal: this.view(threadId, updated) };
+    });
+  }
+
+  private targetQuestionStatus(question: StoredTargetQuestion): TargetQuestionView["status"] {
+    return question.status === "pending" && Date.parse(question.expiresAt) <= this.clock().getTime() ? "expired" : question.status;
+  }
+
+  private targetQuestionView(threadId: string, question: StoredTargetQuestion): TargetQuestionView {
+    return {
+      id: question.id, threadId, preview: question.preview, working: question.working, options: question.options, allowOther: true,
+      createdAt: question.createdAt, expiresAt: question.expiresAt, status: this.targetQuestionStatus(question)
+    };
+  }
+
+  private async findTargetQuestion(id: string): Promise<{ threadId: string; store: JsonDocumentStore<ChatThreadDocument>; question: StoredTargetQuestion }> {
+    if (!proposalIdPattern.test(id)) throw new NotFoundError("target question", id);
+    for (const threadId of await this.threadIds()) {
+      const store = this.store(threadId);
+      const question = (await store.read()).targetQuestions.find((candidate) => candidate.id === id);
+      if (question) return { threadId, store, question };
+    }
+    throw new NotFoundError("target question", id);
   }
 
   /** Finds a proposal by its short id across all threads. */
