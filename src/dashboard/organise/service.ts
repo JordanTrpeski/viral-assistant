@@ -8,6 +8,7 @@ import { createCandidate, maxTitleLength, normaliseItem, patchCandidate, validat
 import type { JsonObject } from "../validation.js";
 import { applyReminderRules, nextOccurrence } from "./reminders.js";
 import { listName, listStatuses, newListFields } from "./lists.js";
+import { projectPage, type ProjectPage, type ProjectTracker } from "./projects.js";
 
 export interface OrganiseList {
   id: string;
@@ -233,10 +234,31 @@ export class OrganiseService {
     });
   }
 
-  /** Deletes an item and removes it from every other item's links. */
+  /** Trackers that may belong to projects; replaced once trackers exist. */
+  protected async projectTrackers(): Promise<ProjectTracker[]> {
+    return [];
+  }
+
+  async projectPage(id: string): Promise<ProjectPage> {
+    const project = await this.getItem(id);
+    if (project.type !== "project") throw new NotFoundError("project", id);
+    return projectPage(project, (await this.items.read()).items, await this.listLists(), await this.projectTrackers());
+  }
+
+  /**
+   * Deletes an item and removes it from every other item's links. A project is refused while anything still
+   * belongs to it (items or trackers): unassign or delete those first.
+   */
   async deleteItem(id: string): Promise<void> {
+    const trackers = await this.projectTrackers();
     await this.items.update((document) => {
-      if (!document.items.some((item) => item.id === id)) throw new NotFoundError("item", id);
+      const target = document.items.find((item) => item.id === id);
+      if (!target) throw new NotFoundError("item", id);
+      if (target.type === "project") {
+        const items = document.items.filter((item) => item.project_id === id).length;
+        const tracked = trackers.filter((tracker) => tracker.project_id === id).length;
+        if (items || tracked) throw new ValidationError(`Cannot delete project ${target.title}: ${[items ? `${items} item(s)` : "", tracked ? `${tracked} tracker(s)` : ""].filter(Boolean).join(" and ")} still belong to it`);
+      }
       document.items = document.items.filter((item) => item.id !== id);
       for (const item of document.items) if (item.links.includes(id)) item.links = item.links.filter((link) => link !== id);
     });

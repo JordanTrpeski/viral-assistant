@@ -226,3 +226,14 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 128. **Changing a list's statuses** (rename, reorder, add) is allowed, but a status still used by one of its rows cannot be removed (400). Afterwards each row's `done_at` follows the new last status: set if the row now sits on it, cleared if not. — assumed, revisit
 129. **A list cannot be deleted while it has rows** (400 with the count). — assumed, revisit
 130. **List rows are ordinary `list_item` items.** They are created and edited through `/api/organise/items`. A row starts at its list's first status and only accepts its list's statuses. — assumed, revisit
+
+### Step 6 — projects
+
+131. **Project deletion rule: refuse while in use.** Deleting a project that still has tasks, reminders, notes, list rows or trackers returns 400 with the counts. Unassign or delete those first. The spec allowed either refuse or unlink; refusing never changes other items behind your back. — assumed, revisit
+132. **The project page** (`GET /api/organise/projects/:id`, an addition to the spec's routes) returns the project and five sections:
+    - Tasks and Reminders: open first, then done, each by date then title.
+    - Notes: newest first, since notes have no status.
+    - Trackers.
+    - Lists: the project's list rows, grouped by list, with rows not yet on the list's last status first.
+    - "Open of total" counts every section except notes. — assumed, revisit
+133. **Lists themselves do not belong to projects** (a list is a name and statuses only). The Lists section shows list rows whose `project_id` is the project. — assumed, revisit

@@ -271,3 +271,8 @@ button.danger { color: var(--danger); }
 .note-compose input { grid-column: 1 / -1; }
 .lists-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
 .new-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.project-head { display: flex; flex-direction: column; gap: 8px; }
+.project-name { font-size: 18px; font-weight: 600; }
+.item-row.done-item .item-title { color: var(--muted); text-decoration: line-through; }
+a.item-row { color: var(--text); text-decoration: none; }
+.project-head a { color: var(--accent); }

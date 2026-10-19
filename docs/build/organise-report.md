@@ -46,3 +46,9 @@ Test counts are pass / fail / skipped for the full suite at that step's commit.
 - **Routes:** `GET|POST /api/organise/lists`, `GET|PATCH|DELETE /api/organise/lists/:id`.
 - **Tests:** `organise-notes-lists`, 5 cases: default, preset and custom statuses with validation; row status from its list and done_at on the last status; status edits (no removing used ones, done_at follows), delete only when empty; notes with links to existing items only; routes.
 - **UI:** the "Notes and lists" page with Notes and Lists tabs: compose notes (title optional), create lists from presets, edit statuses, add and edit rows with live status changes; the detail panel shows a row's list statuses. Browser-checked at 1920 and 1280: no console errors, no overflow; note, row status, add row, preset list and detail statuses all worked.
+
+### Step 6 — projects: done (suite 240 / 0 / 2)
+- **Files:** `src/dashboard/organise/{projects,service,routes}.ts`; `src/dashboard/organise/modules/{projects,registry}.ts`; `src/dashboard/ui/organise/projects.ts`; `src/dashboard/ui/{app.ts,styles.css}`; `tests/organise-projects.test.ts`; assumptions; this report.
+- **Routes:** `GET /api/organise/projects/:id` (addition, assumption 132).
+- **Tests:** `organise-projects`, 4 cases: project page contents and open-first order across all five sections; project on tasks and reminders at create and edit, and project statuses; the deletion rule (refused while in use, allowed when empty); routes.
+- **UI:** the Projects list with status filter and create; the project page with editable name, status and description, Delete, and the five sections. Browser-checked at 1920 and 1280: no overflow; sections, open-first order, live status, refused delete with a message and create all worked. The only console line is the expected 400 from the refused delete.
