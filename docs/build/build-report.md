@@ -1,0 +1,222 @@
+# Dashboard build — report
+
+Branch: `feat/dashboard-build`, started from `origin/main` at `355721a`. Not merged; the merge decision is yours.
+All six milestones are **done** and green. Every decision made without asking is in [`assumptions.md`](assumptions.md) (63 entries, each marked "assumed, revisit").
+
+## Run it locally
+
+```bash
+pnpm install
+pnpm run build                          # compiles the server and the browser modules into dist/
+pnpm run viral-dev dashboard            # → http://127.0.0.1:4174
+# options: --port <n>   --data-dir <dir>   (default data dir: .viral/ in the repo)
+```
+
+On Windows PowerShell the commands are the same. To start from clean data: `Remove-Item -Recurse -Force .viral\finance, .viral\dashboard`, or `rm -rf .viral/finance .viral/dashboard` in bash.
+
+Verification, as run before every push:
+
+```bash
+rm -rf dist            # PowerShell: Remove-Item -Recurse -Force dist
+pnpm run typecheck && pnpm run lint && pnpm run test
+```
+
+## Status per milestone
+
+Test counts are **pass / fail / skipped**. "Milestone tests" are the new test file for that milestone. "Full suite" is the whole repository at that commit. The 2 skips are pre-existing Windows-only harness probes; the baseline on `main` was 106 / 0 / 2.
+
+| Milestone | Commit | Status | Milestone tests | Full suite |
+|---|---|---|---|---|
+| M1 Data model | `7dc88b6` | done | 16 / 0 / 0 (`dashboard-model`) | 122 / 0 / 2 |
+| M2 Finance | `cf74d89` | done | 12 / 0 / 0 (`dashboard-finance`) | 134 / 0 / 2 |
+| M3 Groceries | `f7fca09` | done | 10 / 0 / 0 (`dashboard-groceries`) | 144 / 0 / 2 |
+| M4 Calendar | `6eb31e6` | done | 6 / 0 / 0 (`dashboard-calendar`) | 150 / 0 / 2 |
+| M5 Overview | `6db6cfa` | done | 5 / 0 / 0 (`dashboard-overview`) | 155 / 0 / 2 |
+| M6 Reminders | this commit | done | 6 / 0 / 0 (`dashboard-reminders`) | **161 / 0 / 2** |
+
+No milestone hit the three-attempt failure rule.
+
+### Files changed
+
+- **M1:** `.gitignore` (adds `.viral/finance/`, `.viral/dashboard/`), `docs/build/assumptions.md`, `src/dashboard/{errors,finance,store,timeline,validation}.ts`, `src/dashboard/shared/{colours,dates,money}.ts`, `tests/dashboard-helpers.ts`, `tests/dashboard-model.test.ts`
+- **M2:** `src/cli.ts` (new `dashboard` command), `viral-dev.config.json` (new `dashboard` section), `src/dashboard/{budget,config,http,server,summary}.ts`, `src/dashboard/ui/{api,app,budget-view,dom,finance,settings}.ts`, `src/dashboard/ui/{index.html,styles.css}`, `tests/dashboard-finance.test.ts`, `tests/dashboard-helpers.ts`, assumptions
+- **M3:** `src/dashboard/groceries.ts`, `src/dashboard/ui/groceries.ts`, `src/dashboard/server.ts`, `src/dashboard/ui/{api,app}.ts`, `styles.css`, `tests/dashboard-groceries.test.ts`, assumptions
+- **M4:** `src/dashboard/calendar.ts`, `src/dashboard/ui/{calendar,overview}.ts`, `src/dashboard/{server,timeline}.ts`, `src/dashboard/ui/app.ts`, `styles.css`, `tests/dashboard-calendar.test.ts`, assumptions
+- **M5:** `src/dashboard/overview.ts`, `src/dashboard/ui/overview.ts`, `src/dashboard/server.ts`, `styles.css`, `tests/dashboard-overview.test.ts`, assumptions
+- **M6:** `src/dashboard/reminders.ts`, `src/dashboard/ui/reminders.ts`, `src/dashboard/{server,timeline}.ts`, `src/dashboard/ui/app.ts`, `styles.css`, `tests/dashboard-reminders.test.ts`, `tests/dashboard-calendar.test.ts` (prepare-by status rule, see assumption 47), assumptions, this report
+
+### Protected files
+
+**Not touched:** `STATE.json`, `STATE.md`, `CHECKPOINT.md`, `verification/`, `runs/`, `tasks/`, `packets/`, `.claude/`.
+
+**`viral-dev.config.json`** was changed once, in M2, as the brief allows. It gained a new `dashboard` section (`host` 127.0.0.1, `port` 4174, `budgetStepCents` 1000) and nothing else in the file changed. `.gitignore` gained the two data folders.
+
+## What each test file covers
+
+Each milestone's tests cover create, read, edit, delete, validation failure (400), unknown id (404), atomic write, cent arithmetic, and its calculations.
+
+- **Atomic write:** a temp file plus rename leaves no temp files behind. A rename forced to fail keeps both the file on disk and the in-memory state. Twenty concurrent updates lose none. A corrupt file is reported, never overwritten.
+- **Cents:** euro parsing and formatting; `0.1 + 0.2` style sums; trip totals of quantity × unit price (3 × 0.99 + 2 × 1.49 = 5.95); prorated targets rounded to the cent.
+- **Calculations:**
+  - Balance, and income and spent this month, counting only dates up to today.
+  - Runway over a 90-day window, including the case of a negative balance.
+  - Week boundaries:
+    - Sunday 1 November is a one-day week.
+    - Monday 2 November starts a full week.
+    - 26–31 October is cut at the month end.
+  - The month view: committed bills never split into weeks.
+  - "+N more", with hidden legend categories excluded; the Monday-first grid; the 7-day window; the reminders panel (overdue, 30-day limit, at most 8).
+  - Price watch percentages; prepare-by defaults and overdue rules.
+- **Cross-module:** a completed trip writes exactly one Finance expense and shows in the Overview budget. A failed trip save rolls the expense back. Changes in Finance appear on the Overview; the Overview budget is read-only (no − / +), and budget targets are edited only in Finance > Budget.
+- **Routes:** 400 and 404 bodies; 405 for a wrong method; 415 for a non-JSON body; 403 for a non-loopback Host header (DNS-rebinding defence); the static allow-list.
+
+**Browser checks (not part of `pnpm run test`).** At each milestone I drove the real page in headless Chromium at 1920×1080 and 1280×800:
+- live add, edit and delete; the zero-amount error; − / +;
+- tick, price, complete trip and template Start;
+- "+N more", legend hide/show (remembered across reload), and click-through to the owning module;
+- adding a personal reminder, its prepare-by, the overdue flag, and done.
+
+The checks reported no console errors and no horizontal overflow. They caught two real bugs, both fixed before commit:
+- Template "Start" returned 415, because the client sent no JSON body.
+- The Reminders table was cramped at 1280px.
+
+These scripts were throwaway and are not in the repo, so **the UI has no automated tests in the suite**; only the server and the calculations do.
+
+## API (loopback only, JSON)
+
+`GET /api/status` · `GET|PATCH /api/settings` ·
+`GET|POST /api/finance/categories`, `PATCH|DELETE /api/finance/categories/:id` ·
+`GET|POST /api/finance/transactions` (`?month=YYYY-MM&type=all|fixed|flexible|income`), `GET|PATCH|DELETE /api/finance/transactions/:id` ·
+`GET /api/finance/targets`, `PATCH /api/finance/targets/:categoryId`, `POST /api/finance/targets/:categoryId/step` (`{period, direction}`) ·
+`GET /api/finance/summary` (`?month`) · `GET /api/budget` (`?date`) ·
+`GET|POST /api/groceries/items`, `PATCH|DELETE /api/groceries/items/:id` ·
+`GET|POST /api/groceries/templates`, `PATCH|DELETE /api/groceries/templates/:id`, `POST /api/groceries/templates/:id/start` ·
+`GET|POST /api/groceries/prices`, `PATCH|DELETE /api/groceries/prices/:id` ·
+`GET|POST /api/groceries/trips` (POST completes a trip), `GET|PATCH|DELETE /api/groceries/trips/:id` ·
+`GET /api/calendar` (`?month&hidden=bills,…`) · `GET /api/timeline` (`?from&days`) · `GET /api/overview` ·
+`GET|POST /api/reminders` (`?status=open|done|all`), `GET|PATCH|DELETE /api/reminders/:id`
+
+## Chat (text, UI only)
+
+Added after M6 in commit "feat(dashboard): text chat UI with placeholder replies". It needs no setup beyond the commands above.
+
+**Works:**
+- The chat pane replaces the old placeholder at the bottom of the Overview's right column.
+- Threads: "Main" always exists; "+ New" creates a named thread (1–40 characters); click a tab to switch; rename with ✎ or a double-click; delete with ✕ (immediate). Main cannot be renamed or deleted.
+- Messages: a scrolling list, with your messages on the right and replies on the left. Enter sends and Shift+Enter adds a new line, or use Send. Text is trimmed and must be 1–2000 characters.
+- Expand / Collapse: the chat takes over the Overview area, and the calendar and other panels collapse. The choice is remembered in this browser.
+- Storage: one atomic JSON file per thread in `.viral/dashboard/chat/`. The note "Kept until you delete it. Retention rule not decided yet." appears under the tabs.
+- Routes: `GET|POST /api/chat/threads`, `PATCH|DELETE /api/chat/threads/:id`, `GET|POST /api/chat/threads/:id/messages` (POST returns `{ message, reply }`). Bad names or text return 400, unknown thread ids return 404, and changes to Main return 400.
+- Tests: `tests/dashboard-chat.test.ts`, 7 / 0 / 0.
+
+**Placeholder or not built:**
+- Every reply is the fixed text "Chat is not connected to a model yet." There is no Ollama or other model connection, no action parsing, and no voice.
+- There is no retention rule and no automatic deletion.
+- At 1280×800 the pane in the right column only shows about two messages, so Expand is the practical way to use it at that size.
+
+## Chat commands (actions, validation, confirm flow; no model)
+
+Added in commit "feat(dashboard): chat command layer with validation and confirm flow". The brief for this step was cut off mid-sentence; see assumption 69.
+
+**Works:**
+- **Action list** (`src/dashboard/commands/actions.ts`): add_expense, add_income, edit_transaction, delete_transaction, set_budget_target, get_balance. Each has a name, a description and a field schema.
+- **Validation** (`src/dashboard/commands/validate.ts`) is plain code. It checks:
+  - shape: the action is allowed, required fields are present, there are no unknown fields;
+  - amount: greater than 0, finite, at most the configured €5,000 limit, rounded to cents;
+  - category: exact, then case-insensitive, per type, and never created;
+  - date: words, weekdays and ISO; years before 2000 are rejected; future dates are allowed everywhere and flagged "(future date)" in the preview;
+  - target: "last" in this thread, or an existing id.
+
+  Every failed check comes back as its own sentence.
+- **Confirm flow:**
+  - Posting a message returns a reply, a pending proposal with a preview line, or the validation errors, and never writes Finance data.
+  - `POST /api/chat/proposals/:id/confirm` is the only chat path that writes. It returns the saved entry and a 10-second undo token.
+  - `POST /api/chat/proposals/:id/cancel` discards a proposal.
+  - `POST /api/chat/undo/:token` reverses the most recent chat write.
+  - Proposals expire after 10 minutes.
+- **UI:** Confirm and Cancel on proposals, Undo for 10 seconds, and validation errors listed in the reply.
+- **Tests:** `tests/dashboard-commands.test.ts`, 14 / 0 / 0.
+
+**Placeholder or not built:**
+- No model is connected. The production proposer always replies "Chat is not connected to a model yet.", so the confirm flow can only be exercised through the test stub until a model is connected.
+- Nothing after the cut-off in the brief was built.
+
+## Ollama connection
+
+The chat command layer is now connected to the local model. `OllamaProposer`
+(`src/dashboard/commands/ollama.ts`) implements the same `Proposer` interface the stub uses, so the
+swap is one choice in `createDashboardContext`: an explicit proposer (tests) wins, else the
+model-backed proposer when `dashboard.proposerEnabled` is true, else the placeholder. It reuses the
+existing loopback Ollama adapter in `src/local` — no second HTTP client.
+
+- **Probe.** `viral-dev local-status` reports Ollama **0.40.6**, running on loopback, with
+  `qwen3:4b-instruct` installed. Structured output via a `format` parameter would be supported at that
+  version, but the shared adapter exposes no `format` field; rather than widen that contract this step
+  requests JSON through a strict system prompt and parses robustly (strip `<think>…</think>` and code
+  fences, take the first `{…}`). Wiring `format` through the adapter is left for later.
+- **Input to the model:** the message, today (ISO), the six actions with field schemas, and the
+  category names per type. Nothing else.
+- **Validation and the confirm/undo flow are unchanged.** The proposer only produces a `RawProposal`
+  (or a reply); the existing plain-code validator is still the sole guardrail, and a model-invented
+  category or a malformed date is rejected with the same error text as before.
+- **Failure handling:** 30 s timeout from `dashboard.timeoutMs`, one call, no streaming, no retry.
+  Timeout/unreachable → "Chat could not reach the model right now." (logged); invalid JSON / unknown
+  action / "none" → the existing placeholder reply. The proposer never throws into the route.
+- **Config keys added** to the dashboard section: `model` (`qwen3:4b-instruct`), `timeoutMs` (30000),
+  `proposerEnabled` (true).
+- **Tests** inject a fake model (`tests/dashboard-ollama.test.ts`): valid JSON → proposal through
+  validation; invalid JSON, unknown action and "none" → placeholder; invented category rejected by the
+  existing validation; no invented date (defaults to today); timeout → unavailable reply without
+  throwing; reasoning block stripped; and `proposerEnabled` false uses the placeholder. All 193 suite
+  tests pass.
+- **Live check (not in the suite):** `scripts/chat-spike.mjs` runs `docs/build/spike-phrases.txt`
+  through the real model and validation and writes `docs/build/spike-results.md`. First run:
+  **24/30 outcome-correct**, 0 proposed-when-it-should-ask, 5 asked/failed-when-it-should-propose
+  (one cold-start 30 s timeout on the first call, and four "delete/edit the last …" phrases that the
+  spike's empty context correctly rejects because no chat transaction exists yet), 1 unavailable. One
+  "coffee …" phrase (no Coffee category) was mapped to Entertainment instead of being declined. The
+  prompt and validation were **not** tuned to improve the score in this step.
+
+## Ambiguity and clarification
+
+Some spending words name a thing, not a category ("coffee", "dinner", "drinks"). Rather than let the
+model guess, a small code rule asks. `src/dashboard/commands/ambiguity.ts` holds a short map of such
+words to candidate category names; candidates are filtered to the live category list at request time
+(so with today's defaults "Spending"/"Personal" are dropped, and "gift" ends up with no candidates and
+never asks).
+
+- **Rule:** the model proposer runs first; then, for a spending add whose message uses an ambiguous
+  word and names no existing category, the chat returns a **question** ("Coffee, €2.50. Which
+  category?") with the surviving candidates — it does **not** create a proposal and writes nothing. The
+  amount/note/date come from the model proposal; only the category is withheld.
+- **Answer:** `POST /api/chat/clarifications/:id/answer` takes a candidate or any valid existing
+  category, runs it through the **existing** validation (invalid → the same category error), and turns
+  the clarification into a normal pending proposal that goes through the usual confirm. The answer
+  itself writes nothing.
+- **Remember once:** a successful answer stores word → category id in
+  `.viral/dashboard/chat-rules.json`; the same exact word then proposes directly and is not asked
+  again. Clarifications expire after 10 minutes like proposals (400 when expired/answered, 404 for an
+  unknown id).
+- **Spike re-run.** `scripts/chat-spike.mjs` now runs the real chat path and confirms one setup entry
+  ("groceries 3 bread") first, so the "last …" phrases have a transaction to reference. Run 2:
+  **29/30 outcome-correct** (see `docs/build/spike-results.md`; run 1 kept in
+  `spike-results-run1.md`). The four "last" phrases now propose (they were invalid in run 1's empty
+  context), "coffee 2.50 at hofer" is now a question, and "what's my balance" is answered directly as a
+  plain reply (its label still says proposal, so it reads as the one mismatch). Prompt and validation
+  were not tuned.
+
+## Not done, and why
+
+- **Chat replies and voice:** the text chat UI and storage were added later (see Chat above), but replies are a fixed placeholder; no model and no voice are connected.
+- **Gym, Projects, Viral tasks:** greyed out and non-functional, as designed. Reminders is functional; see assumption 56 for how I read the brief's wording.
+- **Today's token count:** shows "n/a". Viral records no token usage anywhere (the efficiency telemetry has no token fields), so there is nothing truthful to display. Wiring a real source is a separate change.
+- **Served by "the existing daemon":** there is no HTTP daemon on `main`. The desktop daemon lives only on the unmerged `feat/m06-desktop-final` and `feat/m05-voice-clean` branches. This build adds its own small loopback server (`viral-dev dashboard`). If the desktop daemon is merged later, the router in `src/dashboard/server.ts` can be mounted there (assumption 7).
+
+## Known limitations worth a look before merging
+
+1. **Editing a trip's expense directly in Finance does not update the trip.** The trip keeps its own item total. The reverse direction is handled: editing the trip updates the expense. Deleting the expense in Finance marks the trip "Expense deleted in Finance".
+2. **Any process on this machine can call the API.** There is no token or login, only loopback binding, Host checks and JSON-only writes. That suits a single-user desktop, but not a shared machine.
+3. **Weekly targets on cut weeks are prorated** (assumption 22). If you would rather have the full weekly target on a one-day week, it is a one-line change in `src/dashboard/budget.ts`.
+4. **"Today" is the server machine's local date.** Clients in another time zone would see the server's day.
+5. **There is no backup or undo.** Deletes are immediate, as the design requires ("no confirmation steps"), so a mis-click on Delete is permanent.
+6. **Data stays local** under `.viral/`, which is ignored by git, and is never committed.

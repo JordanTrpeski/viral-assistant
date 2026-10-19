@@ -31,6 +31,15 @@
       "command": "pnpm run acceptance:m04"
     }
   ],
+  "dashboard": {
+    "host": "127.0.0.1",
+    "port": 4174,
+    "budgetStepCents": 1000,
+    "chatMaxAmountCents": 500000,
+    "model": "qwen3:4b-instruct",
+    "timeoutMs": 30000,
+    "proposerEnabled": true
+  },
   "efficiencyGovernor": {
     "primaryHarness": "claude",
     "allowAutomaticPaidHarnessSwitch": false,
