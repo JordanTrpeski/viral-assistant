@@ -44,7 +44,14 @@ export async function renderDetail(context: AppContext, id: string, items: Organ
     field(item.type === "project" ? "Name" : "Title", textField(context, item.title, `d:${item.id}:title`, (value) => patch({ title: value ?? "" }), { maxlength: item.type === "project" ? 100 : 200 })),
     statuses ? field("Status", selectField(item.status, statuses.map((status) => ({ value: status, label: statusLabel(status) })), `d:${item.id}:status`, (value) => patch({ status: value }))) : null,
     item.type !== "project" && item.type !== "inbox" ? field(item.type === "task" ? "Due" : "Date", dateField(context, item.date, `d:${item.id}:date`, (value) => patch({ date: value }))) : null,
-    item.type === "reminder" ? field("Prepare by", dateField(context, item.prepare_by, `d:${item.id}:prepare`, (value) => patch({ prepare_by: value }))) : null,
+    item.type === "reminder" ? field("Prepare by", h("div", { class: "prepare-cell" },
+      dateField(context, item.prepare_by, `d:${item.id}:prepare`, (value) => patch({ prepare_by: value })),
+      h("input", {
+        type: "number", min: 0, max: 365, class: "qty-input", title: "Days before the date; 0 means none", "aria-label": "Prepare days before",
+        value: item.prepare_by && item.date ? Math.round((Date.parse(item.date) - Date.parse(item.prepare_by)) / 86_400_000) : 0,
+        onchange: (event: Event) => patch({ prepare_days: Number((event.target as HTMLInputElement).value) })
+      }),
+      h("span", { class: "muted small" }, "days before"))) : null,
     item.type === "task" ? field("Priority", selectField(item.priority, vocab.priorities.map((value) => ({ value, label: value })), `d:${item.id}:priority`, (value) => patch({ priority: value }))) : null,
     item.type === "reminder" ? field("Category", selectField(item.category, vocab.reminderCategories.map((value) => ({ value, label: value })), `d:${item.id}:category`, (value) => patch({ category: value }))) : null,
     item.type === "reminder" ? field("Repeats", selectField(item.recurrence, vocab.recurrences.map((value) => ({ value, label: value })), `d:${item.id}:recurrence`, (value) => patch(value === "custom" ? { recurrence: value, interval_days: item.interval_days ?? 30 } : { recurrence: value, interval_days: null }))) : null,

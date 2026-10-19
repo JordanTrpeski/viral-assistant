@@ -17,6 +17,8 @@ export interface TimelineItem {
   status: TimelineStatus;
   amountCents: number | null;
   prepareBy: IsoDate | null;
+  /** Set for entries that come from Organise items, so a click opens them there. Absent for older sources. */
+  origin?: "organise";
 }
 
 export function colourForTransaction(kind: TransactionKind): ColourCategory {
@@ -57,7 +59,8 @@ export function prepareEntries(items: TimelineItem[], today: IsoDate): TimelineI
     colour: "reminder",
     status: item.status === "done" || item.date < today ? "done" : "scheduled",
     amountCents: null,
-    prepareBy: null
+    prepareBy: null,
+    ...(item.origin ? { origin: item.origin } : {})
   }));
 }
 

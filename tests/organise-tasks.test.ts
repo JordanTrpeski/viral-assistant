@@ -50,7 +50,7 @@ test("complete sets done_at and moves to Done, never deleted; reopen returns it;
 test("Done is ordered by newest done_at first", () => {
   const task = (title: string, doneAt: string): OrganiseItem => ({
     id: title, type: "task", title, date: null, prepare_by: null, recurrence: null, interval_days: null, category: null, project_id: null,
-    status: "done", priority: "normal", notes: "", links: [], list_id: null, checklist: [], created_at: "", updated_at: "", done_at: doneAt
+    status: "done", priority: "normal", notes: "", links: [], list_id: null, checklist: [], recurrence_anchor: null, created_at: "", updated_at: "", done_at: doneAt
   });
   const groups = groupTasks([task("old", "2026-10-01T09:00:00Z"), task("new", "2026-10-13T09:00:00Z"), task("mid", "2026-10-07T09:00:00Z")], today);
   assert.deepEqual(groups.done.map((entry) => entry.title), ["new", "mid", "old"]);

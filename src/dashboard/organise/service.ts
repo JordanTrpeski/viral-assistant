@@ -6,6 +6,7 @@ import { JsonDocumentStore, type StoreFileSystem } from "../store.js";
 import { isObject, rejectUnknownFields, requireObject } from "../validation.js";
 import { createCandidate, maxTitleLength, normaliseItem, patchCandidate, validateItemsDocument, type ItemType, type ModelContext, type OrganiseItem } from "./model.js";
 import type { JsonObject } from "../validation.js";
+import { applyReminderRules, nextOccurrence } from "./reminders.js";
 
 export interface OrganiseList {
   id: string;
@@ -97,7 +98,8 @@ export class OrganiseService {
   }
 
   async createItem(body: unknown): Promise<OrganiseItem> {
-    const candidate = createCandidate(body);
+    const raw = createCandidate(body);
+    const candidate = applyReminderRules(raw, raw, null);
     const lists = (await this.lists.read()).lists;
     return this.items.update((document) => {
       const item = normaliseItem(candidate, null, this.modelContext(document.items, lists));
@@ -112,8 +114,16 @@ export class OrganiseService {
       const index = document.items.findIndex((item) => item.id === id);
       if (index < 0) throw new NotFoundError("item", id);
       const previous = document.items[index]!;
-      const item = normaliseItem(patchCandidate(previous, body), previous, this.modelContext(document.items, lists));
+      const context = this.modelContext(document.items, lists);
+      const item = normaliseItem(applyReminderRules(patchCandidate(previous, body), body as JsonObject, previous), previous, context);
       document.items[index] = item;
+      // Completing a recurring reminder: this occurrence goes to Done and the next one is created.
+      if (item.type === "reminder" && item.status === "done" && previous.status !== "done") {
+        const next = nextOccurrence(item);
+        // Re-completing a reopened occurrence must not schedule the same next occurrence twice.
+        const exists = next && document.items.some((other) => other.type === "reminder" && other.title === item.title && other.date === next.date && other.id !== item.id);
+        if (next && !exists) document.items.push(normaliseItem(next, null, this.modelContext(document.items, lists)));
+      }
       return item;
     });
   }
@@ -150,7 +160,7 @@ export class OrganiseService {
       if (index < 0) throw new NotFoundError("item", id);
       const previous = document.items[index]!;
       if (previous.type !== "inbox") throw new ValidationError("Only inbox items can be sorted");
-      const candidate = sortCandidate(target, input, previous);
+      const candidate = applyReminderRules(sortCandidate(target, input, previous), input, previous);
       const item = normaliseItem(candidate, previous, this.modelContext(document.items, lists));
       document.items[index] = item;
       return item;
@@ -174,7 +184,7 @@ export class OrganiseService {
 /** The sort form for each target type, as in the spec. Notes use `text` for their body and an optional single `link`. */
 export const sortFormFields = {
   task: ["title", "date", "priority", "project_id", "checklist"],
-  reminder: ["title", "date", "category", "project_id", "recurrence", "interval_days", "prepare_by", "notes"],
+  reminder: ["title", "date", "category", "project_id", "recurrence", "interval_days", "prepare_by", "prepare_days", "notes"],
   note: ["text", "project_id", "date", "link"],
   list_item: ["list_id", "status", "notes"]
 } as const;

@@ -265,3 +265,5 @@ button.danger { color: var(--danger); }
 .checklist-editor { display: flex; flex-direction: column; gap: 4px; }
 .checklist-entry { display: grid; grid-template-columns: 20px minmax(0, 1fr) 28px; gap: 6px; align-items: center; }
 .checklist-entry button { padding: 2px 4px; }
+.category-personal { color: var(--personal); }
+.category-bill { color: var(--bills); }

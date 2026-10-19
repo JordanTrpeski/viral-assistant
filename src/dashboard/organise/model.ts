@@ -56,6 +56,8 @@ export interface OrganiseItem {
   links: string[];
   list_id: string | null;
   checklist: ChecklistEntry[] | null;
+  /** Internal, yearly reminders only: the series' month-day ("MM-DD"), so a 29 February date survives non-leap years. */
+  recurrence_anchor: string | null;
   created_at: string;
   updated_at: string;
   done_at: string | null;
@@ -70,10 +72,10 @@ export interface ModelContext {
 }
 
 /** Fields a request may set. `type` is only accepted on create; it changes only through inbox sort. */
-export const editableFields = ["title", "date", "prepare_by", "recurrence", "interval_days", "category", "project_id", "status", "priority", "notes", "links", "list_id", "checklist"] as const;
+export const editableFields = ["title", "date", "prepare_by", "prepare_days", "recurrence", "interval_days", "category", "project_id", "status", "priority", "notes", "links", "list_id", "checklist"] as const;
 
 const typeOnlyFields: Readonly<Record<string, ItemType>> = {
-  recurrence: "reminder", interval_days: "reminder", category: "reminder", priority: "task", checklist: "task", list_id: "list_item"
+  recurrence: "reminder", interval_days: "reminder", category: "reminder", prepare_days: "reminder", priority: "task", checklist: "task", list_id: "list_item"
 };
 
 function optionalDate(value: unknown, field: string): IsoDate | null {
@@ -224,11 +226,22 @@ export function normaliseItem(candidate: JsonObject, previous: OrganiseItem | nu
     links,
     list_id: listId,
     checklist: list,
+    recurrence_anchor: recurrence === "yearly" && date !== null ? anchorFor(date, candidate.recurrence_anchor) : null,
     created_at: previous?.created_at ?? now,
     updated_at: now,
     // done_at is set when the status becomes done and cleared when it is reopened.
     done_at: isDone ? (wasDone ? previous!.done_at : now) : null
   };
+}
+
+/**
+ * Keeps an existing anchor while the date is consistent with it (same month-day, or a 28 February standing in for
+ * the 29th in a non-leap year); otherwise the anchor is the date's own month-day.
+ */
+function anchorFor(date: IsoDate, existing: unknown): string {
+  const monthDay = date.slice(5);
+  if (typeof existing === "string" && (existing === monthDay || (existing === "02-29" && monthDay === "02-28" && !isIsoDate(`${date.slice(0, 4)}-02-29`)))) return existing;
+  return monthDay;
 }
 
 /** Builds the candidate for a create request (type required). */

@@ -14,6 +14,7 @@ import { colourCategories, isColourCategory, type ColourCategory } from "./share
 import { localIsoDate, monthOf } from "./shared/dates.js";
 import { nextSevenDays, reminderPanel } from "./overview.js";
 import { reminderTimelineItems, RemindersService, type ReminderStatus } from "./reminders.js";
+import { organiseReminderTimelineItems } from "./organise/reminders.js";
 import { registerOrganiseRoutes } from "./organise/routes.js";
 import { OrganiseService } from "./organise/service.js";
 import { financeSummary } from "./summary.js";
@@ -149,7 +150,11 @@ export function registerGroceriesRoutes(router: Router, context: DashboardContex
 /** Every dated entry from every source, including the derived prepare-by entries. */
 export async function timelineItems(context: DashboardContext): Promise<TimelineItem[]> {
   const date = today(context);
-  const items = [...transactionTimelineItems(await context.finance.snapshot(), date), ...reminderTimelineItems(await context.reminders.list())];
+  const items = [
+    ...transactionTimelineItems(await context.finance.snapshot(), date),
+    ...reminderTimelineItems(await context.reminders.list()),
+    ...organiseReminderTimelineItems(await context.organise.listItems({ type: "reminder" }))
+  ];
   return [...items, ...prepareEntries(items, date)];
 }
 
