@@ -283,3 +283,7 @@ a.item-row { color: var(--text); text-decoration: none; }
 .unit-input { width: 90px; }
 .history { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
 .history-cell { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; text-align: center; font-variant-numeric: tabular-nums; }
+.review-block { margin-top: 8px; }
+.review-block h4 { margin: 0 0 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+.review-link { display: block; color: var(--accent); text-decoration: none; }
+.item-row:disabled { cursor: default; opacity: 1; }

@@ -8,6 +8,7 @@ import { renderOrganiseOverview } from "./organise/overview.js";
 import { renderNotesAndLists } from "./organise/notes.js";
 import { renderProjects } from "./organise/projects.js";
 import { renderOrganiseReminders } from "./organise/reminders.js";
+import { renderReview } from "./organise/review.js";
 import { renderTasks } from "./organise/tasks.js";
 import { renderTrackers } from "./organise/trackers.js";
 import { renderOverview } from "./overview.js";
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { route: "organise-notes", label: "Notes and lists", render: renderNotesAndLists, group: "Organise" },
   { route: "organise-projects", label: "Projects", render: renderProjects, group: "Organise" },
   { route: "organise-trackers", label: "Trackers", render: renderTrackers, group: "Organise" },
+  { route: "organise-review", label: "Weekly review", render: renderReview, group: "Organise", hidden: true },
   { route: "gym", label: "Gym" },
   { route: "viral-tasks", label: "Viral tasks" }
 ];

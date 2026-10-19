@@ -249,3 +249,10 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
     - Totals are rounded to 6 decimals. Percent has one decimal. "Remaining" is never negative. — assumed, revisit
 136. **History is the last 8 periods ending with the current one, oldest first.** It is computed on the fly; nothing is stored. — assumed, revisit
 137. **Deleting a tracker deletes its entries.** Trackers and their entries share `trackers.json`, with entries stored apart from the tracker records as the spec requires. — assumed, revisit
+
+### Step 8 — weekly review
+
+138. **Window:** `end` (default today) and the 6 days before it, inclusive. `done_at` is a timestamp and is compared by its local calendar date on the server. — assumed, revisit
+139. **"Slipped" uses the real today**, even with an explicit past `end`. Open tasks count if due in the window and before today; a task due today has not slipped yet. Open reminders count if dated anywhere in the window, including today. A reopened task has no `done_at`, so it does not appear under Done. — assumed, revisit
+140. **Scaled targets are rounded to 2 decimals** after scaling. Weekly is × 1, monthly × 7 / 30.4375, yearly × 7 / 365.25. A tracker without a target shows its 7-day total alone. — assumed, revisit
+141. **The review page is not in the left nav**, since the spec calls it an on-demand page. It opens from a link on the Organise overview, and at `#/organise-review`. Clicking a task or reminder in the review opens it in its own page. — assumed, revisit

@@ -9,6 +9,7 @@ import type { JsonObject } from "../validation.js";
 import { applyReminderRules, nextOccurrence } from "./reminders.js";
 import { listName, listStatuses, newListFields } from "./lists.js";
 import { projectPage, type ProjectPage, type ProjectTracker } from "./projects.js";
+import { weeklyReview, type WeeklyReview } from "./review.js";
 import { entryFields, trackerFields, trackerView, validateTrackersDocument, type Tracker, type TrackerEntry, type TrackersDocument, type TrackerView } from "./trackers.js";
 
 export interface OrganiseList {
@@ -239,6 +240,12 @@ export class OrganiseService {
 
   protected async projectTrackers(): Promise<ProjectTracker[]> {
     return (await this.trackers.read()).trackers;
+  }
+
+  /** The rolling 7-day review ending on `end` (default today). */
+  async review(end?: IsoDate): Promise<WeeklyReview> {
+    const [items, lists, trackers] = await Promise.all([this.items.read(), this.lists.read(), this.trackers.read()]);
+    return weeklyReview({ items: items.items, lists: lists.lists, trackers: trackers.trackers, entries: trackers.entries, end: end ?? this.today(), today: this.today() });
   }
 
   // Trackers: entries are stored separately from the tracker, in the same trackers.json.

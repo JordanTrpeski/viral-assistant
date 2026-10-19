@@ -27,6 +27,7 @@ export async function renderOrganiseOverview(container: HTMLElement, context: Ap
   container.replaceChildren(h("div", { class: `page organise${selected ? " with-detail" : ""}` },
     h("div", { class: "organise-main" },
       inbox,
+      h("a", { class: "panel review-link", href: "#/organise-review" }, "Weekly review — the last 7 days →"),
       h("section", { class: "panel" },
         h("div", { class: "inline-add" },
           h("select", { value: draft.type, onchange: (event: Event) => { draft.type = (event.target as HTMLSelectElement).value as ItemType; } },

@@ -58,3 +58,9 @@ Test counts are pass / fail / skipped for the full suite at that step's commit.
 - **Routes:** `GET|POST /api/organise/trackers`, `PATCH|DELETE /api/organise/trackers/:id`, `GET|POST /api/organise/trackers/:id/entries`, `PATCH|DELETE /api/organise/trackers/:id/entries/:entryId`.
 - **Tests:** `organise-trackers`, 6 cases: week boundaries Monday to Sunday (including across a month end), month (including a leap February) and year boundaries; progress with and without a target; over-target; 0.1 + 0.2; history of 8 periods (weekly, monthly, yearly); entry edit and delete changing progress; validation and unknown ids; deleting a tracker deletes its entries; project link and the deletion rule; routes.
 - **UI:** the Trackers page with a progress bar (value of target, percent, to go) or the total only, 8-period history, live entry add, edit and delete, and tracker settings. Browser-checked at 1920 and 1280: no console errors, no overflow; progress, history, no-target total and entry add, edit and delete all worked.
+
+### Step 8 — weekly review: done (suite 251 / 0 / 2)
+- **Files:** `src/dashboard/organise/{review,service,routes}.ts`; `src/dashboard/ui/organise/{review,overview}.ts`; `src/dashboard/ui/{app.ts,styles.css}`; `tests/organise-review.test.ts`; assumptions; this report.
+- **Routes:** `GET /api/organise/review?end=YYYY-MM-DD` (default today).
+- **Tests:** `organise-review`, 5 cases, all with fixed dates: window edges (first day in, the day before out, today in, explicit end); a reopened task not counted; done list items and tracker entries; trackers scaled to 7 days (weekly as is, monthly, yearly, no target); slipped tasks and reminders; routes.
+- **UI:** the review page (Done, Slipped, Trackers) with a chosen end date, linked from the Organise overview. Browser-checked at 1920 and 1280: no console errors, no overflow; contents, the scaled tracker summary, click-through and the overview link all worked.

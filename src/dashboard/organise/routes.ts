@@ -13,6 +13,10 @@ export function registerOrganiseRoutes(router: Router, organise: OrganiseService
   // The model's fixed vocabularies, so the browser UI never duplicates them.
   router.add("GET", "/api/organise/meta", () => ({ types: itemTypes, statuses: typeStatuses, reminderCategories, recurrences, priorities, listPresets, modules: organiseModules }));
   router.add("GET", "/api/organise/reminders", async ({ query }) => groupReminders(await organise.listItems({ ...filterParams(query), type: "reminder" }), organise.today()));
+  router.add("GET", "/api/organise/review", ({ query }) => {
+    const end = query.get("end");
+    return organise.review(end === null ? undefined : requireDate(end, "end"));
+  });
   router.add("GET", "/api/organise/trackers", () => organise.listTrackers());
   router.add("POST", "/api/organise/trackers", ({ body }) => organise.createTracker(body));
   router.add("PATCH", "/api/organise/trackers/:id", ({ params, body }) => organise.updateTracker(params.id!, body));
