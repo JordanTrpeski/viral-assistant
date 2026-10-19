@@ -207,9 +207,11 @@ never asks).
 
 ## Arithmetic (relative amounts)
 
-The model computes relative amounts unreliably — "divide that by 4" after €80 came back as €12.50 — and
-validation cannot catch an amount that is valid but wrong. So relative amounts are now computed **in code**,
-in `src/dashboard/commands/arithmetic.ts`, and the code result replaces the model's amount.
+The model computes relative amounts unreliably — "divide that by 4" after €80 came back as €12.50 — and, worse,
+a live check showed it returns `{"action":"none"}` for a bare "divide that by 4", so there is no proposal to
+attach a corrected amount to. Relative amounts are therefore computed **in code, before the model is called**,
+in `src/dashboard/commands/arithmetic.ts` and the chat wiring. The model is **not** called for an arithmetic
+message; non-arithmetic messages go to the model exactly as before.
 
 - **Patterns (case-insensitive):** "divide X by N", "X / N", "X divided by N", "half of X" / "half X",
   "double X" / "double of X", "N percent of Y", "N% of Y". "that" / "it" / "that amount" / "the last amount"
@@ -219,17 +221,25 @@ in `src/dashboard/commands/arithmetic.ts`, and the code result replaces the mode
   typed or a confirmed proposal's amount, newest first — **never** the model's output. A prior message that is
   itself a relative phrase is skipped. If no reference exists yet, the chat **asks for the number** and makes
   no proposal.
-- **Override and log:** where a pattern yields a value for an amount-carrying action (add_expense, add_income,
-  set_budget_target), the code result wins. A difference from the model's amount is written to the **server
-  log** (`console.error`), never to the chat.
+- **The code picks the action** from the message: a Flexible category with the word "target"/"budget" and a
+  period → a `set_budget_target` proposal; a named spending/income category without a target word →
+  `add_expense`/`add_income` (so "half of 60 on groceries" still adds €30); neither → the which-target question.
+- **Which-target question:** a bare phrase such as "divide that by 4" replies "€20.00 for which target?" with
+  buttons "Groceries weekly target", "Groceries monthly target" and "Other…". The default button is the target
+  changed most recently in the thread, marked "(last changed)"; none is marked if no target was changed.
+  "Other…" accepts any valid Flexible category and period, checked by the existing validation (invalid →
+  existing error). Answering (`POST /api/chat/target-questions/:id/answer`) creates a normal pending proposal
+  that goes through the usual confirm; the answer writes nothing. These questions expire after 10 minutes like
+  proposals (400 expired/answered, 404 unknown).
 - **Split is not calculated:** "split 60 between 3" returns the question "Do you want your share of €60.00, or
   the total for everyone?" and makes no proposal.
 - **Working in the preview:** a value from arithmetic appends its working in brackets, e.g.
   "Set Groceries weekly target to €20.00 (now €0.00) (80 ÷ 4 = 20)". Other previews are unchanged.
-- **Tests:** `tests/dashboard-arithmetic.test.ts` covers all of the above with a scripted fake model (no
-  Ollama). **Spike:** five arithmetic phrases were added to `spike-phrases.txt` but are **pending a local
-  run** (noted in `spike-results.md`); the amount is code-decided and already unit-tested, so a live run only
-  confirms the model's action/category choice.
+- **Tests:** `tests/dashboard-arithmetic.test.ts` covers all of the above with a scripted fake model that also
+  asserts the model is never called for arithmetic. **Spike:** both kinds of phrase (bare → question, named
+  target → proposal) are in `spike-phrases.txt` but are **pending the owner's local run** (noted in
+  `spike-results.md`); the amounts are code-decided and already unit-tested, so a live run only confirms the
+  end-to-end behaviour.
 
 ## Not done, and why
 
