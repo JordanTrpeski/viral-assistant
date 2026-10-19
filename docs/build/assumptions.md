@@ -169,3 +169,24 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 97. **A computed amount with no named target asks which target, rather than guessing.** The reply is the question "€X for which target?" with buttons "Groceries weekly target", "Groceries monthly target" and "Other…". "Other…" accepts any valid existing Flexible category and either period ("week"/"month"), typed as text and checked by the existing validation (so an invalid category or period returns the existing error). Answering it (`POST /api/chat/target-questions/:id/answer`) creates a normal pending `set_budget_target` proposal that goes through the usual confirm; the answer writes nothing. These questions expire after the same 10 minutes as proposals; an expired or unknown answer returns 400 or 404 like the existing routes. — assumed, revisit
 98. **The default button is the target changed most recently in this thread, marked "(last changed)".** "Most recently changed" is read from the thread's confirmed `set_budget_target` proposals (newest `resolvedAt`). If it matches one of the two shown Groceries buttons, that button is the default; if no target has been changed in the thread, no default is marked. — assumed, revisit
 99. **The bare-phrase rule applies to all four kinds** — "divide that by 4", "half of that", "double it", "10% of 250" — which all ask which target when no target is named. A named spending category keeps the expense behaviour ("half of 60 on groceries" still adds €30), and "split 60 between 3" keeps its share-or-total question. — assumed, revisit
+
+## Organise v1 (`docs/design/organise-v1.md`)
+
+### Step 1 — shared item model and store
+
+100. **API and storage field names are snake_case** (`prepare_by`, `project_id`, `done_at`, …), exactly as the spec writes them, even though the older dashboard modules use camelCase. — assumed, revisit
+101. **Every item stores every field of the shared model.** Fields that do not apply to its type are `null` (for example `priority` on a reminder). Sending a type-only field with a value for another type is rejected with 400. — assumed, revisit
+102. **A note's title is optional.** Without one, the first line of its text (up to 200 characters) becomes the title, so the model rule "title 1 to 200" still holds. A note with neither title nor text returns 400. — assumed, revisit
+103. **A project's name is its `title`**, limited to 1–100 characters instead of 200, and its description is its `notes`. A project cannot itself belong to a project. — assumed, revisit
+104. **An item's type cannot change by editing (400).** Only inbox sort changes the type, as the spec describes. — assumed, revisit
+105. **Defaults:**
+    - Tasks: priority `normal`, status `open`.
+    - Reminders: category `Other`, recurrence `none`, status `open`.
+    - Projects: status `active`.
+    - List items: the first status of their list.
+    - `prepare_by` needs a `date` and must be on or before it; the same day is allowed. — assumed, revisit
+106. **`done_at` is set when an item's status becomes its done status**: a task's or reminder's `done`, a project's `done`, or a list's last status. It is cleared when the item is reopened. Editing other fields of a done item keeps its original `done_at`. — assumed, revisit
+107. **Deleting an item removes its id from every other item's `links`.** Deletion rules for projects and lists are set in their steps. — assumed, revisit
+108. **`GET /api/organise/meta`** (not in the spec) returns the model's vocabularies (types, statuses, categories, recurrences, priorities). The browser UI uses it so it never duplicates them. — assumed, revisit
+109. **Static serving was extended by one folder**, `/assets/ui/organise/<name>.js`, because the spec puts the UI under `src/dashboard/ui/organise/`. File names keep the same strict pattern. — assumed, revisit
+110. **Navigation.** The Organise nav group (Overview, Tasks, Reminders, Notes and lists, Projects, Trackers) sits after Groceries. Gym and Viral tasks stay greyed out, and Settings stays pinned at the bottom. Organise pages without a UI yet appear greyed out until their step. The old greyed-out top-level "Projects" item is replaced by Organise > Projects. An item opens in the detail panel through `?item=<id>` in the address hash, so any page can open any item. — assumed, revisit

@@ -14,6 +14,8 @@ import { colourCategories, isColourCategory, type ColourCategory } from "./share
 import { localIsoDate, monthOf } from "./shared/dates.js";
 import { nextSevenDays, reminderPanel } from "./overview.js";
 import { reminderTimelineItems, RemindersService, type ReminderStatus } from "./reminders.js";
+import { registerOrganiseRoutes } from "./organise/routes.js";
+import { OrganiseService } from "./organise/service.js";
 import { financeSummary } from "./summary.js";
 import { prepareEntries, transactionTimelineItems, type TimelineItem } from "./timeline.js";
 import { requireDate, requireMonth, requirePositiveInteger } from "./validation.js";
@@ -24,6 +26,7 @@ export interface DashboardContext {
   groceries: GroceriesService;
   reminders: RemindersService;
   chat: ChatService;
+  organise: OrganiseService;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -59,6 +62,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     chat: new ChatService(join(options.dataDir, "dashboard", "chat"), {
       clock, finance, proposer, ...(options.chatMaxAmountCents ? { maxAmountCents: options.chatMaxAmountCents } : {})
     }),
+    organise: new OrganiseService(join(options.dataDir, "dashboard", "organise"), { clock }),
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -218,6 +222,7 @@ export function createRouter(context: DashboardContext): Router {
   registerOverviewRoutes(router, context);
   registerReminderRoutes(router, context);
   registerChatRoutes(router, context);
+  registerOrganiseRoutes(router, context.organise);
   return router;
 }
 

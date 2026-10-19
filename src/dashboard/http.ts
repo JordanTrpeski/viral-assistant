@@ -149,14 +149,14 @@ const contentTypes: Record<string, string> = {
 };
 
 /**
- * Serves the page and stylesheet from `uiSourceDir`, and compiled browser modules from `distDir/ui` and
- * `distDir/shared` under `/assets/`. File names are restricted to a safe pattern, so no path can escape.
+ * Serves the page and stylesheet from `uiSourceDir`, and compiled browser modules from `distDir/ui`,
+ * `distDir/ui/organise` and `distDir/shared` under `/assets/`. File names are restricted to a safe pattern, so no path can escape.
  */
 export function dashboardStatics(uiSourceDir: string, distDir: string): StaticResolver {
   return (path) => {
     if (path === "/" || path === "/index.html") return { path: join(uiSourceDir, "index.html"), contentType: contentTypes[".html"]! };
     if (path === "/styles.css") return { path: join(uiSourceDir, "styles.css"), contentType: contentTypes[".css"]! };
-    const asset = /^\/assets\/(ui|shared)\/([a-z0-9-]+\.js)$/.exec(path);
+    const asset = /^\/assets\/(ui|ui\/organise|shared)\/([a-z0-9-]+\.js)$/.exec(path);
     if (asset) return { path: join(distDir, asset[1]!, asset[2]!), contentType: contentTypes[extname(asset[2]!)]! };
     return null;
   };
