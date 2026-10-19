@@ -76,6 +76,7 @@ const context: AppContext = {
     renderNav(route);
     try { await item?.render?.(main, context); }
     catch (error) { context.notify((error as Error).message); }
+    void updateInboxBadge();
     if (focused) document.querySelector<HTMLElement>(`[data-focus="${CSS.escape(focused)}"]`)?.focus();
   }
 };
@@ -95,6 +96,17 @@ function renderNav(active: string): void {
     entries.push(navLink(item, active));
   }
   nav.replaceChildren(...entries, h("div", { class: "nav-bottom" }, navLink(settingsItem, active)));
+}
+
+/** Unsorted inbox count as a badge on the Organise nav item. */
+async function updateInboxBadge(): Promise<void> {
+  try {
+    const { count } = await api<{ count: number }>("GET", "/api/organise/inbox");
+    const link = nav.querySelector<HTMLElement>("[data-route='organise']");
+    if (!link) return;
+    link.querySelector(".nav-badge")?.remove();
+    if (count > 0) link.append(h("span", { class: "nav-badge", title: `${count} unsorted in the inbox` }, String(count)));
+  } catch { /* the badge is a convenience; the page works without it */ }
 }
 
 async function pollStatus(): Promise<void> {

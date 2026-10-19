@@ -190,3 +190,11 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 108. **`GET /api/organise/meta`** (not in the spec) returns the model's vocabularies (types, statuses, categories, recurrences, priorities). The browser UI uses it so it never duplicates them. — assumed, revisit
 109. **Static serving was extended by one folder**, `/assets/ui/organise/<name>.js`, because the spec puts the UI under `src/dashboard/ui/organise/`. File names keep the same strict pattern. — assumed, revisit
 110. **Navigation.** The Organise nav group (Overview, Tasks, Reminders, Notes and lists, Projects, Trackers) sits after Groceries. Gym and Viral tasks stay greyed out, and Settings stays pinned at the bottom. Organise pages without a UI yet appear greyed out until their step. The old greyed-out top-level "Projects" item is replaced by Organise > Projects. An item opens in the detail panel through `?item=<id>` in the address hash, so any page can open any item. — assumed, revisit
+
+### Step 2 — inbox
+
+111. **`GET /api/organise/inbox`** (not in the spec's route list, which only has POST) returns `{ count, items }`. The nav badge and the inbox panel use it. — assumed, revisit
+112. **Sort forms use the API field names:** `date` is the task's due date, `project_id` is the project and `list_id` is the list. A note's form takes `text` (its body) and one optional `link`, as the spec lists. Fields that are not on the chosen target's form are rejected (400). The item keeps its id, `created_at`, its existing notes and links, and its title. Task and reminder forms may replace the title; note and list-item forms keep the captured text as the title. — assumed, revisit
+113. **Sorting an item that is not in the inbox returns 400.** A failed sort changes nothing. — assumed, revisit
+114. **The reminder sort form opens with today's date pre-filled.** A reminder needs a date, and the inbox never forces a decision before Sort is pressed. — assumed, revisit
+115. **`GET /api/organise/lists` (read-only) arrives in this step** so the list-item sort target can offer lists. Creating and editing lists comes in step 5. — assumed, revisit

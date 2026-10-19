@@ -250,3 +250,8 @@ button.danger { color: var(--danger); }
 .item-row:hover, .item-row.selected { background: var(--panel-2); }
 .item-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .overdue-flag { color: var(--danger); font-size: 12px; }
+.inbox-capture { width: 100%; font-size: 15px; padding: 8px 10px; margin-bottom: 8px; }
+.inbox-list { list-style: none; margin: 0; padding: 0; }
+.inbox-row { border-bottom: 1px solid var(--line); padding: 6px 0; }
+.inbox-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sort-form { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); max-width: 640px; }

@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { NotFoundError } from "../errors.js";
+import { NotFoundError, ValidationError } from "../errors.js";
 import { localIsoDate, type IsoDate } from "../shared/dates.js";
 import { JsonDocumentStore, type StoreFileSystem } from "../store.js";
-import { isObject } from "../validation.js";
-import { createCandidate, normaliseItem, patchCandidate, validateItemsDocument, type ItemType, type ModelContext, type OrganiseItem } from "./model.js";
+import { isObject, rejectUnknownFields, requireObject } from "../validation.js";
+import { createCandidate, maxTitleLength, normaliseItem, patchCandidate, validateItemsDocument, type ItemType, type ModelContext, type OrganiseItem } from "./model.js";
+import type { JsonObject } from "../validation.js";
 
 export interface OrganiseList {
   id: string;
@@ -102,6 +103,49 @@ export class OrganiseService {
     });
   }
 
+  // Inbox: capture first, sort later.
+
+  /** Adds an inbox item whose title is the typed text. Nothing else is asked. */
+  async addToInbox(body: unknown): Promise<OrganiseItem> {
+    const input = requireObject(body);
+    rejectUnknownFields(input, ["text"]);
+    if (typeof input.text !== "string") throw new ValidationError("text must be a string");
+    const text = input.text.trim();
+    if (text.length < 1 || text.length > maxTitleLength) throw new ValidationError(`text must be 1 to ${maxTitleLength} characters`);
+    return this.createItem({ type: "inbox", title: text });
+  }
+
+  async inbox(): Promise<{ count: number; items: OrganiseItem[] }> {
+    const items = await this.listItems({ type: "inbox" });
+    return { count: items.length, items };
+  }
+
+  /**
+   * Sorts an inbox item into a task, reminder, note or list item using that type's sort form.
+   * The item keeps its id and creation time; only its type and the form's fields change.
+   */
+  async sortInbox(id: string, body: unknown): Promise<OrganiseItem> {
+    const input = requireObject(body);
+    const target = input.type;
+    if (!(target === "task" || target === "reminder" || target === "note" || target === "list_item")) throw new ValidationError("type must be one of: task, reminder, note, list_item");
+    rejectUnknownFields(input, ["type", ...sortFormFields[target]]);
+    const lists = (await this.lists.read()).lists;
+    return this.items.update((document) => {
+      const index = document.items.findIndex((item) => item.id === id);
+      if (index < 0) throw new NotFoundError("item", id);
+      const previous = document.items[index]!;
+      if (previous.type !== "inbox") throw new ValidationError("Only inbox items can be sorted");
+      const candidate = sortCandidate(target, input, previous);
+      const item = normaliseItem(candidate, previous, this.modelContext(document.items, lists));
+      document.items[index] = item;
+      return item;
+    });
+  }
+
+  async listLists(): Promise<OrganiseList[]> {
+    return (await this.lists.read()).lists;
+  }
+
   /** Deletes an item and removes it from every other item's links. */
   async deleteItem(id: string): Promise<void> {
     await this.items.update((document) => {
@@ -110,4 +154,24 @@ export class OrganiseService {
       for (const item of document.items) if (item.links.includes(id)) item.links = item.links.filter((link) => link !== id);
     });
   }
+}
+
+/** The sort form for each target type, as in the spec. Notes use `text` for their body and an optional single `link`. */
+export const sortFormFields = {
+  task: ["title", "date", "priority", "project_id", "checklist"],
+  reminder: ["title", "date", "category", "project_id", "recurrence", "interval_days", "prepare_by", "notes"],
+  note: ["text", "project_id", "date", "link"],
+  list_item: ["list_id", "status", "notes"]
+} as const;
+
+function sortCandidate(target: keyof typeof sortFormFields, input: JsonObject, previous: OrganiseItem): JsonObject {
+  const base: JsonObject = { type: target, title: previous.title, notes: previous.notes, links: previous.links };
+  if (target === "note") {
+    const text = input.text === undefined ? previous.title : input.text;
+    const link = input.link === undefined || input.link === null || input.link === "" ? [] : [input.link];
+    return { ...base, notes: text, project_id: input.project_id, date: input.date, links: [...previous.links, ...link] };
+  }
+  const candidate: JsonObject = { ...base };
+  for (const field of sortFormFields[target]) if (input[field] !== undefined) candidate[field] = input[field];
+  return candidate;
 }

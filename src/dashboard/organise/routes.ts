@@ -15,4 +15,10 @@ export function registerOrganiseRoutes(router: Router, organise: OrganiseService
   router.add("GET", "/api/organise/items/:id", ({ params }) => organise.getItem(params.id!));
   router.add("PATCH", "/api/organise/items/:id", ({ params, body }) => organise.updateItem(params.id!, body));
   router.add("DELETE", "/api/organise/items/:id", ({ params }) => organise.deleteItem(params.id!));
+
+  router.add("GET", "/api/organise/inbox", () => organise.inbox());
+  router.add("POST", "/api/organise/inbox", ({ body }) => organise.addToInbox(body));
+  router.add("POST", "/api/organise/inbox/:id/sort", ({ params, body }) => organise.sortInbox(params.id!, body), 200);
+
+  router.add("GET", "/api/organise/lists", () => organise.listLists());
 }
