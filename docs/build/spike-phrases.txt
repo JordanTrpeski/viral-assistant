@@ -39,3 +39,13 @@ money stuff | plain
 hmm not sure | plain
 help | plain
 what can you do | plain
+
+# --- 5 arithmetic / relative amounts (PENDING a local run — see spike-results.md) ---
+# These exercise in-code arithmetic, not the model's arithmetic. Expected values are what the code must
+# produce; the model's own amount is overridden. "that"/"it" refer to the last amount earlier in the thread,
+# so the two phrases below that use a reference assume a prior message established it.
+# (send "80" first) divide that by 4 | proposal   # expect €20.00, working "80 ÷ 4 = 20"
+# (send "60" first) half of that | proposal        # expect €30.00, working "half of 60 = 30"
+# (send "15" first) double it | proposal           # expect €30.00, working "double 15 = 30"
+10% of 250 on groceries | proposal                 # expect €25.00, working "10% of 250 = 25"
+split 60 between 3 | invalid                        # expect the share-or-total question, no proposal

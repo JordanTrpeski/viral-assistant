@@ -53,3 +53,18 @@ Change since run 1: "coffee 2.50 at hofer" now expects **question** (the ambiguo
 | 28 | hmm not sure | plain | plain |  | (plain reply) | 189 |
 | 29 | help | plain | plain |  | (plain reply) | 181 |
 | 30 | what can you do | plain | plain |  | (plain reply) | 190 |
+
+## Arithmetic / relative amounts — pending a local run
+
+The five arithmetic phrases added to `spike-phrases.txt` have **not** been run against local Ollama yet.
+They exercise in-code arithmetic rather than the model's arithmetic, so their amounts are decided by
+`src/dashboard/commands/arithmetic.ts` and covered by `tests/dashboard-arithmetic.test.ts` (fake model, no
+Ollama). A live run is still worth doing to confirm the model picks the right action/category around the
+phrase — the amount it returns is overridden either way, and any difference is logged to the server, not the
+chat. Expected outcomes (prior amount in parentheses where a reference is used):
+
+- (80) "divide that by 4" → proposal, €20.00, working "80 ÷ 4 = 20"
+- (60) "half of that" → proposal, €30.00, working "half of 60 = 30"
+- (15) "double it" → proposal, €30.00, working "double 15 = 30"
+- "10% of 250" → proposal, €25.00, working "10% of 250 = 25"
+- "split 60 between 3" → invalid: the share-or-total question, no proposal
