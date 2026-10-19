@@ -256,3 +256,16 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 139. **"Slipped" uses the real today**, even with an explicit past `end`. Open tasks count if due in the window and before today; a task due today has not slipped yet. Open reminders count if dated anywhere in the window, including today. A reopened task has no `done_at`, so it does not appear under Done. — assumed, revisit
 140. **Scaled targets are rounded to 2 decimals** after scaling. Weekly is × 1, monthly × 7 / 30.4375, yearly × 7 / 365.25. A tracker without a target shows its 7-day total alone. — assumed, revisit
 141. **The review page is not in the left nav**, since the spec calls it an on-demand page. It opens from a link on the Organise overview, and at `#/organise-review`. Clicking a task or reminder in the review opens it in its own page. — assumed, revisit
+
+### Step 9 — auto-suggest and rules
+
+142. **A "pattern" is the signal that fired**: `date:<name>` (iso, d_mon, mon_d, weekday, today, tomorrow, on_the_nth) or `verb:<word>`. Counts and muting are kept per pattern, never per text. — assumed, revisit
+143. **Dates a suggestion pre-fills.**
+    - "d Mon" and "Mon d" mean the next such day on or after today, so "1 Oct" said on 14 October means next year. A weekday name is its next occurrence on or after today, so "Wednesday" said on a Wednesday is today. "On the Nth" is this month if it is still to come, otherwise the next month that has that day.
+    - Only full weekday names count. "Mon" is not used for Monday, to avoid clashing with month abbreviations.
+    - When several date patterns match, the first in this order wins: iso, d_mon, mon_d, today, tomorrow, on_the_nth, weekday. — assumed, revisit
+144. **The verb signal is the first word only**, lower-cased with punctuation removed ("Buy, stamps" counts; "please buy stamps" does not). — assumed, revisit
+145. **Muting.** "Three dismissals in a row" counts dismissals of one pattern across all items since its last Accept; an Accept resets the run. A dismissed chip is also hidden for that one item. Unmuting resets the run. — assumed, revisit
+146. **Accept** (`POST /api/organise/suggest/:id/accept` with `{ pattern }`; `:id` is the inbox item) records the accept and returns `{ type, prefill }`. It never changes the item: the UI opens the sort form on that type with the date pre-filled, and nothing is saved until Save. — assumed, revisit
+147. **For unmute, the route's `:id` is the pattern itself** (`POST /api/organise/suggest/verb%3Abuy/unmute`), because muting is per pattern and the spec gives all three suggest routes an `:id`. Unmuting a pattern that is not muted returns 404. — assumed, revisit
+148. **Rules live in `rules.json`:** the verb list (editable; single words of 1–30 letters, lower-cased and de-duplicated, at most 100), on/off flags per date pattern, per-pattern counts, and per-item dismissals. The settings appear in a new "Organise suggestions" section on the existing Settings page. — assumed, revisit

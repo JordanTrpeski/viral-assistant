@@ -10,6 +10,7 @@ import { applyReminderRules, nextOccurrence } from "./reminders.js";
 import { listName, listStatuses, newListFields } from "./lists.js";
 import { projectPage, type ProjectPage, type ProjectTracker } from "./projects.js";
 import { weeklyReview, type WeeklyReview } from "./review.js";
+import { datePatternLabels, emptyRules, muteAfter, requirePattern, rulesPatch, suggestionsFor, validateRulesDocument, type PatternStats, type RulesDocument, type Suggestion } from "./suggest.js";
 import { entryFields, trackerFields, trackerView, validateTrackersDocument, type Tracker, type TrackerEntry, type TrackersDocument, type TrackerView } from "./trackers.js";
 
 export interface OrganiseList {
@@ -68,6 +69,7 @@ export class OrganiseService {
   readonly items: JsonDocumentStore<ItemsDocument>;
   readonly lists: JsonDocumentStore<ListsDocument>;
   readonly trackers: JsonDocumentStore<TrackersDocument>;
+  readonly rules: JsonDocumentStore<RulesDocument>;
   readonly clock: () => Date;
 
   constructor(readonly directory: string, options: OrganiseServiceOptions = {}) {
@@ -75,6 +77,7 @@ export class OrganiseService {
     this.items = new JsonDocumentStore(join(directory, "items.json"), validateItemsDocument, () => ({ schemaVersion: 1, items: [] }), options.fs);
     this.lists = new JsonDocumentStore(join(directory, "lists.json"), validateListsDocument, () => ({ schemaVersion: 1, lists: [] }), options.fs);
     this.trackers = new JsonDocumentStore(join(directory, "trackers.json"), validateTrackersDocument, () => ({ schemaVersion: 1, trackers: [], entries: [] }), options.fs);
+    this.rules = new JsonDocumentStore(join(directory, "rules.json"), validateRulesDocument, emptyRules, options.fs);
   }
 
   today(): IsoDate {
@@ -146,9 +149,72 @@ export class OrganiseService {
     return this.createItem({ type: "inbox", title: text });
   }
 
-  async inbox(): Promise<{ count: number; items: OrganiseItem[] }> {
-    const items = await this.listItems({ type: "inbox" });
-    return { count: items.length, items };
+  /** The inbox with auto-suggest chips for each item; suggestions run only here, when the inbox is shown. */
+  async inbox(): Promise<{ count: number; items: (OrganiseItem & { suggestions: Suggestion[] })[] }> {
+    const [items, rules] = await Promise.all([this.listItems({ type: "inbox" }), this.rules.read()]);
+    return { count: items.length, items: items.map((item) => ({ ...item, suggestions: suggestionsFor(item, rules, this.today()) })) };
+  }
+
+  // Suggestion rules: accept and dismiss counts per pattern, muting after three dismissals in a row.
+
+  private async suggestionFor(itemId: string, body: unknown): Promise<{ item: OrganiseItem; suggestion: Suggestion }> {
+    const input = requireObject(body);
+    rejectUnknownFields(input, ["pattern"]);
+    const pattern = requirePattern(input.pattern);
+    const item = await this.getItem(itemId);
+    if (item.type !== "inbox") throw new ValidationError("Suggestions apply to inbox items only");
+    const suggestion = suggestionsFor(item, await this.rules.read(), this.today()).find((candidate) => candidate.pattern === pattern);
+    if (!suggestion) throw new ValidationError(`No ${pattern} suggestion is showing for this item`);
+    return { item, suggestion };
+  }
+
+  /** Records the accept and returns what the sort form should open with. It never changes the item. */
+  async acceptSuggestion(itemId: string, body: unknown): Promise<{ item_id: string; type: Suggestion["type"]; prefill: { date: string | null } }> {
+    const { item, suggestion } = await this.suggestionFor(itemId, body);
+    await this.rules.update((rules) => {
+      const stats = statsFor(rules, suggestion.pattern);
+      stats.accepts += 1;
+      stats.consecutiveDismissals = 0;
+    });
+    return { item_id: item.id, type: suggestion.type, prefill: { date: suggestion.date } };
+  }
+
+  async dismissSuggestion(itemId: string, body: unknown): Promise<{ pattern: string; muted: boolean; consecutiveDismissals: number }> {
+    const { item, suggestion } = await this.suggestionFor(itemId, body);
+    return this.rules.update((rules) => {
+      const stats = statsFor(rules, suggestion.pattern);
+      stats.dismisses += 1;
+      stats.consecutiveDismissals += 1;
+      if (stats.consecutiveDismissals >= muteAfter) stats.muted = true;
+      rules.dismissed.push({ item_id: item.id, pattern: suggestion.pattern });
+      return { pattern: suggestion.pattern, muted: stats.muted, consecutiveDismissals: stats.consecutiveDismissals };
+    });
+  }
+
+  /** Unmutes a pattern (the route id is the pattern, e.g. "verb:buy") and resets its dismissal run. */
+  async unmutePattern(pattern: string): Promise<PatternStats> {
+    const valid = requirePattern(pattern);
+    return this.rules.update((rules) => {
+      const stats = rules.patterns[valid];
+      if (!stats || !stats.muted) throw new NotFoundError("muted pattern", valid);
+      stats.muted = false;
+      stats.consecutiveDismissals = 0;
+      return stats;
+    });
+  }
+
+  async getRules(): Promise<{ verbs: string[]; datePatterns: RulesDocument["datePatterns"]; datePatternLabels: typeof datePatternLabels; muted: string[]; patterns: RulesDocument["patterns"] }> {
+    const rules = await this.rules.read();
+    return { verbs: rules.verbs, datePatterns: rules.datePatterns, datePatternLabels, muted: Object.entries(rules.patterns).filter(([, stats]) => stats.muted).map(([pattern]) => pattern).sort(), patterns: rules.patterns };
+  }
+
+  async updateRules(body: unknown): Promise<Awaited<ReturnType<OrganiseService["getRules"]>>> {
+    const patch = rulesPatch(body);
+    await this.rules.update((rules) => {
+      if (patch.verbs) rules.verbs = patch.verbs;
+      if (patch.datePatterns) rules.datePatterns = { ...rules.datePatterns, ...patch.datePatterns };
+    });
+    return this.getRules();
   }
 
   /**
@@ -360,6 +426,11 @@ export class OrganiseService {
       for (const item of document.items) if (item.links.includes(id)) item.links = item.links.filter((link) => link !== id);
     });
   }
+}
+
+function statsFor(rules: RulesDocument, pattern: string): PatternStats {
+  rules.patterns[pattern] ??= { accepts: 0, dismisses: 0, consecutiveDismissals: 0, muted: false };
+  return rules.patterns[pattern]!;
 }
 
 /** The sort form for each target type, as in the spec. Notes use `text` for their body and an optional single `link`. */

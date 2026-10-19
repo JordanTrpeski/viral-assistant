@@ -6,6 +6,7 @@ import { meta, statusLabel, typeLabels, type ItemType, type OrganiseItem } from 
 import type { OrganiseList } from "../../organise/service.js";
 import { openItem, renderDetail, selectedItemId } from "./detail.js";
 import { renderInbox } from "./inbox.js";
+import { suggestionChips, type InboxItem } from "./suggest.js";
 
 const draft: { type: ItemType; title: string } = { type: "task", title: "" };
 
@@ -22,7 +23,8 @@ export async function renderOrganiseOverview(container: HTMLElement, context: Ap
   const create = (): Promise<void> => (draft.title.trim()
     ? save(context, async () => { const item = await api<OrganiseItem>("POST", "/api/organise/items", { type: draft.type, title: draft.title, ...(draft.type === "reminder" ? { date: context.today } : {}) }); draft.title = ""; openItem(item.id); })
     : Promise.resolve());
-  const inbox = await renderInbox(context, items, lists);
+  const inboxWithSuggestions = (await api<{ items: InboxItem[] }>("GET", "/api/organise/inbox")).items;
+  const inbox = await renderInbox(context, items, lists, (item) => suggestionChips(context, inboxWithSuggestions.find((candidate) => candidate.id === item.id)));
   const groups = vocab.types.filter((type) => type !== "inbox").map((type) => ({ type, items: items.filter((item) => item.type === type) })).filter((group) => group.items.length);
   container.replaceChildren(h("div", { class: `page organise${selected ? " with-detail" : ""}` },
     h("div", { class: "organise-main" },

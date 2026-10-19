@@ -37,6 +37,13 @@ export function registerOrganiseRoutes(router: Router, organise: OrganiseService
   router.add("POST", "/api/organise/inbox", ({ body }) => organise.addToInbox(body));
   router.add("POST", "/api/organise/inbox/:id/sort", ({ params, body }) => organise.sortInbox(params.id!, body), 200);
 
+  router.add("GET", "/api/organise/rules", () => organise.getRules());
+  router.add("PATCH", "/api/organise/rules", ({ body }) => organise.updateRules(body));
+  router.add("POST", "/api/organise/suggest/:id/accept", ({ params, body }) => organise.acceptSuggestion(params.id!, body), 200);
+  router.add("POST", "/api/organise/suggest/:id/dismiss", ({ params, body }) => organise.dismissSuggestion(params.id!, body), 200);
+  // For unmute the id is the pattern itself, e.g. /api/organise/suggest/verb%3Abuy/unmute.
+  router.add("POST", "/api/organise/suggest/:id/unmute", ({ params }) => organise.unmutePattern(params.id!), 200);
+
   router.add("GET", "/api/organise/lists", () => organise.listLists());
   router.add("POST", "/api/organise/lists", ({ body }) => organise.createList(body));
   router.add("GET", "/api/organise/lists/:id", ({ params }) => organise.getList(params.id!));

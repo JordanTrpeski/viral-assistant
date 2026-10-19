@@ -8,10 +8,11 @@ type Target = "task" | "reminder" | "note" | "list_item";
 const state: { capture: string; sortingId: string | null; target: Target; form: Record<string, unknown> } = { capture: "", sortingId: null, target: "task", form: {} };
 
 /** Opens the sort form for an item, optionally pre-filled with a suggested type (used by auto-suggest). */
-export function startSort(item: OrganiseItem, target: Target, today: string): void {
+export function startSort(item: OrganiseItem, target: Target, today: string, prefill: { date?: string | null } = {}): void {
   state.sortingId = item.id;
   state.target = target;
   state.form = defaults(item, target, today);
+  if (prefill.date) state.form.date = prefill.date;
 }
 
 function defaults(item: OrganiseItem, target: Target, today: string): Record<string, unknown> {
