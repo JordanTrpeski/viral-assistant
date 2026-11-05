@@ -1,6 +1,6 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { monthBudget, weekBudget } from "./budget.js";
+import { monthBudget, weekBudget, weeklyAllowanceBudget } from "./budget.js";
 import { buildCalendar, itemsInWindow } from "./calendar.js";
 import { ChatService } from "./chat.js";
 import { OllamaProposer } from "./commands/ollama.js";
@@ -118,7 +118,7 @@ export function registerFinanceRoutes(router: Router, context: DashboardContext)
     const raw = query.get("date");
     const date = raw === null ? today(context) : requireDate(raw);
     const document = await finance.snapshot();
-    return { date, stepCents: context.budgetStepCents, week: weekBudget(document, date), month: monthBudget(document, monthOf(date)) };
+    return { date, stepCents: context.budgetStepCents, week: weekBudget(document, date), month: monthBudget(document, monthOf(date)), weekly: weeklyAllowanceBudget(document, date) };
   });
 }
 

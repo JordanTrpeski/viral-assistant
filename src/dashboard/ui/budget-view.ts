@@ -1,5 +1,5 @@
 // Budget views shared by the Overview and the Finance > Budget tab.
-import type { BudgetRow, MonthBudget, WeekBudget } from "../budget.js";
+import type { BudgetRow, MonthBudget, WeekAllowanceBudget, WeekBudget } from "../budget.js";
 import { formatCents } from "../shared/money.js";
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
@@ -9,6 +9,8 @@ export interface BudgetResponse {
   stepCents: number;
   week: WeekBudget;
   month: MonthBudget;
+  /** Per-category daily-rate weekly allowance for the full week; only the Finance Budget tab uses it. */
+  weekly: WeekAllowanceBudget;
 }
 
 /** Budget data for the shared views. `stepCents` is present only where editing is offered (Finance). */
@@ -23,7 +25,7 @@ export function loadBudget(date?: string): Promise<BudgetResponse> {
   return api<BudgetResponse>("GET", `/api/budget${date ? `?date=${date}` : ""}`);
 }
 
-function shortDate(iso: string): string {
+export function shortDate(iso: string): string {
   const [, month, day] = iso.split("-").map(Number) as [number, number, number];
   return `${day} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1]}`;
 }

@@ -288,3 +288,29 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
     - Trackers: current progress.
     - Weekly review: a link.
     - The step 1 "items by type" list and quick-create were removed from the Overview, since capture is the inbox. — assumed, revisit
+
+## Budget table
+
+154. **The Finance > Budget tab is one table per category**, replacing the old "Targets" table and the separate "This week" / "This month" panels (which listed the same flexible categories twice). Columns: Category, Monthly limit (editable with − and +), Spent this month, Left, Status. — assumed, revisit
+155. **Status uses `budgetStatus(limitCents, spentCents)` in `src/dashboard/budget.ts`:** spending at or under the limit is "OK"; above it is "Over by €X" in the warning colour; a limit of zero or less is "no limit", and that row shows only the spent amount (Left and Status show "—"). Exactly at the limit counts as OK, not over. — assumed, revisit
+156. **Weekly limits stay in the data model and are never deleted here; the weekly column is shown only when at least one category has a weekly target above zero.** With the current data every weekly target is 0, so the column is hidden; set any weekly target and it appears (editable with − and +, same as monthly). — assumed, revisit
+157. **The totals row is kept and relabelled** from "Flexible this month" to "Total spent of total limits": the sum of monthly spending over the sum of monthly limits, with the amount left or over. — assumed, revisit
+158. **"Flexible" is shown as "Expense" everywhere in Finance** (type column, filter chip, category groups, the type dropdown); the stored category kind stays `flexible`, so no data is migrated. "Income" is unchanged. — assumed, revisit
+159. **"Fixed" is removed from the category type dropdown only.** New categories can be Expense or Income. A category already stored as `fixed` still shows a "Fixed" option while it is fixed (so its kind is not silently changed), and pre-existing fixed categories still appear in the transaction category picker; committed-bill counting is unchanged. With the current data no category is fixed. — assumed, revisit
+160. **The committed-bills summary is kept on the Budget tab**, below the table ("Committed bills this month"), because it is distinct from the per-category limit table and the design commits fixed bills for the month. It is not a duplicate of the per-category rows. — assumed, revisit
+161. **The Overview budget is left exactly as it is** (read-only, still using the week/month views); only the Finance > Budget tab changed. — assumed, revisit
+
+## Weekly allowance
+
+(The brief asked these to start at 161, but 161 was already used by the one-table budget change above, so they continue from 162.)
+
+162. **The weekly allowance is calculated from the monthly limit, not stored.** A day's rate is that month's monthly limit ÷ the number of days in that calendar month, distributed so a month's days sum to its limit exactly (the first `limit mod days` days get one extra cent). A Monday-to-Sunday week's allowance is the sum of its seven daily rates. Weekly figures are recomputed on every request from the monthly limits and the transactions; only the monthly limits and the transactions are stored. — assumed, revisit
+163. **Weeks are not reset at the month end (no carry-over logic).** A week that crosses into the next month uses each day's own month rate, so a boundary week mixes the two months' daily rates. This differs from the Overview's "This week", which still uses the older month-cut, prorated weekly target. — assumed, revisit
+164. **A month with no saved limit falls back to the most recent saved limit (else the earliest) and the week is marked "estimated".** In the app every category has a single stored monthly limit applied to every month, so this fallback never triggers there; it exists for the shared calculation and is covered by tests. — assumed, revisit
+165. **A typed weekly target is an optional override that replaces the calculated default for that category's week.** It reuses the existing stored `weeklyCents` field: greater than zero means an override, zero means use the calculated default. In the Budget table the "This week (allowance)" cell shows the effective value and doubles as the override input (typing stores `weeklyCents`, zero clears it); an overridden row is tagged "set" and an estimated one "est.". — assumed, revisit
+
+## Spread over week
+
+166. **Each category has a `spreadWeekly` flag (default true).** It is stored on the category record; a stored category without the field is read as true, so nothing changes until the owner switches one off. New categories default to true. — assumed, revisit
+167. **`spreadWeekly = false` removes the category from every weekly figure** — the weekly allowance, the weekly spent, and the weekly totals — while leaving its monthly figures (limit, spent, left, status) untouched. In the Budget table such a row shows "—" in the "This week (spread categories)" and "Spent this week" columns and keeps its monthly cells; the weekly total and its column are labelled to show they cover spread categories only. — assumed, revisit
+168. **The "Spread over week" toggle is shown only for Expense and Income categories** on the Categories tab (a Fixed category shows "—", since fixed categories never spread and are not part of the weekly calculation anyway). — assumed, revisit
