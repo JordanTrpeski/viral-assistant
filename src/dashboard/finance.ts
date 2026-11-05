@@ -23,7 +23,7 @@ export interface Category {
   id: string;
   name: string;
   kind: CategoryKind;
-  /** Whether this category's monthly limit is spread into a weekly allowance. Default true; stored data without it counts as true. */
+  /** Whether this category's monthly limit is spread into a weekly allowance. Default false; stored data without it counts as false. */
   spreadWeekly: boolean;
 }
 
@@ -71,13 +71,13 @@ export interface TransactionInput {
 }
 
 export const defaultCategories: readonly Category[] = [
-  { id: "rent", name: "Rent", kind: "fixed", spreadWeekly: true },
-  { id: "phone", name: "Phone", kind: "fixed", spreadWeekly: true },
-  { id: "subscriptions", name: "Subscriptions", kind: "fixed", spreadWeekly: true },
-  { id: "groceries", name: "Groceries", kind: "flexible", spreadWeekly: true },
-  { id: "entertainment", name: "Entertainment", kind: "flexible", spreadWeekly: true },
-  { id: "transport", name: "Transport", kind: "flexible", spreadWeekly: true },
-  { id: "salary", name: "Salary", kind: "income", spreadWeekly: true }
+  { id: "rent", name: "Rent", kind: "fixed", spreadWeekly: false },
+  { id: "phone", name: "Phone", kind: "fixed", spreadWeekly: false },
+  { id: "subscriptions", name: "Subscriptions", kind: "fixed", spreadWeekly: false },
+  { id: "groceries", name: "Groceries", kind: "flexible", spreadWeekly: false },
+  { id: "entertainment", name: "Entertainment", kind: "flexible", spreadWeekly: false },
+  { id: "transport", name: "Transport", kind: "flexible", spreadWeekly: false },
+  { id: "salary", name: "Salary", kind: "income", spreadWeekly: false }
 ];
 
 export function emptyFinanceDocument(): FinanceDocument {
@@ -94,8 +94,8 @@ function validateCategory(value: unknown, index: number): Category {
   if (typeof value.id !== "string" || !value.id) throw new Error(`categories[${index}].id must be a string`);
   return {
     id: value.id, name: requireText(value.name, `categories[${index}].name`), kind: requireOneOf(value.kind, categoryKinds, `categories[${index}].kind`),
-    // Missing or any non-false value counts as spread; only an explicit false turns it off.
-    spreadWeekly: value.spreadWeekly !== false
+    // Spreading is off by default; only an explicit true turns it on. Missing or any other value counts as off.
+    spreadWeekly: value.spreadWeekly === true
   };
 }
 
@@ -222,7 +222,7 @@ export class FinanceService {
     const name = requireText(input.name, "name", 60);
     const kind = requireOneOf(input.kind, categoryKinds, "kind");
     if (input.spreadWeekly !== undefined && typeof input.spreadWeekly !== "boolean") throw new ValidationError("spreadWeekly must be a boolean");
-    const spreadWeekly = input.spreadWeekly === undefined ? true : input.spreadWeekly;
+    const spreadWeekly = input.spreadWeekly === undefined ? false : input.spreadWeekly;
     return this.store.update((document) => {
       uniqueName(document, name);
       let id = slug(name);

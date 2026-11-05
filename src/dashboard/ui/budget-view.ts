@@ -1,7 +1,7 @@
-// Budget views shared by the Overview and the Finance > Budget tab.
-import type { BudgetRow, MonthBudget, WeekAllowanceBudget, WeekBudget } from "../budget.js";
+// Read-only budget views for the Overview. The Finance > Budget tab builds its own editable table.
+import type { BudgetRow, MonthBudget, WeekAllowanceBudget, WeekAllowanceRow, WeekBudget } from "../budget.js";
 import { formatCents } from "../shared/money.js";
-import { api, save, type AppContext } from "./api.js";
+import { api } from "./api.js";
 import { h } from "./dom.js";
 
 export interface BudgetResponse {
@@ -9,16 +9,15 @@ export interface BudgetResponse {
   stepCents: number;
   week: WeekBudget;
   month: MonthBudget;
-  /** Per-category daily-rate weekly allowance for the full week; only the Finance Budget tab uses it. */
+  /** Per-category daily-rate weekly allowance for the full week (spread categories only). */
   weekly: WeekAllowanceBudget;
 }
 
-/** Budget data for the shared views. `stepCents` is present only where editing is offered (Finance). */
-export interface BudgetViewData {
+/** The Overview budget payload: the month view keeps every category; the week view is the spread-only allowance. */
+export interface OverviewBudget {
   date: string;
-  week: WeekBudget;
   month: MonthBudget;
-  stepCents?: number;
+  weekly: WeekAllowanceBudget;
 }
 
 export function loadBudget(date?: string): Promise<BudgetResponse> {
@@ -30,25 +29,14 @@ export function shortDate(iso: string): string {
   return `${day} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1]}`;
 }
 
-function step(context: AppContext, categoryId: string, period: "weekly" | "monthly", direction: 1 | -1, stepCents: number): HTMLButtonElement {
-  return h("button", {
-    class: "step",
-    title: `${direction > 0 ? "Raise" : "Lower"} ${period} target by ${formatCents(stepCents)}`,
-    "aria-label": `${direction > 0 ? "Raise" : "Lower"} ${period} target`,
-    onclick: () => save(context, () => api("POST", `/api/finance/targets/${encodeURIComponent(categoryId)}/step`, { period, direction }))
-  }, direction > 0 ? "+" : "−");
-}
-
-function row(context: AppContext, budgetRow: BudgetRow, period: "weekly" | "monthly", editable: boolean, stepCents?: number): HTMLElement {
-  const ratio = budgetRow.targetCents > 0 ? Math.min(1, budgetRow.spentCents / budgetRow.targetCents) : budgetRow.spentCents > 0 ? 1 : 0;
-  const over = budgetRow.remainingCents < 0;
+/** A read-only progress row: name, "spent / limit", and a bar that fills red once spending is over. */
+function progressRow(name: string, limitCents: number, spentCents: number, remainingCents: number): HTMLElement {
+  const ratio = limitCents > 0 ? Math.min(1, spentCents / limitCents) : spentCents > 0 ? 1 : 0;
+  const over = remainingCents < 0;
   return h("div", { class: "budget-row" },
     h("div", { class: "budget-row-head" },
-      h("span", { class: "budget-name" }, budgetRow.name),
-      h("span", { class: `budget-figures${over ? " over" : ""}` }, `${formatCents(budgetRow.spentCents)} / ${formatCents(budgetRow.targetCents)}`),
-      editable && stepCents !== undefined
-        ? h("span", { class: "budget-controls" }, step(context, budgetRow.categoryId, period, -1, stepCents), step(context, budgetRow.categoryId, period, 1, stepCents))
-        : null),
+      h("span", { class: "budget-name" }, name),
+      h("span", { class: `budget-figures${over ? " over" : ""}` }, `${formatCents(spentCents)} / ${formatCents(limitCents)}`)),
     h("div", { class: "bar" }, h("div", { class: `bar-fill${over ? " over" : ""}`, style: `width:${Math.round(ratio * 100)}%` })));
 }
 
@@ -58,24 +46,20 @@ function total(label: string, targetCents: number, spentCents: number, remaining
     h("span", { class: remainingCents < 0 ? "over" : "" }, `${formatCents(spentCents)} of ${formatCents(targetCents)} · ${remainingCents < 0 ? `${formatCents(-remainingCents)} over` : `${formatCents(remainingCents)} left`}`));
 }
 
-export function weekView(context: AppContext, data: BudgetViewData, editable: boolean): HTMLElement {
-  const week = data.week;
-  const prorated = week.days < 7;
+/** This week: the daily-rate allowance, same as the Budget tab, covering only categories spread over the week. */
+export function weekView(data: WeekAllowanceBudget): HTMLElement {
   return h("div", { class: "budget-view" },
-    h("div", { class: "budget-caption" }, `${shortDate(week.start)}${week.start === week.end ? "" : ` – ${shortDate(week.end)}`} · ${week.days} day${week.days === 1 ? "" : "s"}${prorated ? " (targets prorated)" : ""}`),
-    ...week.rows.map((budgetRow) => row(context, budgetRow, "weekly", editable, data.stepCents)),
-    total("Flexible this week", week.targetCents, week.spentCents, week.remainingCents));
+    h("div", { class: "budget-caption" }, `${shortDate(data.start)} – ${shortDate(data.end)} · 7 days${data.estimated ? " (estimated)" : ""}`),
+    data.rows.length
+      ? h("div", {}, ...data.rows.map((row: WeekAllowanceRow) => progressRow(row.name, row.allowanceCents, row.spentCents, row.remainingCents)))
+      : h("div", { class: "muted small" }, "No categories are spread over the week yet."),
+    total("Total this week", data.allowanceCents, data.spentCents, data.remainingCents));
 }
 
-export function monthView(context: AppContext, data: BudgetViewData, editable: boolean): HTMLElement {
-  const month = data.month;
+/** This month: every category's monthly limit and spending. */
+export function monthView(data: MonthBudget): HTMLElement {
   return h("div", { class: "budget-view" },
-    h("div", { class: "budget-caption" }, `Committed bills · ${formatCents(month.committedCents)}`),
-    month.committed.length
-      ? h("ul", { class: "committed" }, ...month.committed.map((bill) =>
-        h("li", {}, h("span", { class: "muted" }, shortDate(bill.date)), h("span", {}, bill.label), h("span", { class: "amount" }, formatCents(bill.amountCents)))))
-      : h("div", { class: "muted small" }, "No fixed bills this month."),
-    h("div", { class: "budget-caption" }, "Flexible spending"),
-    ...month.rows.map((budgetRow) => row(context, budgetRow, "monthly", editable, data.stepCents)),
-    total("Flexible this month", month.targetCents, month.spentCents, month.remainingCents));
+    h("div", { class: "budget-caption" }, "Expenses"),
+    ...data.rows.map((budgetRow: BudgetRow) => progressRow(budgetRow.name, budgetRow.targetCents, budgetRow.spentCents, budgetRow.remainingCents)),
+    total("Total this month", data.targetCents, data.spentCents, data.remainingCents));
 }

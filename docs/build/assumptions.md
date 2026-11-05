@@ -314,3 +314,12 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 166. **Each category has a `spreadWeekly` flag (default true).** It is stored on the category record; a stored category without the field is read as true, so nothing changes until the owner switches one off. New categories default to true. — assumed, revisit
 167. **`spreadWeekly = false` removes the category from every weekly figure** — the weekly allowance, the weekly spent, and the weekly totals — while leaving its monthly figures (limit, spent, left, status) untouched. In the Budget table such a row shows "—" in the "This week (spread categories)" and "Spent this week" columns and keeps its monthly cells; the weekly total and its column are labelled to show they cover spread categories only. — assumed, revisit
 168. **The "Spread over week" toggle is shown only for Expense and Income categories** on the Categories tab (a Fixed category shows "—", since fixed categories never spread and are not part of the weekly calculation anyway). — assumed, revisit
+
+## Spread default
+
+169. **`spreadWeekly` now defaults to off, not on.** A category with no stored `spreadWeekly`, and every new category, counts as false; only an explicit true turns it on. Existing categories are therefore off until the owner switches them on, so the weekly view starts empty. The seed `defaultCategories` are all off. The validator accepts `spreadWeekly` as an optional boolean on both category create and update (the earlier "Unknown field(s): spreadWeekly" error came from an older running build; both validators already allow it). — assumed, revisit
+
+## Overview weekly
+
+170. **Overview's "This week" now uses the same daily-rate weekly allowance as the Budget tab** (served as `weekly` on `/api/overview`, computed by `weeklyAllowanceBudget`), so the two always agree for a given category and date. Only categories with `spreadWeekly = true` appear in it; a category that is off does not appear in the week view at all, and the weekly total covers spread categories only. The "This month" view still lists every category. — assumed, revisit
+171. **Overview label and content changes:** "Flexible this week" → "Total this week", "Flexible this month" → "Total this month", "Flexible spending" → "Expenses". The "Committed bills"/"No fixed bills this month" line is removed from both the Overview month view and the Budget tab, since Fixed is no longer offered. Layout, colours and controls are otherwise unchanged, and the Overview stays read-only. — assumed, revisit

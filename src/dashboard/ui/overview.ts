@@ -5,7 +5,7 @@ import { daysBetween } from "../shared/dates.js";
 import { formatCents } from "../shared/money.js";
 import type { TimelineItem } from "../timeline.js";
 import { api, type AppContext } from "./api.js";
-import { monthView, weekView, type BudgetViewData } from "./budget-view.js";
+import { monthView, weekView, type OverviewBudget } from "./budget-view.js";
 import { openSource, renderCalendar } from "./calendar.js";
 import { isChatExpanded, renderChat } from "./chat.js";
 import { h } from "./dom.js";
@@ -14,7 +14,7 @@ interface OverviewResponse {
   today: string;
   nextSevenDays: TimelineItem[];
   reminders: ReminderPanelItem[];
-  budget: BudgetViewData;
+  budget: OverviewBudget;
 }
 
 const state: { budget: "week" | "month" } = { budget: "week" };
@@ -60,7 +60,7 @@ function budgetPanel(context: AppContext, data: OverviewResponse): HTMLElement {
       h("h3", {}, "Budget"),
       h("div", { class: "chip-group" }, toggle("week", "This week"), toggle("month", "This month")),
       h("a", { class: "small", href: "#/finance" }, "Open Finance")),
-    state.budget === "week" ? weekView(context, data.budget, false) : monthView(context, data.budget, false));
+    state.budget === "week" ? weekView(data.budget.weekly) : monthView(data.budget.month));
 }
 
 export async function renderOverview(container: HTMLElement, context: AppContext): Promise<void> {

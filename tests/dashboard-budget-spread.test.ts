@@ -48,14 +48,14 @@ test("spread over week: switching it off does not change the category's monthly 
   assert.equal(off.spentCents, on.spentCents, "the month total is unaffected");
 });
 
-test("spread over week: when it is on (default) the category is included in the weekly figures", () => {
+test("spread over week: when it is switched on the category is included in the weekly figures", () => {
   const budget = weeklyAllowanceBudget(twoCategoryDoc(true), "2026-10-14");
   assert.deepEqual(budget.rows.map((row) => row.categoryId), ["groceries", "snacks"]);
   assert.equal(budget.allowanceCents, 14_000, "both categories count");
   assert.equal(budget.spentCents, 3_000);
 });
 
-test("spread over week: a stored category with no spreadWeekly field is read as true and counts weekly", async () => {
+test("spread over week: a stored category with no spreadWeekly field is read as off and excluded from weekly", async () => {
   await withTempDir(async (directory) => {
     const file = join(directory, "finance", "finance.json");
     await mkdir(join(directory, "finance"), { recursive: true });
@@ -68,8 +68,23 @@ test("spread over week: a stored category with no spreadWeekly field is read as 
     }), "utf8");
     const finance = openFinance(directory);
     const categories = await finance.listCategories();
-    assert.equal(categories[0]!.spreadWeekly, true, "missing field counts as true");
+    assert.equal(categories[0]!.spreadWeekly, false, "missing field counts as off");
     const budget = weeklyAllowanceBudget(await finance.store.read(), "2026-10-14");
-    assert.deepEqual(budget.rows.map((row) => row.categoryId), ["groceries"], "it is included in the weekly figures");
+    assert.deepEqual(budget.rows.map((row) => row.categoryId), [], "it is excluded from the weekly figures by default");
+  });
+});
+
+test("spread over week: the validator accepts spreadWeekly true or false and rejects other values", async () => {
+  await withTempDir(async (directory) => {
+    const finance = openFinance(directory);
+    const on = await finance.createCategory({ name: "Dining", kind: "flexible", spreadWeekly: true });
+    assert.equal(on.spreadWeekly, true);
+    const off = await finance.createCategory({ name: "Taxis", kind: "flexible", spreadWeekly: false });
+    assert.equal(off.spreadWeekly, false);
+    const plain = await finance.createCategory({ name: "Books", kind: "flexible" });
+    assert.equal(plain.spreadWeekly, false, "omitted defaults to off");
+    await assert.rejects(finance.createCategory({ name: "Bad", kind: "flexible", spreadWeekly: "yes" }), /spreadWeekly must be a boolean/);
+    assert.equal((await finance.updateCategory(on.id, { spreadWeekly: false })).spreadWeekly, false);
+    await assert.rejects(finance.updateCategory(on.id, { spreadWeekly: 1 }), /spreadWeekly must be a boolean/);
   });
 });
