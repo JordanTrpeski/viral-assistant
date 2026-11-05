@@ -8,6 +8,13 @@ Viral is a local-first personal AI operating layer. Bootstrap V0 currently inclu
 - pnpm 11
 - Git
 
+## Starting the dashboard
+
+On Windows, the quickest way to open the dashboard:
+
+1. Double-click **`Start Viral.bat`** in the repository root. It builds the project and opens the dashboard in your browser; press Ctrl+C in the window to stop it.
+2. The first run (or after dependencies change) installs anything that is missing — this is slower; later runs start quickly. If Node.js or pnpm is missing, the window tells you what to install.
+
 ## Clean install and build
 
 ```sh
