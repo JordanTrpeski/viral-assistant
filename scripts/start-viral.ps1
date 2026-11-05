@@ -54,8 +54,9 @@ if (Test-Path "viral-dev.config.json") {
 $url = "http://127.0.0.1:$port"
 
 Write-Host "Viral launcher: starting the dashboard on $url (press Ctrl+C to stop)..." -ForegroundColor Green
-# Run the server in this console so its output shows and Ctrl+C stops it.
-$server = Start-Process -FilePath "pnpm" -ArgumentList @("run", "viral-dev", "dashboard") -NoNewWindow -PassThru
+# Run the server in this console so its output shows and Ctrl+C stops it. pnpm is a .cmd
+# shim on Windows, which Start-Process cannot launch directly, so go through cmd.exe.
+$server = Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", "pnpm", "run", "viral-dev", "dashboard") -NoNewWindow -PassThru
 
 try {
     # Poll for up to 30 seconds, then open the browser once the port answers.
