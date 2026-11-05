@@ -139,11 +139,11 @@ async function budgetTab(context: AppContext, _categories: Category[]): Promise<
       amountInputAllowZero(cents, (value) => save(context, () => api("PATCH", `/api/finance/targets/${encodeURIComponent(categoryId)}`, { weeklyCents: value })), context, `${categoryId}:weeklyCents`),
       overridden ? h("span", { class: "tag", title: "Weekly override set" }, "set") : estimated ? h("span", { class: "tag muted", title: "Estimated from the most recent limit" }, "est.") : null));
 
-  const headers = ["Category", "Monthly limit", "Spent this month", "Left", "This week (allowance)", "Spent this week", "Status"];
+  const headers = ["Category", "Monthly limit", "Spent this month", "Left", "This week (spread categories)", "Spent this week", "Status"];
   const bodyRows = month.rows.map((budgetRow) => {
     const limitCents = budgetRow.configuredCents;
     const status = budgetStatus(limitCents, budgetRow.spentCents);
-    const weekly = weeklyOf.get(budgetRow.categoryId);
+    const weekly = weeklyOf.get(budgetRow.categoryId); // absent when the category is switched off for weekly spreading
     const leftCell = status.kind === "none"
       ? h("td", { class: "num muted" }, "—")
       : status.kind === "over"
@@ -154,14 +154,19 @@ async function budgetTab(context: AppContext, _categories: Category[]): Promise<
       : status.kind === "over"
         ? h("td", { class: "status over" }, `Over by ${formatCents(status.overByCents)}`)
         : h("td", { class: "status" }, "OK");
-    const weekSpent = weekly?.spentCents ?? 0;
+    // A category not spread over the week shows "—" for both weekly columns but keeps its monthly figures.
+    const weekCells = weekly === undefined
+      ? [h("td", { class: "num muted" }, "—"), h("td", { class: "num muted" }, "—")]
+      : [
+        weeklyCell(budgetRow.categoryId, weekly.allowanceCents, weekly.overrideCents !== null, weekly.estimated),
+        h("td", { class: `num${weekly.spentCents > weekly.allowanceCents && weekly.allowanceCents > 0 ? " over" : ""}` }, formatCents(weekly.spentCents))
+      ];
     return h("tr", {},
       h("td", {}, budgetRow.name),
       h("td", {}, h("div", { class: "target-cell" }, stepper(budgetRow.categoryId)[0]!, monthlyInput(budgetRow.categoryId, limitCents), stepper(budgetRow.categoryId)[1]!)),
       h("td", { class: "num" }, formatCents(budgetRow.spentCents)),
       leftCell,
-      weeklyCell(budgetRow.categoryId, weekly?.allowanceCents ?? 0, weekly?.overrideCents !== null && weekly !== undefined, weekly?.estimated ?? false),
-      h("td", { class: `num${weekly && weekSpent > weekly.allowanceCents && weekly.allowanceCents > 0 ? " over" : ""}` }, formatCents(weekSpent)),
+      ...weekCells,
       statusCell);
   });
 
@@ -178,7 +183,7 @@ async function budgetTab(context: AppContext, _categories: Category[]): Promise<
   return h("div", { class: "budget-tab" },
     h("section", { class: "panel" },
       h("h3", {}, "Monthly budget"),
-      h("p", { class: "muted small" }, `One row per category: its limit, spent, what is left, and this week's allowance (monthly limit ÷ days in the month, summed over the week). − and + move a limit by ${formatCents(budget.stepCents)}; type in the week cell to override it.`),
+      h("p", { class: "muted small" }, `One row per category: its limit, spent, what is left, and this week's allowance (monthly limit ÷ days in the month, summed over the week). − and + move a limit by ${formatCents(budget.stepCents)}; type in the week cell to override it. Weekly figures and their total cover only categories set to spread over the week (Categories tab); others show "—".`),
       h("table", { class: "grid-table budget-table" },
         h("thead", {}, h("tr", {}, ...headers.map((label) => h("th", label === "Category" || label === "Status" ? {} : { class: "num" }, label)))),
         h("tbody", {}, ...(bodyRows.length ? bodyRows : [h("tr", {}, h("td", { colspan: headers.length, class: "empty" }, "No categories with budgets yet."))])),
@@ -209,7 +214,7 @@ function amountInputAllowZero(cents: number, onChange: (cents: number) => void, 
 }
 
 function categoriesTab(context: AppContext, categories: Category[]): HTMLElement {
-  const draft = { name: "", kind: "flexible" as Category["kind"] };
+  const draft = { name: "", kind: "flexible" as Category["kind"], spreadWeekly: true };
   // Only Expense and Income can be chosen. "Fixed" is offered solely when the category is already fixed, so an
   // existing fixed category keeps its stored kind until the owner deliberately changes it.
   const kindSelect = (value: Category["kind"], onChange: (kind: Category["kind"]) => void, key?: string): HTMLSelectElement => {
@@ -218,18 +223,27 @@ function categoriesTab(context: AppContext, categories: Category[]): HTMLElement
     return h("select", { ...(key ? focusKey(key) : {}), value, onchange: (event: Event) => onChange((event.target as HTMLSelectElement).value as Category["kind"]) },
       ...kinds.map((kind) => h("option", { value: kind }, typeLabel[kind])));
   };
+  // "Spread over week" applies to Expense and Income categories only; Fixed categories never spread, so show "—".
+  const spreadCell = (category: Category): HTMLElement => category.kind === "fixed"
+    ? h("td", { class: "muted" }, "—")
+    : h("td", {}, h("input", {
+      ...focusKey(`${category.id}:spreadWeekly`), type: "checkbox", checked: category.spreadWeekly, "aria-label": `Spread ${category.name} over the week`,
+      onchange: (event: Event) => save(context, () => api("PATCH", `/api/finance/categories/${category.id}`, { spreadWeekly: (event.target as HTMLInputElement).checked }))
+    }));
   const add = (): Promise<void> => save(context, () => api("POST", "/api/finance/categories", draft));
   return h("section", { class: "panel narrow" },
     h("table", { class: "grid-table" },
-      h("thead", {}, h("tr", {}, h("th", {}, "Name"), h("th", {}, "Type"), h("th", {}, "Actions"))),
+      h("thead", {}, h("tr", {}, h("th", {}, "Name"), h("th", {}, "Type"), h("th", {}, "Spread over week"), h("th", {}, "Actions"))),
       h("tbody", {},
         ...categories.map((category) => h("tr", {},
           h("td", {}, h("input", { ...focusKey(`${category.id}:name`), value: category.name, onchange: (event: Event) => save(context, () => api("PATCH", `/api/finance/categories/${category.id}`, { name: (event.target as HTMLInputElement).value })) })),
           h("td", {}, kindSelect(category.kind, (kind) => save(context, () => api("PATCH", `/api/finance/categories/${category.id}`, { kind })), `${category.id}:kind`)),
+          spreadCell(category),
           h("td", { class: "actions" }, h("button", { class: "danger", onclick: () => save(context, () => api("DELETE", `/api/finance/categories/${category.id}`)) }, "Delete")))),
         h("tr", { class: "adding" },
           h("td", {}, h("input", { placeholder: "New category name", oninput: (event: Event) => { draft.name = (event.target as HTMLInputElement).value; }, onkeydown: (event: KeyboardEvent) => { if (event.key === "Enter") void add(); } })),
           h("td", {}, kindSelect(draft.kind, (kind) => { draft.kind = kind; })),
+          h("td", {}, h("input", { type: "checkbox", checked: draft.spreadWeekly, "aria-label": "Spread the new category over the week", onchange: (event: Event) => { draft.spreadWeekly = (event.target as HTMLInputElement).checked; } })),
           h("td", { class: "actions" }, h("button", { class: "primary", onclick: add }, "Add category"))))));
 }
 

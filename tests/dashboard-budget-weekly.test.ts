@@ -39,7 +39,7 @@ test("weekly allowance: a month with no saved limit falls back to the most recen
 test("weekly allowance: a stored weekly override replaces the calculated default for that category", () => {
   const document: FinanceDocument = {
     schemaVersion: 1,
-    categories: [{ id: "groceries", name: "Groceries", kind: "flexible" }],
+    categories: [{ id: "groceries", name: "Groceries", kind: "flexible", spreadWeekly: true }],
     transactions: [],
     targets: [{ categoryId: "groceries", weeklyCents: 5_000, monthlyCents: 31_000 }], // override €50; default would be €70
     settings: { openingBalanceCents: 0 }
@@ -56,7 +56,7 @@ test("weekly allowance: a stored weekly override replaces the calculated default
 test("weekly allowance: with no override the calculated default is used and spending this week is summed", () => {
   const document: FinanceDocument = {
     schemaVersion: 1,
-    categories: [{ id: "groceries", name: "Groceries", kind: "flexible" }],
+    categories: [{ id: "groceries", name: "Groceries", kind: "flexible", spreadWeekly: true }],
     transactions: [
       { id: "t1", categoryId: "groceries", kind: "expense", amountCents: 1_200, date: "2026-10-14", note: "", fixed: false, source: "manual", createdAt: "", updatedAt: "" },
       { id: "t2", categoryId: "groceries", kind: "expense", amountCents: 800, date: "2026-09-30", note: "", fixed: false, source: "manual", createdAt: "", updatedAt: "" }

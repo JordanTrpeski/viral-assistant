@@ -144,7 +144,9 @@ export function weeklyAllowanceBudget(document: FinanceDocument, date: IsoDate):
   const end = addDays(start, 6);
   const months = [...new Set([monthOf(start), monthOf(end)])];
   const names = new Map(document.categories.map((category) => [category.id, category.name]));
-  const rows: WeekAllowanceRow[] = targetsFor(document).map((entry) => {
+  // Categories switched off for weekly spreading are left out of every weekly figure (allowance, spent, totals).
+  const spreads = new Map(document.categories.map((category) => [category.id, category.spreadWeekly !== false]));
+  const rows: WeekAllowanceRow[] = targetsFor(document).filter((entry) => spreads.get(entry.categoryId) !== false).map((entry) => {
     const savedLimits = months.map((month) => ({ month, limitCents: entry.monthlyCents }));
     const computed = weekAllowance(savedLimits, start);
     const overrideCents = entry.weeklyCents > 0 ? entry.weeklyCents : null;

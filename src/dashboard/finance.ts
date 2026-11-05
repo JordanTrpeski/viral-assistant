@@ -23,6 +23,8 @@ export interface Category {
   id: string;
   name: string;
   kind: CategoryKind;
+  /** Whether this category's monthly limit is spread into a weekly allowance. Default true; stored data without it counts as true. */
+  spreadWeekly: boolean;
 }
 
 export interface Transaction {
@@ -69,13 +71,13 @@ export interface TransactionInput {
 }
 
 export const defaultCategories: readonly Category[] = [
-  { id: "rent", name: "Rent", kind: "fixed" },
-  { id: "phone", name: "Phone", kind: "fixed" },
-  { id: "subscriptions", name: "Subscriptions", kind: "fixed" },
-  { id: "groceries", name: "Groceries", kind: "flexible" },
-  { id: "entertainment", name: "Entertainment", kind: "flexible" },
-  { id: "transport", name: "Transport", kind: "flexible" },
-  { id: "salary", name: "Salary", kind: "income" }
+  { id: "rent", name: "Rent", kind: "fixed", spreadWeekly: true },
+  { id: "phone", name: "Phone", kind: "fixed", spreadWeekly: true },
+  { id: "subscriptions", name: "Subscriptions", kind: "fixed", spreadWeekly: true },
+  { id: "groceries", name: "Groceries", kind: "flexible", spreadWeekly: true },
+  { id: "entertainment", name: "Entertainment", kind: "flexible", spreadWeekly: true },
+  { id: "transport", name: "Transport", kind: "flexible", spreadWeekly: true },
+  { id: "salary", name: "Salary", kind: "income", spreadWeekly: true }
 ];
 
 export function emptyFinanceDocument(): FinanceDocument {
@@ -90,7 +92,11 @@ export function transactionKindFor(kind: CategoryKind): TransactionKind {
 function validateCategory(value: unknown, index: number): Category {
   if (!isObject(value)) throw new Error(`categories[${index}] must be an object`);
   if (typeof value.id !== "string" || !value.id) throw new Error(`categories[${index}].id must be a string`);
-  return { id: value.id, name: requireText(value.name, `categories[${index}].name`), kind: requireOneOf(value.kind, categoryKinds, `categories[${index}].kind`) };
+  return {
+    id: value.id, name: requireText(value.name, `categories[${index}].name`), kind: requireOneOf(value.kind, categoryKinds, `categories[${index}].kind`),
+    // Missing or any non-false value counts as spread; only an explicit false turns it off.
+    spreadWeekly: value.spreadWeekly !== false
+  };
 }
 
 function validateTransaction(value: unknown, index: number): Transaction {
@@ -212,14 +218,16 @@ export class FinanceService {
 
   async createCategory(body: unknown): Promise<Category> {
     const input = requireObject(body);
-    rejectUnknownFields(input, ["name", "kind"]);
+    rejectUnknownFields(input, ["name", "kind", "spreadWeekly"]);
     const name = requireText(input.name, "name", 60);
     const kind = requireOneOf(input.kind, categoryKinds, "kind");
+    if (input.spreadWeekly !== undefined && typeof input.spreadWeekly !== "boolean") throw new ValidationError("spreadWeekly must be a boolean");
+    const spreadWeekly = input.spreadWeekly === undefined ? true : input.spreadWeekly;
     return this.store.update((document) => {
       uniqueName(document, name);
       let id = slug(name);
       for (let suffix = 2; document.categories.some((category) => category.id === id); suffix += 1) id = `${slug(name)}-${suffix}`;
-      const category: Category = { id, name, kind };
+      const category: Category = { id, name, kind, spreadWeekly };
       document.categories.push(category);
       return category;
     });
@@ -227,9 +235,11 @@ export class FinanceService {
 
   async updateCategory(id: string, body: unknown): Promise<Category> {
     const input = requireObject(body);
-    rejectUnknownFields(input, ["name", "kind"]);
+    rejectUnknownFields(input, ["name", "kind", "spreadWeekly"]);
     const name = input.name === undefined ? undefined : requireText(input.name, "name", 60);
     const kind = input.kind === undefined ? undefined : requireOneOf(input.kind, categoryKinds, "kind");
+    if (input.spreadWeekly !== undefined && typeof input.spreadWeekly !== "boolean") throw new ValidationError("spreadWeekly must be a boolean");
+    const spreadWeekly = input.spreadWeekly === undefined ? undefined : input.spreadWeekly;
     return this.store.update((document) => {
       const category = findCategory(document, id);
       if (name !== undefined) {
@@ -243,6 +253,7 @@ export class FinanceService {
         category.kind = kind;
         if (kind !== "flexible") document.targets = document.targets.filter((target) => target.categoryId !== id);
       }
+      if (spreadWeekly !== undefined) category.spreadWeekly = spreadWeekly;
       return category;
     });
   }
