@@ -12,9 +12,13 @@ command layer (actions, validation, confirm/undo) is built and tested behind a s
 
 - The **Overview budget is read-only**. Budget targets are edited **only in Finance** (Finance >
   Budget); the Overview shows the figures and progress plus a plain "Open Finance" link.
-- **Weekly and monthly targets are independent** — changing one never changes the other.
-- **Weeks run Monday to Sunday and reset on the 1st.** A week that crosses a month boundary is **cut
-  at the month end** (the cut week's target is the weekly target prorated by its number of days).
+- **The weekly target is a calculated default with an optional override.** The default is the daily
+  rate (the monthly limit ÷ the days in that month) summed over the week's seven days; a weekly target
+  the user types in overrides it for that category. Monthly limits stay independent of the weekly
+  figure, which is computed on each request and never stored.
+- **Weeks run Monday to Sunday and are not reset at the month end.** A week that crosses a month
+  boundary uses each day's own month rate, so it mixes the two months' daily rates rather than being
+  cut on the 1st. (The Overview's "This week" still shows the older month-cut, prorated view.)
 - **Fixed bills** (rent, phone, subscriptions) are **committed for the month** on their due date and
   are **never split into weeks**.
 - **Flexible categories** count against both the weekly and the monthly target.

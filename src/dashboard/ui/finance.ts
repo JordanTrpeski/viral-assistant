@@ -1,9 +1,9 @@
 // Finance module: summary cards, Transactions / Budget / Categories tabs.
-import type { BudgetTarget, Category, Transaction } from "../finance.js";
+import type { Category, Transaction } from "../finance.js";
 import type { FinanceSummary } from "../summary.js";
 import { monthOf } from "../shared/dates.js";
 import { formatCents, parseEuroToCents } from "../shared/money.js";
-import { budgetStatus } from "../budget.js";
+import { budgetStatus } from "../shared/budget-status.js";
 import { api, save, type AppContext } from "./api.js";
 import { loadBudget, shortDate } from "./budget-view.js";
 import { focusKey, h } from "./dom.js";
@@ -125,24 +125,25 @@ async function transactionsTab(context: AppContext, categories: Category[]): Pro
 }
 
 async function budgetTab(context: AppContext, _categories: Category[]): Promise<HTMLElement> {
-  const [targets, budget] = await Promise.all([api<BudgetTarget[]>("GET", "/api/finance/targets"), loadBudget()]);
+  const budget = await loadBudget();
   const month = budget.month;
-  const targetOf = new Map(targets.map((target) => [target.categoryId, target]));
-  // The weekly column only appears once at least one weekly target is set; weekly data is never deleted here.
-  const showWeekly = targets.some((target) => target.weeklyCents > 0);
+  const weeklyOf = new Map(budget.weekly.rows.map((row) => [row.categoryId, row]));
 
-  const targetInput = (categoryId: string, field: "weeklyCents" | "monthlyCents", cents: number): HTMLInputElement =>
-    amountInputAllowZero(cents, (value) => save(context, () => api("PATCH", `/api/finance/targets/${encodeURIComponent(categoryId)}`, { [field]: value })), context, `${categoryId}:${field}`);
-  const stepper = (categoryId: string, period: "weekly" | "monthly"): HTMLElement[] => [-1, 1].map((direction) =>
-    h("button", { class: "step", "aria-label": `${direction > 0 ? "Raise" : "Lower"} ${period} limit`, onclick: () => save(context, () => api("POST", `/api/finance/targets/${encodeURIComponent(categoryId)}/step`, { period, direction })) }, direction > 0 ? "+" : "−"));
-  const limitCell = (categoryId: string, field: "weeklyCents" | "monthlyCents", period: "weekly" | "monthly", cents: number): HTMLElement =>
-    h("td", {}, h("div", { class: "target-cell" }, stepper(categoryId, period)[0]!, targetInput(categoryId, field, cents), stepper(categoryId, period)[1]!));
+  const monthlyInput = (categoryId: string, cents: number): HTMLInputElement =>
+    amountInputAllowZero(cents, (value) => save(context, () => api("PATCH", `/api/finance/targets/${encodeURIComponent(categoryId)}`, { monthlyCents: value })), context, `${categoryId}:monthlyCents`);
+  const stepper = (categoryId: string): HTMLElement[] => [-1, 1].map((direction) =>
+    h("button", { class: "step", "aria-label": `${direction > 0 ? "Raise" : "Lower"} monthly limit`, onclick: () => save(context, () => api("POST", `/api/finance/targets/${encodeURIComponent(categoryId)}/step`, { period: "monthly", direction })) }, direction > 0 ? "+" : "−"));
+  // The weekly cell shows the allowance and doubles as the override: typing a value stores weeklyCents (0 clears it).
+  const weeklyCell = (categoryId: string, cents: number, overridden: boolean, estimated: boolean): HTMLElement =>
+    h("td", { class: "num" }, h("div", { class: "target-cell" },
+      amountInputAllowZero(cents, (value) => save(context, () => api("PATCH", `/api/finance/targets/${encodeURIComponent(categoryId)}`, { weeklyCents: value })), context, `${categoryId}:weeklyCents`),
+      overridden ? h("span", { class: "tag", title: "Weekly override set" }, "set") : estimated ? h("span", { class: "tag muted", title: "Estimated from the most recent limit" }, "est.") : null));
 
-  const headers = ["Category", ...(showWeekly ? ["Weekly limit"] : []), "Monthly limit", "Spent this month", "Left", "Status"];
+  const headers = ["Category", "Monthly limit", "Spent this month", "Left", "This week (allowance)", "Spent this week", "Status"];
   const bodyRows = month.rows.map((budgetRow) => {
-    const weeklyCents = targetOf.get(budgetRow.categoryId)?.weeklyCents ?? 0;
     const limitCents = budgetRow.configuredCents;
     const status = budgetStatus(limitCents, budgetRow.spentCents);
+    const weekly = weeklyOf.get(budgetRow.categoryId);
     const leftCell = status.kind === "none"
       ? h("td", { class: "num muted" }, "—")
       : status.kind === "over"
@@ -153,28 +154,31 @@ async function budgetTab(context: AppContext, _categories: Category[]): Promise<
       : status.kind === "over"
         ? h("td", { class: "status over" }, `Over by ${formatCents(status.overByCents)}`)
         : h("td", { class: "status" }, "OK");
+    const weekSpent = weekly?.spentCents ?? 0;
     return h("tr", {},
       h("td", {}, budgetRow.name),
-      ...(showWeekly ? [limitCell(budgetRow.categoryId, "weeklyCents", "weekly", weeklyCents)] : []),
-      limitCell(budgetRow.categoryId, "monthlyCents", "monthly", limitCents),
+      h("td", {}, h("div", { class: "target-cell" }, stepper(budgetRow.categoryId)[0]!, monthlyInput(budgetRow.categoryId, limitCents), stepper(budgetRow.categoryId)[1]!)),
       h("td", { class: "num" }, formatCents(budgetRow.spentCents)),
       leftCell,
+      weeklyCell(budgetRow.categoryId, weekly?.allowanceCents ?? 0, weekly?.overrideCents !== null && weekly !== undefined, weekly?.estimated ?? false),
+      h("td", { class: `num${weekly && weekSpent > weekly.allowanceCents && weekly.allowanceCents > 0 ? " over" : ""}` }, formatCents(weekSpent)),
       statusCell);
   });
 
   const over = month.remainingCents < 0;
   const totalRow = h("tr", { class: "budget-total-row" },
     h("td", {}, "Total spent of total limits"),
-    ...(showWeekly ? [h("td", {}, "")] : []),
     h("td", { class: "num" }, formatCents(month.targetCents)),
     h("td", { class: "num" }, formatCents(month.spentCents)),
     h("td", { class: `num${over ? " over" : ""}` }, over ? `−${formatCents(-month.remainingCents)}` : formatCents(month.remainingCents)),
+    h("td", { class: "num" }, formatCents(budget.weekly.allowanceCents)),
+    h("td", { class: "num" }, formatCents(budget.weekly.spentCents)),
     h("td", { class: over ? "status over" : "status" }, over ? `Over by ${formatCents(-month.remainingCents)}` : "OK"));
 
   return h("div", { class: "budget-tab" },
     h("section", { class: "panel" },
       h("h3", {}, "Monthly budget"),
-      h("p", { class: "muted small" }, `One row per category: its limit, what you have spent this month, and what is left. − and + move a limit by ${formatCents(budget.stepCents)}.`),
+      h("p", { class: "muted small" }, `One row per category: its limit, spent, what is left, and this week's allowance (monthly limit ÷ days in the month, summed over the week). − and + move a limit by ${formatCents(budget.stepCents)}; type in the week cell to override it.`),
       h("table", { class: "grid-table budget-table" },
         h("thead", {}, h("tr", {}, ...headers.map((label) => h("th", label === "Category" || label === "Status" ? {} : { class: "num" }, label)))),
         h("tbody", {}, ...(bodyRows.length ? bodyRows : [h("tr", {}, h("td", { colspan: headers.length, class: "empty" }, "No categories with budgets yet."))])),
