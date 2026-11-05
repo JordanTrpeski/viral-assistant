@@ -23,7 +23,7 @@ export function loadBudget(date?: string): Promise<BudgetResponse> {
   return api<BudgetResponse>("GET", `/api/budget${date ? `?date=${date}` : ""}`);
 }
 
-function shortDate(iso: string): string {
+export function shortDate(iso: string): string {
   const [, month, day] = iso.split("-").map(Number) as [number, number, number];
   return `${day} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month - 1]}`;
 }

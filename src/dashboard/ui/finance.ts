@@ -3,8 +3,9 @@ import type { BudgetTarget, Category, Transaction } from "../finance.js";
 import type { FinanceSummary } from "../summary.js";
 import { monthOf } from "../shared/dates.js";
 import { formatCents, parseEuroToCents } from "../shared/money.js";
+import { budgetStatus } from "../budget.js";
 import { api, save, type AppContext } from "./api.js";
-import { loadBudget, monthView, weekView } from "./budget-view.js";
+import { loadBudget, shortDate } from "./budget-view.js";
 import { focusKey, h } from "./dom.js";
 
 type Tab = "transactions" | "budget" | "categories";
@@ -14,7 +15,9 @@ const state: { tab: Tab; filter: Filter; month: string | null; editingId: string
   tab: "transactions", filter: "all", month: null, editingId: null, adding: false
 };
 
-const typeLabel: Record<Category["kind"], string> = { fixed: "Fixed", flexible: "Flexible", income: "Income" };
+// "Flexible" is shown as "Expense" everywhere (stored value stays "flexible"). "Fixed" keeps its label for the
+// few places a pre-existing fixed category is still displayed, but it is no longer offered in the type dropdown.
+const typeLabel: Record<Category["kind"], string> = { fixed: "Fixed", flexible: "Expense", income: "Income" };
 
 function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -31,7 +34,11 @@ function runwayText(summary: FinanceSummary): { value: string; detail: string } 
 }
 
 function categorySelect(categories: Category[], value: string, onChange: (id: string) => void, key: string): HTMLSelectElement {
-  const groups = (["flexible", "fixed", "income"] as const).map((kind) =>
+  // Expense (flexible) and Income only. A Fixed group is shown just when pre-existing fixed categories exist,
+  // so their transactions stay reachable; new fixed categories can no longer be made (see the type dropdown).
+  const kinds: Category["kind"][] = ["flexible", "income"];
+  if (categories.some((category) => category.kind === "fixed")) kinds.push("fixed");
+  const groups = kinds.map((kind) =>
     h("optgroup", { label: typeLabel[kind] }, ...categories.filter((category) => category.kind === kind).map((category) => h("option", { value: category.id }, category.name))));
   return h("select", { ...focusKey(key), value, onchange: (event: Event) => onChange((event.target as HTMLSelectElement).value) }, ...groups);
 }
@@ -117,26 +124,68 @@ async function transactionsTab(context: AppContext, categories: Category[]): Pro
         rows.length || state.adding ? null : h("tr", {}, h("td", { colspan: 6, class: "empty" }, "No transactions for this month and filter.")))));
 }
 
-async function budgetTab(context: AppContext, categories: Category[]): Promise<HTMLElement> {
+async function budgetTab(context: AppContext, _categories: Category[]): Promise<HTMLElement> {
   const [targets, budget] = await Promise.all([api<BudgetTarget[]>("GET", "/api/finance/targets"), loadBudget()]);
-  const names = new Map(categories.map((category) => [category.id, category.name]));
-  const targetInput = (target: BudgetTarget, field: "weeklyCents" | "monthlyCents"): HTMLInputElement => amountInputAllowZero(target[field], (cents) =>
-    save(context, () => api("PATCH", `/api/finance/targets/${encodeURIComponent(target.categoryId)}`, { [field]: cents })), context, `${target.categoryId}:${field}`);
-  const stepper = (target: BudgetTarget, period: "weekly" | "monthly"): HTMLElement[] => [-1, 1].map((direction) =>
-    h("button", { class: "step", onclick: () => save(context, () => api("POST", `/api/finance/targets/${encodeURIComponent(target.categoryId)}/step`, { period, direction })) }, direction > 0 ? "+" : "−"));
+  const month = budget.month;
+  const targetOf = new Map(targets.map((target) => [target.categoryId, target]));
+  // The weekly column only appears once at least one weekly target is set; weekly data is never deleted here.
+  const showWeekly = targets.some((target) => target.weeklyCents > 0);
+
+  const targetInput = (categoryId: string, field: "weeklyCents" | "monthlyCents", cents: number): HTMLInputElement =>
+    amountInputAllowZero(cents, (value) => save(context, () => api("PATCH", `/api/finance/targets/${encodeURIComponent(categoryId)}`, { [field]: value })), context, `${categoryId}:${field}`);
+  const stepper = (categoryId: string, period: "weekly" | "monthly"): HTMLElement[] => [-1, 1].map((direction) =>
+    h("button", { class: "step", "aria-label": `${direction > 0 ? "Raise" : "Lower"} ${period} limit`, onclick: () => save(context, () => api("POST", `/api/finance/targets/${encodeURIComponent(categoryId)}/step`, { period, direction })) }, direction > 0 ? "+" : "−"));
+  const limitCell = (categoryId: string, field: "weeklyCents" | "monthlyCents", period: "weekly" | "monthly", cents: number): HTMLElement =>
+    h("td", {}, h("div", { class: "target-cell" }, stepper(categoryId, period)[0]!, targetInput(categoryId, field, cents), stepper(categoryId, period)[1]!));
+
+  const headers = ["Category", ...(showWeekly ? ["Weekly limit"] : []), "Monthly limit", "Spent this month", "Left", "Status"];
+  const bodyRows = month.rows.map((budgetRow) => {
+    const weeklyCents = targetOf.get(budgetRow.categoryId)?.weeklyCents ?? 0;
+    const limitCents = budgetRow.configuredCents;
+    const status = budgetStatus(limitCents, budgetRow.spentCents);
+    const leftCell = status.kind === "none"
+      ? h("td", { class: "num muted" }, "—")
+      : status.kind === "over"
+        ? h("td", { class: "num over" }, `−${formatCents(status.overByCents)}`)
+        : h("td", { class: "num" }, formatCents(limitCents - budgetRow.spentCents));
+    const statusCell = status.kind === "none"
+      ? h("td", { class: "muted" }, "—")
+      : status.kind === "over"
+        ? h("td", { class: "status over" }, `Over by ${formatCents(status.overByCents)}`)
+        : h("td", { class: "status" }, "OK");
+    return h("tr", {},
+      h("td", {}, budgetRow.name),
+      ...(showWeekly ? [limitCell(budgetRow.categoryId, "weeklyCents", "weekly", weeklyCents)] : []),
+      limitCell(budgetRow.categoryId, "monthlyCents", "monthly", limitCents),
+      h("td", { class: "num" }, formatCents(budgetRow.spentCents)),
+      leftCell,
+      statusCell);
+  });
+
+  const over = month.remainingCents < 0;
+  const totalRow = h("tr", { class: "budget-total-row" },
+    h("td", {}, "Total spent of total limits"),
+    ...(showWeekly ? [h("td", {}, "")] : []),
+    h("td", { class: "num" }, formatCents(month.targetCents)),
+    h("td", { class: "num" }, formatCents(month.spentCents)),
+    h("td", { class: `num${over ? " over" : ""}` }, over ? `−${formatCents(-month.remainingCents)}` : formatCents(month.remainingCents)),
+    h("td", { class: over ? "status over" : "status" }, over ? `Over by ${formatCents(-month.remainingCents)}` : "OK"));
+
   return h("div", { class: "budget-tab" },
     h("section", { class: "panel" },
-      h("h3", {}, "Targets (Flexible categories)"),
-      h("p", { class: "muted small" }, `Weekly and monthly targets are independent. − and + move a target by ${formatCents(budget.stepCents)}.`),
-      h("table", { class: "grid-table" },
-        h("thead", {}, h("tr", {}, h("th", {}, "Category"), h("th", {}, "Weekly target"), h("th", {}, "Monthly target"))),
-        h("tbody", {}, ...targets.map((target) => h("tr", {},
-          h("td", {}, names.get(target.categoryId) ?? target.categoryId),
-          h("td", {}, h("div", { class: "target-cell" }, stepper(target, "weekly")[0]!, targetInput(target, "weeklyCents"), stepper(target, "weekly")[1]!)),
-          h("td", {}, h("div", { class: "target-cell" }, stepper(target, "monthly")[0]!, targetInput(target, "monthlyCents"), stepper(target, "monthly")[1]!))))))),
-    h("div", { class: "two-col" },
-      h("section", { class: "panel" }, h("h3", {}, "This week"), weekView(context, budget, true)),
-      h("section", { class: "panel" }, h("h3", {}, "This month"), monthView(context, budget, true))));
+      h("h3", {}, "Monthly budget"),
+      h("p", { class: "muted small" }, `One row per category: its limit, what you have spent this month, and what is left. − and + move a limit by ${formatCents(budget.stepCents)}.`),
+      h("table", { class: "grid-table budget-table" },
+        h("thead", {}, h("tr", {}, ...headers.map((label) => h("th", label === "Category" || label === "Status" ? {} : { class: "num" }, label)))),
+        h("tbody", {}, ...(bodyRows.length ? bodyRows : [h("tr", {}, h("td", { colspan: headers.length, class: "empty" }, "No categories with budgets yet."))])),
+        h("tfoot", {}, totalRow))),
+    h("section", { class: "panel" },
+      h("h3", {}, "Committed bills this month"),
+      h("p", { class: "muted small" }, `Fixed bills are committed for the month · ${formatCents(month.committedCents)}`),
+      month.committed.length
+        ? h("ul", { class: "committed" }, ...month.committed.map((bill) =>
+          h("li", {}, h("span", { class: "muted" }, shortDate(bill.date)), h("span", {}, bill.label), h("span", { class: "amount" }, formatCents(bill.amountCents)))))
+        : h("div", { class: "muted small" }, "No fixed bills this month.")));
 }
 
 function amountInputAllowZero(cents: number, onChange: (cents: number) => void, context: AppContext, key: string): HTMLInputElement {
@@ -157,9 +206,14 @@ function amountInputAllowZero(cents: number, onChange: (cents: number) => void, 
 
 function categoriesTab(context: AppContext, categories: Category[]): HTMLElement {
   const draft = { name: "", kind: "flexible" as Category["kind"] };
-  const kindSelect = (value: Category["kind"], onChange: (kind: Category["kind"]) => void, key?: string): HTMLSelectElement =>
-    h("select", { ...(key ? focusKey(key) : {}), value, onchange: (event: Event) => onChange((event.target as HTMLSelectElement).value as Category["kind"]) },
-      ...(["fixed", "flexible", "income"] as const).map((kind) => h("option", { value: kind }, typeLabel[kind])));
+  // Only Expense and Income can be chosen. "Fixed" is offered solely when the category is already fixed, so an
+  // existing fixed category keeps its stored kind until the owner deliberately changes it.
+  const kindSelect = (value: Category["kind"], onChange: (kind: Category["kind"]) => void, key?: string): HTMLSelectElement => {
+    const kinds: Category["kind"][] = ["flexible", "income"];
+    if (value === "fixed") kinds.unshift("fixed");
+    return h("select", { ...(key ? focusKey(key) : {}), value, onchange: (event: Event) => onChange((event.target as HTMLSelectElement).value as Category["kind"]) },
+      ...kinds.map((kind) => h("option", { value: kind }, typeLabel[kind])));
+  };
   const add = (): Promise<void> => save(context, () => api("POST", "/api/finance/categories", draft));
   return h("section", { class: "panel narrow" },
     h("table", { class: "grid-table" },

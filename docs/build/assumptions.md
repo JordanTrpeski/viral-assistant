@@ -288,3 +288,14 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
     - Trackers: current progress.
     - Weekly review: a link.
     - The step 1 "items by type" list and quick-create were removed from the Overview, since capture is the inbox. — assumed, revisit
+
+## Budget table
+
+154. **The Finance > Budget tab is one table per category**, replacing the old "Targets" table and the separate "This week" / "This month" panels (which listed the same flexible categories twice). Columns: Category, Monthly limit (editable with − and +), Spent this month, Left, Status. — assumed, revisit
+155. **Status uses `budgetStatus(limitCents, spentCents)` in `src/dashboard/budget.ts`:** spending at or under the limit is "OK"; above it is "Over by €X" in the warning colour; a limit of zero or less is "no limit", and that row shows only the spent amount (Left and Status show "—"). Exactly at the limit counts as OK, not over. — assumed, revisit
+156. **Weekly limits stay in the data model and are never deleted here; the weekly column is shown only when at least one category has a weekly target above zero.** With the current data every weekly target is 0, so the column is hidden; set any weekly target and it appears (editable with − and +, same as monthly). — assumed, revisit
+157. **The totals row is kept and relabelled** from "Flexible this month" to "Total spent of total limits": the sum of monthly spending over the sum of monthly limits, with the amount left or over. — assumed, revisit
+158. **"Flexible" is shown as "Expense" everywhere in Finance** (type column, filter chip, category groups, the type dropdown); the stored category kind stays `flexible`, so no data is migrated. "Income" is unchanged. — assumed, revisit
+159. **"Fixed" is removed from the category type dropdown only.** New categories can be Expense or Income. A category already stored as `fixed` still shows a "Fixed" option while it is fixed (so its kind is not silently changed), and pre-existing fixed categories still appear in the transaction category picker; committed-bill counting is unchanged. With the current data no category is fixed. — assumed, revisit
+160. **The committed-bills summary is kept on the Budget tab**, below the table ("Committed bills this month"), because it is distinct from the per-category limit table and the design commits fixed bills for the month. It is not a duplicate of the per-category rows. — assumed, revisit
+161. **The Overview budget is left exactly as it is** (read-only, still using the week/month views); only the Finance > Budget tab changed. — assumed, revisit

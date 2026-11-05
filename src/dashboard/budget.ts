@@ -2,6 +2,19 @@ import { targetsFor, type FinanceDocument } from "./finance.js";
 import { budgetWeekOf, firstOfMonth, inRange, lastOfMonth, type IsoDate, type IsoMonth } from "./shared/dates.js";
 import { sumCents } from "./shared/money.js";
 
+/** The status of one category's monthly spending against its limit. "none" means no limit is set (limit ≤ 0). */
+export type BudgetStatus =
+  | { kind: "none" }
+  | { kind: "ok" }
+  | { kind: "over"; overByCents: number };
+
+/** Status for a monthly limit and the amount spent. Spending exactly at the limit is OK; above it is over. */
+export function budgetStatus(limitCents: number, spentCents: number): BudgetStatus {
+  if (limitCents <= 0) return { kind: "none" };
+  if (spentCents <= limitCents) return { kind: "ok" };
+  return { kind: "over", overByCents: spentCents - limitCents };
+}
+
 export interface BudgetRow {
   categoryId: string;
   name: string;
