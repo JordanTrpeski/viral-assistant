@@ -27,6 +27,7 @@ let hidden = loadHidden();
 
 /** Opens the module that owns an entry, so anything on the calendar can be changed where it lives. */
 export function openSource(context: AppContext, item: TimelineItem): void {
+  if (item.origin === "organise") { context.navigate(`organise-reminders?item=${item.sourceId}`); return; }
   context.navigate(item.source === "transaction" ? "finance" : "reminders");
 }
 

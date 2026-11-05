@@ -169,3 +169,122 @@ Entries 1–6 come from the brief. The rest were decided during the build, group
 97. **A computed amount with no named target asks which target, rather than guessing.** The reply is the question "€X for which target?" with buttons "Groceries weekly target", "Groceries monthly target" and "Other…". "Other…" accepts any valid existing Flexible category and either period ("week"/"month"), typed as text and checked by the existing validation (so an invalid category or period returns the existing error). Answering it (`POST /api/chat/target-questions/:id/answer`) creates a normal pending `set_budget_target` proposal that goes through the usual confirm; the answer writes nothing. These questions expire after the same 10 minutes as proposals; an expired or unknown answer returns 400 or 404 like the existing routes. — assumed, revisit
 98. **The default button is the target changed most recently in this thread, marked "(last changed)".** "Most recently changed" is read from the thread's confirmed `set_budget_target` proposals (newest `resolvedAt`). If it matches one of the two shown Groceries buttons, that button is the default; if no target has been changed in the thread, no default is marked. — assumed, revisit
 99. **The bare-phrase rule applies to all four kinds** — "divide that by 4", "half of that", "double it", "10% of 250" — which all ask which target when no target is named. A named spending category keeps the expense behaviour ("half of 60 on groceries" still adds €30), and "split 60 between 3" keeps its share-or-total question. — assumed, revisit
+
+## Organise v1 (`docs/design/organise-v1.md`)
+
+### Step 1 — shared item model and store
+
+100. **API and storage field names are snake_case** (`prepare_by`, `project_id`, `done_at`, …), exactly as the spec writes them, even though the older dashboard modules use camelCase. — assumed, revisit
+101. **Every item stores every field of the shared model.** Fields that do not apply to its type are `null` (for example `priority` on a reminder). Sending a type-only field with a value for another type is rejected with 400. — assumed, revisit
+102. **A note's title is optional.** Without one, the first line of its text (up to 200 characters) becomes the title, so the model rule "title 1 to 200" still holds. A note with neither title nor text returns 400. — assumed, revisit
+103. **A project's name is its `title`**, limited to 1–100 characters instead of 200, and its description is its `notes`. A project cannot itself belong to a project. — assumed, revisit
+104. **An item's type cannot change by editing (400).** Only inbox sort changes the type, as the spec describes. — assumed, revisit
+105. **Defaults:**
+    - Tasks: priority `normal`, status `open`.
+    - Reminders: category `Other`, recurrence `none`, status `open`.
+    - Projects: status `active`.
+    - List items: the first status of their list.
+    - `prepare_by` needs a `date` and must be on or before it; the same day is allowed. — assumed, revisit
+106. **`done_at` is set when an item's status becomes its done status**: a task's or reminder's `done`, a project's `done`, or a list's last status. It is cleared when the item is reopened. Editing other fields of a done item keeps its original `done_at`. — assumed, revisit
+107. **Deleting an item removes its id from every other item's `links`.** Deletion rules for projects and lists are set in their steps. — assumed, revisit
+108. **`GET /api/organise/meta`** (not in the spec) returns the model's vocabularies (types, statuses, categories, recurrences, priorities). The browser UI uses it so it never duplicates them. — assumed, revisit
+109. **Static serving was extended by one folder**, `/assets/ui/organise/<name>.js`, because the spec puts the UI under `src/dashboard/ui/organise/`. File names keep the same strict pattern. — assumed, revisit
+110. **Navigation.** The Organise nav group (Overview, Tasks, Reminders, Notes and lists, Projects, Trackers) sits after Groceries. Gym and Viral tasks stay greyed out, and Settings stays pinned at the bottom. Organise pages without a UI yet appear greyed out until their step. The old greyed-out top-level "Projects" item is replaced by Organise > Projects. An item opens in the detail panel through `?item=<id>` in the address hash, so any page can open any item. — assumed, revisit
+
+### Step 2 — inbox
+
+111. **`GET /api/organise/inbox`** (not in the spec's route list, which only has POST) returns `{ count, items }`. The nav badge and the inbox panel use it. — assumed, revisit
+112. **Sort forms use the API field names:** `date` is the task's due date, `project_id` is the project and `list_id` is the list. A note's form takes `text` (its body) and one optional `link`, as the spec lists. Fields that are not on the chosen target's form are rejected (400). The item keeps its id, `created_at`, its existing notes and links, and its title. Task and reminder forms may replace the title; note and list-item forms keep the captured text as the title. — assumed, revisit
+113. **Sorting an item that is not in the inbox returns 400.** A failed sort changes nothing. — assumed, revisit
+114. **The reminder sort form opens with today's date pre-filled.** A reminder needs a date, and the inbox never forces a decision before Sort is pressed. — assumed, revisit
+115. **`GET /api/organise/lists` (read-only) arrives in this step** so the list-item sort target can offer lists. Creating and editing lists comes in step 5. — assumed, revisit
+
+### Step 3 — tasks
+
+116. **"Open" in the task groups means not done**, so `in_progress` tasks appear in Today, This week and Later alongside `open` ones. — assumed, revisit
+117. **Order within a group:** due date (undated last), then priority (high, normal, low), then title. Done is ordered newest `done_at` first. — assumed, revisit
+118. **Ticking every checklist entry does not complete the task**; completing is always an explicit step. Checklist edits send the whole list. Entries keep their ids, and new entries get one from the server. — assumed, revisit
+119. **`GET /api/organise/tasks`** (not in the spec's route list) returns the four groups, accepting the same filters as `GET /api/organise/items`. The filters are `project_id`, `status`, and `from`/`to` (inclusive, on the item's date). A date range excludes undated items, and `from` after `to` returns 400. — assumed, revisit
+120. **Module registry.** `src/dashboard/organise/modules/` holds one file per module, exporting `type`, `label`, `fields`, `statuses` and `actions` (`{ name, description, fieldSchema }`). The registry lists them, and `/api/organise/meta` exposes them under `modules`. Each step adds its own module. The actions are declarations only; nothing calls them. — assumed, revisit
+
+### Step 4 — reminders
+
+121. **Recurrence (the spec's own default, recorded as asked).** Completing a yearly or custom reminder marks that occurrence done and keeps it in Done. It then creates the next occurrence: same title, category, project, recurrence, interval, notes and links; date advanced (yearly: same month-day next year; custom: `interval_days` later); `prepare_by` kept the same number of days ahead; status open. Reopening a done occurrence does not remove the next one, and completing it again does not create a duplicate. — assumed, revisit
+122. **29 February:** a yearly series started on 29 February falls on 28 February in non-leap years and returns to the 29th in leap years. To make this work, yearly reminders carry one internal field, `recurrence_anchor` ("MM-DD"). It is set by the server, cannot be set through the API, and is null for every other item. This is the only addition to the shared item model. — assumed, revisit
+123. **prepare_by.**
+    - A new Personal reminder (created or sorted from the inbox) without `prepare_by` gets 14 days before its date. Other categories get none.
+    - **`prepare_days` (0 to 365) is accepted alongside `prepare_by`**, as "zero means none": 0 clears it, and n sets it n days before the date. Sending both returns 400.
+    - Moving the date moves a 14-day default with it; a custom `prepare_by` stays where it is.
+    - Switching a reminder to Personal adds the default if it has none. — assumed, revisit
+124. **Calendar colours for Organise reminders:** Personal is pink (Personal), Bill is amber (Bills), and Study, Work, Health and Other are grey (Reminder). They enter the existing timeline as reminder entries with an optional `origin: "organise"`. That puts them on the calendar, in Next 7 days and in the dashboard Overview's Reminders panel, along with their grey "Prepare:" entries, without changing that code. Clicking one opens it under Organise > Reminders. — assumed, revisit
+125. **The earlier dashboard Reminders page** (M6, `.viral/dashboard/reminders.json`) is neither deleted nor migrated. Its entry leaves the nav in favour of Organise > Reminders, but the page is still reachable at `#/reminders`, its reminders still show on the calendar, and clicking one still opens it. Merging the two stores is left for a later decision. — assumed, revisit
+126. **`GET /api/organise/reminders`** (not in the spec's route list) returns Overdue, Upcoming and Done groups, with the same filters as items. — assumed, revisit
+
+### Step 5 — notes and lists
+
+127. **Presets** are named status sets: `default` (to do, doing, done), `books` (to read, reading, finished) and `films` (to watch, watching, watched); films is my addition as a second example. A list may instead take its own `statuses`: 1 to 10 names, each 1–40 characters, case-insensitively distinct, in order. **The last status counts as done.** Lists live in `lists.json`. — assumed, revisit
+128. **Changing a list's statuses** (rename, reorder, add) is allowed, but a status still used by one of its rows cannot be removed (400). Afterwards each row's `done_at` follows the new last status: set if the row now sits on it, cleared if not. — assumed, revisit
+129. **A list cannot be deleted while it has rows** (400 with the count). — assumed, revisit
+130. **List rows are ordinary `list_item` items.** They are created and edited through `/api/organise/items`. A row starts at its list's first status and only accepts its list's statuses. — assumed, revisit
+
+### Step 6 — projects
+
+131. **Project deletion rule: refuse while in use.** Deleting a project that still has tasks, reminders, notes, list rows or trackers returns 400 with the counts. Unassign or delete those first. The spec allowed either refuse or unlink; refusing never changes other items behind your back. — assumed, revisit
+132. **The project page** (`GET /api/organise/projects/:id`, an addition to the spec's routes) returns the project and five sections:
+    - Tasks and Reminders: open first, then done, each by date then title.
+    - Notes: newest first, since notes have no status.
+    - Trackers.
+    - Lists: the project's list rows, grouped by list, with rows not yet on the list's last status first.
+    - "Open of total" counts every section except notes. — assumed, revisit
+133. **Lists themselves do not belong to projects** (a list is a name and statuses only). The Lists section shows list rows whose `project_id` is the project. — assumed, revisit
+
+### Step 7 — trackers
+
+134. **Tracker weeks run Monday to Sunday and are not cut at month ends**, unlike the Finance budget weeks, because the spec states plain Monday-to-Sunday weeks for trackers. — assumed, revisit
+135. **Fields.**
+    - Name: 1–100 characters. Unit: up to 30 characters, may be empty.
+    - Target: a number greater than 0, or null for no target. In the UI, clearing it or entering 0 removes the target.
+    - Project: optional, and must exist.
+    - Entry value: a number of 0 or more (0 is allowed). Entry date defaults to today. Note: up to 500 characters.
+    - Totals are rounded to 6 decimals. Percent has one decimal. "Remaining" is never negative. — assumed, revisit
+136. **History is the last 8 periods ending with the current one, oldest first.** It is computed on the fly; nothing is stored. — assumed, revisit
+137. **Deleting a tracker deletes its entries.** Trackers and their entries share `trackers.json`, with entries stored apart from the tracker records as the spec requires. — assumed, revisit
+
+### Step 8 — weekly review
+
+138. **Window:** `end` (default today) and the 6 days before it, inclusive. `done_at` is a timestamp and is compared by its local calendar date on the server. — assumed, revisit
+139. **"Slipped" uses the real today**, even with an explicit past `end`. Open tasks count if due in the window and before today; a task due today has not slipped yet. Open reminders count if dated anywhere in the window, including today. A reopened task has no `done_at`, so it does not appear under Done. — assumed, revisit
+140. **Scaled targets are rounded to 2 decimals** after scaling. Weekly is × 1, monthly × 7 / 30.4375, yearly × 7 / 365.25. A tracker without a target shows its 7-day total alone. — assumed, revisit
+141. **The review page is not in the left nav**, since the spec calls it an on-demand page. It opens from a link on the Organise overview, and at `#/organise-review`. Clicking a task or reminder in the review opens it in its own page. — assumed, revisit
+
+### Step 9 — auto-suggest and rules
+
+142. **A "pattern" is the signal that fired**: `date:<name>` (iso, d_mon, mon_d, weekday, today, tomorrow, on_the_nth) or `verb:<word>`. Counts and muting are kept per pattern, never per text. — assumed, revisit
+143. **Dates a suggestion pre-fills.**
+    - "d Mon" and "Mon d" mean the next such day on or after today, so "1 Oct" said on 14 October means next year. A weekday name is its next occurrence on or after today, so "Wednesday" said on a Wednesday is today. "On the Nth" is this month if it is still to come, otherwise the next month that has that day.
+    - Only full weekday names count. "Mon" is not used for Monday, to avoid clashing with month abbreviations.
+    - When several date patterns match, the first in this order wins: iso, d_mon, mon_d, today, tomorrow, on_the_nth, weekday. — assumed, revisit
+144. **The verb signal is the first word only**, lower-cased with punctuation removed ("Buy, stamps" counts; "please buy stamps" does not). — assumed, revisit
+145. **Muting.** "Three dismissals in a row" counts dismissals of one pattern across all items since its last Accept; an Accept resets the run. A dismissed chip is also hidden for that one item. Unmuting resets the run. — assumed, revisit
+146. **Accept** (`POST /api/organise/suggest/:id/accept` with `{ pattern }`; `:id` is the inbox item) records the accept and returns `{ type, prefill }`. It never changes the item: the UI opens the sort form on that type with the date pre-filled, and nothing is saved until Save. — assumed, revisit
+147. **For unmute, the route's `:id` is the pattern itself** (`POST /api/organise/suggest/verb%3Abuy/unmute`), because muting is per pattern and the spec gives all three suggest routes an `:id`. Unmuting a pattern that is not muted returns 404. — assumed, revisit
+148. **Rules live in `rules.json`:** the verb list (editable; single words of 1–30 letters, lower-cased and de-duplicated, at most 100), on/off flags per date pattern, per-pattern counts, and per-item dismissals. The settings appear in a new "Organise suggestions" section on the existing Settings page. — assumed, revisit
+
+### Step 10 — search, filters, Today strip, export, Overview panels
+
+149. **Search** (`GET /api/organise/search?q=`) is a case-insensitive substring match on title, notes, checklist text and the item's project name; a project also matches on its own name. Results are grouped by type and sorted by title. An empty `q` returns nothing; more than 200 characters returns 400. It runs when you press Enter in the search box. — assumed, revisit
+150. **Filters per subpanel**, where the field exists:
+    - Tasks and Reminders: project, status and date range.
+    - Notes: project and date range, since notes have no status.
+    - List rows: project, the list's own statuses, and date range.
+    - Projects: status.
+    - Trackers: project only. Trackers have no status or date of their own; their entries are dated. — assumed, revisit
+151. **The Today strip lists a reminder under "Prepare" only while its date is still to come.** That is: open, `prepare_by` today or earlier, date after today. A reminder dated today or overdue appears once, under Reminders. — assumed, revisit
+152. **No Finance CSV export exists on `main`,** so "the same CSV style as Finance" was implemented exactly as the spec spells it out: a UTF-8 byte-order mark, a header row, every field quoted with quotes doubled, and CRLF line ends. The file has one row per Organise item; trackers and entries are not included. Text fields that start with `=`, `+`, `-` or `@` get a leading `'` so a spreadsheet does not run them as formulas. The HTTP layer gained a small `RawResponse` type so a route can return a non-JSON body. — assumed, revisit
+153. **Overview panels come from a UI panel registry** (`src/dashboard/ui/organise/panels.ts`, one file per panel). The Overview only iterates it, so adding a module's panel never edits the Overview. The panels read `GET /api/organise/overview` (an addition):
+    - Tasks: open, due this week (today to day 6), overdue.
+    - Reminders: the next 30 days with "Prepare:" entries, first 8 shown.
+    - Notes and lists: counts.
+    - Trackers: current progress.
+    - Weekly review: a link.
+    - The step 1 "items by type" list and quick-create were removed from the Overview, since capture is the inbox. — assumed, revisit

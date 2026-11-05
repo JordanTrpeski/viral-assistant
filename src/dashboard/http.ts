@@ -12,6 +12,11 @@ export interface RouteRequest {
   body: unknown;
 }
 
+/** A non-JSON route result (e.g. a CSV download). */
+export class RawResponse {
+  constructor(readonly body: string | Buffer, readonly contentType: string, readonly filename?: string) {}
+}
+
 export type RouteHandler = (request: RouteRequest) => Promise<unknown> | unknown;
 
 interface Route {
@@ -134,6 +139,10 @@ export async function handleRequest(router: Router, statics: StaticResolver, req
       body = await readBody(request);
     }
     const result = await matched.route.handler({ params: matched.params, query: url.searchParams, body });
+    if (result instanceof RawResponse) {
+      response.writeHead(200, { "content-type": result.contentType, "cache-control": "no-store", ...(result.filename ? { "content-disposition": `attachment; filename="${result.filename}"` } : {}) }).end(result.body);
+      return;
+    }
     sendJson(response, matched.route.status, result ?? {});
   } catch (error) {
     if (error instanceof ValidationError) sendJson(response, 400, { error: error.message });
@@ -149,14 +158,14 @@ const contentTypes: Record<string, string> = {
 };
 
 /**
- * Serves the page and stylesheet from `uiSourceDir`, and compiled browser modules from `distDir/ui` and
- * `distDir/shared` under `/assets/`. File names are restricted to a safe pattern, so no path can escape.
+ * Serves the page and stylesheet from `uiSourceDir`, and compiled browser modules from `distDir/ui`,
+ * `distDir/ui/organise` and `distDir/shared` under `/assets/`. File names are restricted to a safe pattern, so no path can escape.
  */
 export function dashboardStatics(uiSourceDir: string, distDir: string): StaticResolver {
   return (path) => {
     if (path === "/" || path === "/index.html") return { path: join(uiSourceDir, "index.html"), contentType: contentTypes[".html"]! };
     if (path === "/styles.css") return { path: join(uiSourceDir, "styles.css"), contentType: contentTypes[".css"]! };
-    const asset = /^\/assets\/(ui|shared)\/([a-z0-9-]+\.js)$/.exec(path);
+    const asset = /^\/assets\/(ui|ui\/organise|shared)\/([a-z0-9-]+\.js)$/.exec(path);
     if (asset) return { path: join(distDir, asset[1]!, asset[2]!), contentType: contentTypes[extname(asset[2]!)]! };
     return null;
   };
