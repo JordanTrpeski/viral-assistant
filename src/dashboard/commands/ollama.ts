@@ -80,8 +80,17 @@ export class OllamaProposer implements Proposer {
     const prompt = buildPrompt(input.text, input.today, categories);
     const result = await this.model.infer({ input: prompt, model: this.config.model, timeoutMs: this.config.timeoutMs });
     if (!result.succeeded) {
-      // Timeout or Ollama unavailable: a distinct reply, logged, no retry, never thrown.
-      console.error(`[chat] Ollama proposer could not reach the model: ${result.error ?? "unknown error"}${result.timedOut ? " (timeout)" : ""}`);
+      // Timeout or Ollama unavailable: a distinct reply, logged, no retry, never thrown. The real low-level
+      // cause lives in result.diagnostics (the underlying fetch error or HTTP body) and result.statusCode, so
+      // log them too — the generic error alone ("Ollama is unavailable") does not say why. The reply is unchanged.
+      const parts = [
+        `model=${this.config.model}`,
+        `timeoutMs=${this.config.timeoutMs}`,
+        result.timedOut ? "timedOut=true" : null,
+        result.statusCode === null ? null : `status=${result.statusCode}`,
+        result.diagnostics.length ? `detail=${result.diagnostics.join("; ")}` : null
+      ].filter(Boolean).join(" ");
+      console.error(`[ollama] proposer could not reach the model: ${result.error ?? "unknown error"} (${parts})`);
       return { kind: "reply", text: unavailableReply };
     }
     const parsed = parseProposal(result.output);
