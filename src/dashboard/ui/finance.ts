@@ -5,7 +5,7 @@ import { monthOf } from "../shared/dates.js";
 import { formatCents, parseEuroToCents } from "../shared/money.js";
 import { budgetStatus } from "../shared/budget-status.js";
 import { api, save, type AppContext } from "./api.js";
-import { loadBudget, shortDate } from "./budget-view.js";
+import { loadBudget } from "./budget-view.js";
 import { focusKey, h } from "./dom.js";
 
 type Tab = "transactions" | "budget" | "categories";
@@ -187,14 +187,7 @@ async function budgetTab(context: AppContext, _categories: Category[]): Promise<
       h("table", { class: "grid-table budget-table" },
         h("thead", {}, h("tr", {}, ...headers.map((label) => h("th", label === "Category" || label === "Status" ? {} : { class: "num" }, label)))),
         h("tbody", {}, ...(bodyRows.length ? bodyRows : [h("tr", {}, h("td", { colspan: headers.length, class: "empty" }, "No categories with budgets yet."))])),
-        h("tfoot", {}, totalRow))),
-    h("section", { class: "panel" },
-      h("h3", {}, "Committed bills this month"),
-      h("p", { class: "muted small" }, `Fixed bills are committed for the month · ${formatCents(month.committedCents)}`),
-      month.committed.length
-        ? h("ul", { class: "committed" }, ...month.committed.map((bill) =>
-          h("li", {}, h("span", { class: "muted" }, shortDate(bill.date)), h("span", {}, bill.label), h("span", { class: "amount" }, formatCents(bill.amountCents)))))
-        : h("div", { class: "muted small" }, "No fixed bills this month.")));
+        h("tfoot", {}, totalRow))));
 }
 
 function amountInputAllowZero(cents: number, onChange: (cents: number) => void, context: AppContext, key: string): HTMLInputElement {
@@ -214,7 +207,7 @@ function amountInputAllowZero(cents: number, onChange: (cents: number) => void, 
 }
 
 function categoriesTab(context: AppContext, categories: Category[]): HTMLElement {
-  const draft = { name: "", kind: "flexible" as Category["kind"], spreadWeekly: true };
+  const draft = { name: "", kind: "flexible" as Category["kind"], spreadWeekly: false };
   // Only Expense and Income can be chosen. "Fixed" is offered solely when the category is already fixed, so an
   // existing fixed category keeps its stored kind until the owner deliberately changes it.
   const kindSelect = (value: Category["kind"], onChange: (kind: Category["kind"]) => void, key?: string): HTMLSelectElement => {

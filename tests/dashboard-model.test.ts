@@ -191,7 +191,7 @@ test("finance: categories are created as Fixed or Flexible (or Income), renamed,
   await withTempDir(async (directory) => {
     const finance = openFinance(directory);
     const gym = await finance.createCategory({ name: "Gym membership", kind: "fixed" });
-    assert.deepEqual(gym, { id: "gym-membership", name: "Gym membership", kind: "fixed", spreadWeekly: true });
+    assert.deepEqual(gym, { id: "gym-membership", name: "Gym membership", kind: "fixed", spreadWeekly: false });
     await assert.rejects(finance.createCategory({ name: "gym MEMBERSHIP", kind: "flexible" }), /already exists/);
     await assert.rejects(finance.createCategory({ name: "Cats", kind: "sometimes" }), /kind must be one of/);
     assert.equal((await finance.updateCategory(gym.id, { name: "Gym" })).name, "Gym");

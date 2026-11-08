@@ -212,8 +212,10 @@ export function registerOverviewRoutes(router: Router, context: DashboardContext
       today: date,
       nextSevenDays: nextSevenDays(items, date),
       reminders: reminderPanel(items, date),
-      // Read-only on the Overview: no stepCents, so the budget widget exposes no edit control. Targets are edited in Finance.
-      budget: { date, week: weekBudget(document, date), month: monthBudget(document, monthOf(date)) }
+      // Read-only on the Overview: no stepCents, so the budget widget exposes no edit control. Targets are edited in
+      // Finance. The week view uses the same daily-rate allowance as the Budget tab (spread categories only); the
+      // month view keeps every category.
+      budget: { date, month: monthBudget(document, monthOf(date)), weekly: weeklyAllowanceBudget(document, date) }
     };
   });
 }
