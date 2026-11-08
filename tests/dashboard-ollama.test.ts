@@ -75,6 +75,29 @@ test("ollama proposer: a timeout returns the unavailable reply and never throws"
   assert.deepEqual(await proposer({ succeeded: false, error: "Ollama is unavailable" }).propose(input), { kind: "reply", text: unavailableReply });
 });
 
+test("ollama proposer: a failure logs the real cause (status and diagnostics) with an [ollama] prefix, and the reply text is unchanged", async () => {
+  const model: LocalModel = {
+    id: "ollama", displayName: "Ollama",
+    probe: () => Promise.resolve({ provider: "ollama", displayName: "Ollama", executable: "ollama", installed: true, running: true, usable: true, version: "test", models: ["m"], preferredModel: "m", diagnostics: [] }),
+    infer: () => Promise.resolve({
+      provider: "ollama", model: "m", succeeded: false, output: "", startedAt: "", finishedAt: "", durationMs: 1,
+      statusCode: 500, timedOut: false, cancelled: false, error: "Ollama returned HTTP 500", diagnostics: ["connect ECONNREFUSED 127.0.0.1:11434"]
+    })
+  };
+  const failing = new OllamaProposer(model, { model: "qwen3:4b-instruct", timeoutMs: 30_000 }, () => Promise.resolve(defaultCategories));
+  const logs: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => { logs.push(args.map(String).join(" ")); };
+  let reply: ProposerResult;
+  try { reply = await failing.propose(input); } finally { console.error = original; }
+  assert.deepEqual(reply, { kind: "reply", text: unavailableReply }, "the fixed fallback reply is unchanged");
+  assert.equal(logs.length, 1);
+  assert.match(logs[0]!, /^\[ollama\] proposer could not reach the model:/);
+  assert.match(logs[0]!, /connect ECONNREFUSED 127\.0\.0\.1:11434/, "the underlying diagnostic is logged");
+  assert.match(logs[0]!, /status=500/);
+  assert.match(logs[0]!, /model=qwen3:4b-instruct/);
+});
+
 test("ollama proposer: a <think> reasoning block is stripped before the JSON is parsed", async () => {
   const result = await proposer({ output: '<think>They spent ten euros on groceries today.</think>\n{"action":"add_expense","fields":{"amount":10,"category":"Groceries"}}' }).propose(input);
   assert.equal(proposalOf(result).action, "add_expense");
