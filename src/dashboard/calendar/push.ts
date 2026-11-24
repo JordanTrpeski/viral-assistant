@@ -64,10 +64,19 @@ export interface EventBodyContext {
  * zone (end = start + 30 minutes; the app has no per-item end time yet). The item id and category id go into
  * private extended properties so the link can be rebuilt if links.json is lost. Colour is set per category.
  */
+const DONE_PREFIX = "✓ Done: ";
+
+/** The Google event title: a completed deadline is prefixed "✓ Done: " (colour unchanged); events never are. */
+export function eventSummary(item: Item): string {
+  if (item.kind !== "task") return item.title;
+  const clean = item.title.startsWith(DONE_PREFIX) ? item.title.slice(DONE_PREFIX.length) : item.title;
+  return item.status === "done" ? `${DONE_PREFIX}${clean}` : item.title;
+}
+
 export function buildEventBody(item: Item, context: EventBodyContext): Record<string, unknown> {
   const zone = item.timeZone && item.timeZone.trim() !== "" ? item.timeZone : context.zone;
   const body: Record<string, unknown> = {
-    summary: item.title,
+    summary: eventSummary(item),
     reminders: { useDefault: false, overrides: reminderOverrides(context.leadDays) },
     extendedProperties: { private: { viralItemId: item.id, viralCategoryId: context.categoryId ?? "" } }
   };

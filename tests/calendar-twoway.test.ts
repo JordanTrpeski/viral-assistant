@@ -20,7 +20,7 @@ function timedItem(date: string, time: string, over: Partial<Item> = {}): Item {
   return {
     id: over.id ?? "item-1", kind: over.kind ?? "task", title: over.title ?? "Thing",
     categoryId: over.categoryId ?? null, subcategoryId: null, allDay: over.allDay ?? false, date, time: over.time !== undefined ? over.time : time, timeZone: ZONE,
-    dueDate: null, plannedDate: null, priority: "normal", status: "open", recurrence: over.recurrence ?? null,
+    dueDate: null, plannedDate: null, priority: "normal", status: over.status ?? "open", recurrence: over.recurrence ?? null,
     leadTimes: over.leadTimes ?? null, snoozedUntil: null, created: "x", updated: over.updated ?? "2027-01-01T00:00:00Z"
   };
 }
@@ -89,6 +89,29 @@ test("5b: a deadline pushes whether timed or all-day; an all-day event stays in 
 test("5b: an all-day Google event parses to an all-day app item on its date", () => {
   const fields = parseEventForPull({ summary: "Holiday", start: { date: "2027-02-10" }, end: { date: "2027-02-11" } }, ZONE)!;
   assert.deepEqual([fields.date, fields.time, fields.allDay], ["2027-02-10", null, true]);
+});
+
+test("5b: a completed deadline gets the ✓ prefix; un-ticking removes it; renaming keeps it; events never get it", () => {
+  const ctx = { colorId: null, leadDays: [], categoryId: null, zone: ZONE };
+  const titleOf = (over: Partial<Item>): unknown => buildEventBody(timedItem("2027-02-10", "09:00", { kind: "task", ...over }), ctx).summary;
+  assert.equal(titleOf({ title: "Essay", status: "open" }), "Essay");
+  assert.equal(titleOf({ title: "Essay", status: "done" }), "✓ Done: Essay", "ticking adds the prefix");
+  assert.equal(titleOf({ title: "Essay final", status: "done" }), "✓ Done: Essay final", "renaming while done keeps the prefix");
+  assert.equal(titleOf({ title: "✓ Done: Essay", status: "done" }), "✓ Done: Essay", "no double prefix");
+  assert.equal(buildEventBody(timedItem("2027-02-10", "09:00", { kind: "reminder", title: "Birthday", status: "done" }), ctx).summary, "Birthday", "events are never prefixed");
+});
+
+test("5b: completing a deadline pushes the ✓ Done title on the next sync", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Pay tax", date: "2027-02-10", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+    h.setNow("2027-01-02T00:00:00.000Z");
+    await h.service.completeItem(item.id);
+    await h.two.reconcile();
+    assert.equal((h.google.events.get(eventId) as { summary: string }).summary, "✓ Done: Pay tax");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
 });
 
 // ---- reconciler over a simulated calendar -------------------------------------------------------------------

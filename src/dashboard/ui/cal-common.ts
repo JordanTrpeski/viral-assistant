@@ -47,7 +47,7 @@ export function eventRow(event: DisplayEvent): HTMLElement {
   return h("div", { class: `cal-row event${event.dimmed ? " dimmed" : ""}${event.highlight ? " highlight" : ""}` },
     h("span", { class: "cal-when" }, when),
     h("span", { class: "cal-title" }, event.title),
-    h("span", { class: "cal-cal" }, event.calendarName));
+    h("span", { class: "cal-cal" }, `from ${event.calendarName}`));
 }
 
 export function renderTodayStrip(strip: TodayStrip): HTMLElement {
