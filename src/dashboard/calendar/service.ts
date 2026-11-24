@@ -160,6 +160,17 @@ export class CalendarService {
     });
   }
 
+  /** Sets a category's Google event colour id (phase 5). null clears it (Google default). Nothing is pushed here. */
+  async setCategoryColour(categoryId: string, colour: string | null): Promise<Category> {
+    await this.purge();
+    return this.store.update((draft) => {
+      const category = draft.categories.find((candidate) => candidate.id === categoryId);
+      if (!category) throw new NotFoundError("category", categoryId);
+      category.colour = colour;
+      return category;
+    });
+  }
+
   async deleteCategory(categoryId: string): Promise<void> {
     await this.purge();
     await this.store.update((draft) => {

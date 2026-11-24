@@ -2,6 +2,8 @@
 // settings and per-calendar display prefs. Backed by the phase-1 CalendarService and the phase-3 events store.
 // Nothing here writes to Google. Kept separate from server.ts so the screens stay decoupled from the wiring.
 import { RawResponse, type Router } from "../http.js";
+import { ValidationError } from "../errors.js";
+import { ReconnectRequiredError } from "./google.js";
 import { localIsoDate, monthOf, type IsoMonth } from "../shared/dates.js";
 import { requireDate, requireMonth, isObject } from "../validation.js";
 import type { DashboardContext } from "../server.js";
@@ -26,7 +28,40 @@ export function registerCalendarAppRoutes(router: Router, context: DashboardCont
       for (const name of defaultCategoryNames) await calendar.createCategory({ name });
       categories = await calendar.listCategories();
     }
-    return categories.map((category) => ({ id: category.id, name: category.name }));
+    return categories.map((category) => ({ id: category.id, name: category.name, colour: category.colour }));
+  });
+
+  // Per-category Google event colour (phase 5). The colour id must be a key from /api/calendar/google/colours.
+  router.add("PATCH", "/api/calendar/categories/:id/colour", ({ params, body }) => {
+    const colour = isObject(body) && (typeof body.colour === "string" || body.colour === null) ? body.colour : null;
+    return calendar.setCategoryColour(params.id!, colour);
+  });
+
+  // The write target: a writable calendar that receives pushed items. The list shows only writable calendars.
+  router.add("GET", "/api/calendar/google/write-target", async () => {
+    const document = await context.calendarEvents.read();
+    const writable = document.calendars.filter((entry) => !entry.readOnly).map((entry) => ({ id: entry.id, name: entry.name }));
+    return { writeCalendarId: document.writeCalendarId, writable };
+  });
+  router.add("PATCH", "/api/calendar/google/write-target", async ({ body }) => {
+    const chosen = isObject(body) && (typeof body.writeCalendarId === "string" || body.writeCalendarId === null) ? body.writeCalendarId : undefined;
+    if (chosen === undefined) throw new ValidationError("writeCalendarId must be a calendar id or null");
+    return context.calendarEvents.update((draft) => {
+      if (chosen !== null) {
+        const target = draft.calendars.find((entry) => entry.id === chosen);
+        if (!target) throw new ValidationError("unknown calendar");
+        if (target.readOnly) throw new ValidationError("that calendar is read-only; writes are only allowed to an owner/writer calendar");
+      }
+      draft.writeCalendarId = chosen;
+      return { writeCalendarId: draft.writeCalendarId };
+    });
+  });
+
+  // The Google event colour palette, read at runtime (never hardcoded). Any failure returns an empty palette so
+  // the Settings page still renders; the user reconnects or syncs to populate it.
+  router.add("GET", "/api/calendar/google/colours", async () => {
+    try { return { colours: await context.googleCalendar.eventColours() }; }
+    catch (error) { return { reconnect: error instanceof ReconnectRequiredError, colours: {} }; }
   });
 
   router.add("GET", "/api/calendar/settings", () => calendar.getSettings());

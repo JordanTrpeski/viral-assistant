@@ -26,6 +26,7 @@ function eventsDoc(prefs: EventsDocument["prefs"] = {}): EventsDocument {
       { calendarId: "holidays", eventId: "h1", title: "Holiday", allDay: true, start: null, end: null, date: "2026-11-27", time: null, endTime: null, endDate: "2026-11-27", timeZone: "Europe/Ljubljana", status: "confirmed", colour: "#abc" }
     ],
     prefs,
+    writeCalendarId: null,
     lastSync: null
   };
 }

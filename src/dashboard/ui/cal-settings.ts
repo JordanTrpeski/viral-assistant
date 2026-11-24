@@ -4,8 +4,11 @@
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
 
-interface GoogleStatus { clientPresent: boolean; connected: boolean; account: string | null; }
-interface SyncResult { line: string; reconnect: boolean; lastSync: string | null; }
+interface GoogleStatus { clientPresent: boolean; connected: boolean; account: string | null; writeScope: boolean; }
+interface SyncResult { line: string; readOnly?: string; reconnect: boolean; lastSync: string | null; }
+interface WriteTarget { writeCalendarId: string | null; writable: { id: string; name: string }[]; }
+interface Category { id: string; name: string; colour: string | null; }
+type Palette = Record<string, { background: string; foreground: string }>;
 interface PrefRow { id: string; name: string; readOnly: boolean; highlight: boolean; hidden: boolean; }
 interface CalendarSettings { timeZone: string; allDayReminderTime: string; trashDays: number; }
 
@@ -35,6 +38,11 @@ export async function renderCalendarSettings(container: HTMLElement, context: Ap
   }
   children.push(connectionPanel);
 
+  // --- Write access warning ---------------------------------------------
+  if (status.connected && !status.writeScope) {
+    connectionPanel.append(h("p", { class: "muted small", style: "color: var(--bills)" }, "Read-only access only. Reconnect Google to grant write access before pushing items to your calendar."));
+  }
+
   // --- Sync --------------------------------------------------------------
   if (status.connected) {
     const line = h("p", { class: "muted small" }, lastSyncText(null));
@@ -43,7 +51,7 @@ export async function renderCalendarSettings(container: HTMLElement, context: Ap
       try {
         const result = await api<SyncResult>("POST", "/api/calendar/google/sync");
         context.notify(result.line);
-        line.textContent = result.reconnect ? result.line : `${result.line} ${lastSyncText(result.lastSync)}`;
+        line.textContent = result.reconnect ? result.line : `${result.line}${result.readOnly ? ` ${result.readOnly}` : ""} ${lastSyncText(result.lastSync)}`;
         await renderCalendarSettings(container, context);
       } catch (error) { line.textContent = (error as Error).message; }
     } }, "Sync now");
@@ -62,6 +70,32 @@ export async function renderCalendarSettings(container: HTMLElement, context: Ap
         return h("tr", {}, h("td", {}, row.name), h("td", { class: "muted" }, row.readOnly ? "read-only" : "writable"), h("td", {}, show), h("td", {}, highlight));
       }) : [h("tr", {}, h("td", {}, "No calendars yet — Sync now."))])));
     children.push(h("div", { class: "panel" }, h("h3", {}, "Calendars"), h("p", { class: "muted small" }, "Show/hide and highlight are stored in the app only; they never change Google or the stored events."), prefTable));
+
+    // --- Write target: which writable calendar receives pushed items -----
+    const target = await api<WriteTarget>("GET", "/api/calendar/google/write-target");
+    const targetSelect = h("select", {}, h("option", { value: "" }, "— none (don't push) —"), ...target.writable.map((calendar) => h("option", { value: calendar.id }, calendar.name)));
+    if (target.writeCalendarId) (targetSelect as HTMLSelectElement).value = target.writeCalendarId;
+    targetSelect.addEventListener("change", () => save(context, () => api("PATCH", "/api/calendar/google/write-target", { writeCalendarId: (targetSelect as HTMLSelectElement).value || null })));
+    children.push(h("div", { class: "panel" }, h("h3", {}, "Push target"), h("p", { class: "muted small" }, "Timed items are pushed only to this writable calendar. Defaults to \"Viral test\"; never the primary."), h("div", { class: "addbar" }, targetSelect)));
+
+    // --- Category colours from Google's palette --------------------------
+    const coloursResult = await api<{ colours?: Palette; reconnect?: boolean }>("GET", "/api/calendar/google/colours");
+    const palette = coloursResult.colours ?? {};
+    const categories = await api<Category[]>("GET", "/api/calendar/categories");
+    const colourRows = categories.map((category) => {
+      const select = h("select", {}, h("option", { value: "" }, "Google default"), ...Object.keys(palette).map((id) => h("option", { value: id }, `Colour ${id}`)));
+      if (category.colour) (select as HTMLSelectElement).value = category.colour;
+      const swatch = h("span", { class: "swatch", style: `background:${category.colour && palette[category.colour] ? palette[category.colour]!.background : "transparent"}` });
+      select.addEventListener("change", () => {
+        const value = (select as HTMLSelectElement).value || null;
+        swatch.setAttribute("style", `background:${value && palette[value] ? palette[value]!.background : "transparent"}`);
+        void api("PATCH", `/api/calendar/categories/${encodeURIComponent(category.id)}/colour`, { colour: value });
+      });
+      return h("tr", {}, h("td", {}, category.name), h("td", {}, swatch), h("td", {}, select));
+    });
+    children.push(h("div", { class: "panel" }, h("h3", {}, "Category colours"),
+      h("p", { class: "muted small" }, Object.keys(palette).length ? "Pushed events use their category's colour. Google owns the colour only if you change it in Google; the next push overwrites it." : "Colours load from Google once connected with write access."),
+      h("table", { class: "grid-table" }, h("tbody", {}, ...colourRows))));
   }
 
   // --- Default time zone -------------------------------------------------

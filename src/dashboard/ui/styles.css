@@ -333,3 +333,4 @@ a.item-row { color: var(--text); text-decoration: none; }
 .addbar .grow { flex: 1; min-width: 160px; }
 .addbar .narrow { width: 90px; }
 a.button { display: inline-block; text-decoration: none; padding: 6px 12px; border-radius: 6px; }
+.swatch { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--line); vertical-align: middle; }

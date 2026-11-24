@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { CALENDAR_READONLY_SCOPE, GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError, describeAuthRequest, parseCalendarList, type GoogleClientConfig, type HttpResponse } from "../src/dashboard/calendar/google.js";
+import { CALENDAR_EVENTS_SCOPE, CALENDAR_READONLY_SCOPE, CALENDAR_SCOPES, GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError, describeAuthRequest, parseCalendarList, type GoogleClientConfig, type HttpResponse } from "../src/dashboard/calendar/google.js";
 
 const clientJson = JSON.stringify({ installed: { client_id: "cid", client_secret: "secret", auth_uri: "https://accounts.google.com/o/oauth2/auth", token_uri: "https://oauth2.googleapis.com/token" } });
 const tokenJson = JSON.stringify({ refreshToken: "rt", account: "a@example.com", scope: "https://www.googleapis.com/auth/calendar.readonly", obtainedAt: "2026-11-01T00:00:00.000Z" });
@@ -50,7 +50,8 @@ test("google: the sign-in URL carries every parameter Google's installed-app flo
   assert.equal(query.get("response_type"), "code", "response_type=code is present");
   assert.equal(query.get("client_id"), config.clientId);
   assert.equal(query.get("redirect_uri"), redirectUri, "the 127.0.0.1 loopback redirect");
-  assert.equal(query.get("scope"), CALENDAR_READONLY_SCOPE, "read-only Calendar scope only");
+  assert.equal(query.get("scope"), CALENDAR_SCOPES, "read-only + events scopes");
+  assert.ok(query.get("scope")!.includes(CALENDAR_READONLY_SCOPE) && query.get("scope")!.includes(CALENDAR_EVENTS_SCOPE), "both calendar scopes are requested");
   assert.equal(query.get("state"), "fake-state");
   assert.equal(query.get("code_challenge"), "fake-code-challenge");
   assert.equal(query.get("code_challenge_method"), "S256");
@@ -100,7 +101,7 @@ test("google: the browser opener receives the full sign-in URL with every query 
   assert.equal(params.get("response_type"), "code", "response_type=code survived");
   assert.equal(params.get("client_id"), config.clientId);
   assert.equal(params.get("redirect_uri"), redirectUri);
-  assert.equal(params.get("scope"), CALENDAR_READONLY_SCOPE);
+  assert.equal(params.get("scope"), CALENDAR_SCOPES);
   assert.equal(params.get("access_type"), "offline");
   assert.equal(params.get("prompt"), "consent");
   assert.equal(params.get("code_challenge"), "fake-code-challenge");
@@ -108,6 +109,28 @@ test("google: the browser opener receives the full sign-in URL with every query 
   assert.equal(params.get("state"), "fake-state-value");
   assert.equal(params.size, 9, "all nine &-joined parameters are present");
   assert.ok(logs.some((line) => line.includes("9 query params")), "logs the parameter count before opening");
+});
+
+test("google: event colours come from the palette endpoint and are not hardcoded", async () => {
+  const http = async (request: { url: string }): Promise<HttpResponse> => {
+    if (request.url.includes("oauth2.googleapis.com/token")) return { status: 200, json: { access_token: "at", expires_in: 3599 } };
+    if (request.url.includes("/colors")) return { status: 200, json: { event: { "5": { background: "#fbd75b", foreground: "#1d1d1d" }, "11": { background: "#dc2127", foreground: "#1d1d1d" } }, calendar: {} } };
+    throw new Error(`unexpected call to ${request.url}`);
+  };
+  const connection = new GoogleCalendarConnection("/fake/calendar", { readFile: files({ client: clientJson, token: tokenJson }), http });
+  const palette = await connection.eventColours();
+  assert.deepEqual(Object.keys(palette).sort(), ["11", "5"]);
+  assert.equal(palette["5"]!.background, "#fbd75b");
+});
+
+test("google: hasWriteScope is false for an old read-only token and true once events scope is granted", async () => {
+  const readOnly = new GoogleCalendarConnection("/fake/calendar", { readFile: files({ client: clientJson, token: tokenJson }) });
+  assert.equal(await readOnly.hasWriteScope(), false, "the phase-2 token has no write scope");
+  assert.equal((await readOnly.status()).writeScope, false);
+
+  const writeTokenJson = JSON.stringify({ refreshToken: "rt", account: "a@example.com", scope: `${CALENDAR_READONLY_SCOPE} ${CALENDAR_EVENTS_SCOPE}`, obtainedAt: "2026-11-01T00:00:00.000Z" });
+  const writable = new GoogleCalendarConnection("/fake/calendar", { readFile: files({ client: clientJson, token: writeTokenJson }) });
+  assert.equal(await writable.hasWriteScope(), true, "reconnecting with the events scope enables writes");
 });
 
 test("google: a missing client file gives a clear message that says where to put it", async () => {

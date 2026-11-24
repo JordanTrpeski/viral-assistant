@@ -57,12 +57,14 @@ export interface EventsDocument {
   events: StoredEvent[];
   /** calendarId → display preference. */
   prefs: Record<string, CalendarPref>;
+  /** The writable calendar that receives pushed items (phase 5). null = push nowhere. Never the primary by default. */
+  writeCalendarId: string | null;
   /** ISO time of the last successful sync, or null if none has run. */
   lastSync: string | null;
 }
 
 export function emptyEventsDocument(): EventsDocument {
-  return { schemaVersion: 1, calendars: [], events: [], prefs: {}, lastSync: null };
+  return { schemaVersion: 1, calendars: [], events: [], prefs: {}, writeCalendarId: null, lastSync: null };
 }
 
 // ---- The fetcher's vocabulary (implemented for real in google.ts, faked in tests) ---------------------------
@@ -191,6 +193,7 @@ export function validateEventsDocument(value: unknown): EventsDocument {
     calendars: (Array.isArray(value.calendars) ? value.calendars : []).map(validateSyncedCalendar).filter((calendar): calendar is SyncedCalendar => calendar !== null),
     events: (Array.isArray(value.events) ? value.events : []).map(validateStoredEvent).filter((event): event is StoredEvent => event !== null),
     prefs: validatePrefs(value.prefs),
+    writeCalendarId: strOrNull(value.writeCalendarId),
     lastSync: strOrNull(value.lastSync)
   };
 }

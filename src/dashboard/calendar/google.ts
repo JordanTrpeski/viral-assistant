@@ -1,6 +1,6 @@
-// Google Calendar connection (phase 2): read-only sign-in, one stored refresh token, and the calendar list.
-// Read-only scope only (calendar.readonly); write access arrives in phase 5. Network and browser are injected
-// so tests never touch the real Google API. Tokens are never logged.
+// Google Calendar connection: sign-in, one stored refresh token, the calendar list, event reads (phase 3) and,
+// from phase 5, writes (insert/patch) plus the colour palette. Scopes: calendar.readonly + calendar.events.
+// Network and browser are injected so tests never touch the real Google API. Tokens are never logged.
 //
 // Google rules checked 2026-11 (developers.google.com/identity/protocols/oauth2 and .../oauth2/native-app):
 // - A client in "Testing" publishing status gets a refresh token that expires after 7 days (unless only
@@ -17,9 +17,14 @@ import { writeJsonAtomic, type StoreFileSystem } from "../store.js";
 import type { EventFetchRequest, EventFetchResult } from "./events.js";
 
 export const CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+// Phase 5: write access to events. Read-only is kept because reading still needs it.
+export const CALENDAR_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+export const CALENDAR_SCOPES = `${CALENDAR_READONLY_SCOPE} ${CALENDAR_EVENTS_SCOPE}`;
 const REVOKE_URI = "https://oauth2.googleapis.com/revoke";
 const CALENDAR_LIST_URL = "https://www.googleapis.com/calendar/v3/users/me/calendarList";
+const COLORS_URL = "https://www.googleapis.com/calendar/v3/colors";
 const eventsUrl = (calendarId: string): string => `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+const eventUrl = (calendarId: string, eventId: string): string => `${eventsUrl(calendarId)}/${encodeURIComponent(eventId)}`;
 
 export class GoogleClientMissingError extends Error {
   constructor(readonly path: string) {
@@ -65,6 +70,8 @@ export interface GoogleStatus {
   clientPresent: boolean;
   connected: boolean;
   account: string | null;
+  /** True when the stored token was granted the events (write) scope. Writes are refused until this is true. */
+  writeScope: boolean;
 }
 
 export interface HttpResponse {
@@ -72,7 +79,14 @@ export interface HttpResponse {
   json: unknown;
 }
 
-export type HttpClient = (request: { url: string; method: "GET" | "POST"; headers?: Record<string, string>; body?: string }) => Promise<HttpResponse>;
+export type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+export type HttpClient = (request: { url: string; method: HttpMethod; headers?: Record<string, string>; body?: string }) => Promise<HttpResponse>;
+
+/** Result of a write (insert/patch): the raw Google event on success; otherwise a clear, body-free status. */
+export type WriteResult =
+  | { status: "ok"; event: Record<string, unknown> }
+  | { status: "reconnect" }
+  | { status: "error"; error: string };
 
 export interface GoogleOptions {
   fs?: StoreFileSystem;
@@ -128,6 +142,11 @@ export function parseCalendarList(json: unknown): GoogleCalendar[] {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Whether a stored token's granted scopes include the events (write) scope. Old read-only tokens return false. */
+function hasEventsScope(token: StoredToken | null): boolean {
+  return token !== null && token.scope.split(/\s+/).includes(CALENDAR_EVENTS_SCOPE);
 }
 
 const defaultHttp: HttpClient = async ({ url, method, headers, body }) => {
@@ -235,7 +254,12 @@ export class GoogleCalendarConnection {
 
   async status(): Promise<GoogleStatus> {
     const token = await this.loadToken();
-    return { clientPresent: await this.clientPresent(), connected: token !== null, account: token?.account ?? null };
+    return { clientPresent: await this.clientPresent(), connected: token !== null, account: token?.account ?? null, writeScope: hasEventsScope(token) };
+  }
+
+  /** True when the stored token carries the events (write) scope. Writes are refused until the user reconnects. */
+  async hasWriteScope(): Promise<boolean> {
+    return hasEventsScope(await this.loadToken());
   }
 
   /** Deletes the stored refresh token. Best-effort revoke at Google, but the file is always removed. */
@@ -303,11 +327,11 @@ export class GoogleCalendarConnection {
     };
   }
 
-  /** Builds the consent URL for the installed-app flow with PKCE and read-only Calendar scope. */
+  /** Builds the consent URL for the installed-app flow with PKCE, read-only + events (write) Calendar scopes. */
   buildAuthUrl(config: GoogleClientConfig, redirectUri: string, codeChallenge: string, state: string): string {
     const params = new URLSearchParams({
       client_id: config.clientId, redirect_uri: redirectUri, response_type: "code",
-      scope: CALENDAR_READONLY_SCOPE, access_type: "offline", prompt: "consent",
+      scope: CALENDAR_SCOPES, access_type: "offline", prompt: "consent",
       code_challenge: codeChallenge, code_challenge_method: "S256", state
     });
     return `${config.authUri}?${params.toString()}`;
@@ -361,7 +385,43 @@ export class GoogleCalendarConnection {
       obtainedAt: this.now().toISOString()
     };
     await writeJsonAtomic(this.tokenPath, token, this.fs); // one token only; overwrites any previous
-    return { clientPresent: true, connected: true, account };
+    return { clientPresent: true, connected: true, account, writeScope: hasEventsScope(token) };
+  }
+
+  /** The event colour palette from Google (read at runtime, never hardcoded): colour id → {background, foreground}. */
+  async eventColours(): Promise<Record<string, { background: string; foreground: string }>> {
+    const access = await this.accessToken();
+    const response = await this.http({ url: COLORS_URL, method: "GET", headers: { authorization: `Bearer ${access}` } });
+    if (response.status === 401 || response.status === 403) throw new ReconnectRequiredError("Reconnect Google: access was refused.");
+    if (response.status < 200 || response.status >= 300 || !isObject(response.json)) throw new Error(`Google colours failed: HTTP ${response.status}`);
+    const event = isObject(response.json.event) ? response.json.event : {};
+    const palette: Record<string, { background: string; foreground: string }> = {};
+    for (const [id, value] of Object.entries(event)) {
+      if (isObject(value) && typeof value.background === "string" && typeof value.foreground === "string") {
+        palette[id] = { background: value.background, foreground: value.foreground };
+      }
+    }
+    return palette;
+  }
+
+  /** Creates an event on a calendar. 401/403 → reconnect; other non-2xx → error. Never throws for HTTP status. */
+  async insertEvent(calendarId: string, body: Record<string, unknown>): Promise<WriteResult> {
+    return this.write("POST", eventsUrl(calendarId), body);
+  }
+
+  /** Patches an existing event (only the fields in `body`). Same error handling as insertEvent. */
+  async patchEvent(calendarId: string, eventId: string, body: Record<string, unknown>): Promise<WriteResult> {
+    return this.write("PATCH", eventUrl(calendarId, eventId), body);
+  }
+
+  private async write(method: HttpMethod, url: string, body: Record<string, unknown>): Promise<WriteResult> {
+    let access: string;
+    try { access = await this.accessToken(); }
+    catch (error) { if (error instanceof ReconnectRequiredError) return { status: "reconnect" }; throw error; }
+    const response = await this.http({ url, method, headers: { authorization: `Bearer ${access}`, "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (response.status === 401 || response.status === 403) return { status: "reconnect" };
+    if (response.status < 200 || response.status >= 300 || !isObject(response.json)) return { status: "error", error: `HTTP ${response.status}` };
+    return { status: "ok", event: response.json };
   }
 
   /** Best-effort account label (email) for display, from the userinfo endpoint; null if it cannot be read. */
