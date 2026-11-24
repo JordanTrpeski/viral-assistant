@@ -10,6 +10,7 @@ import { writeJsonAtomic, type JsonDocumentStore, type StoreFileSystem } from ".
 import type { CalendarDocument, Item, ItemStatus, Priority } from "./model.js";
 
 export const ORGANISE_V1 = "organise-v1";
+export const DEADLINE_RANGE_V1 = "deadline-range-v1";
 const timePattern = /^\d{2}:\d{2}$/;
 const PRIORITIES = new Set<Priority>(["low", "normal", "high"]);
 
@@ -113,6 +114,52 @@ export function planMigration(sources: { dashboardReminders: unknown; organiseIt
   }
 
   return { items, exported, reminders, tasks };
+}
+
+function earliest(dates: (string | null)[]): string | null {
+  const present = dates.filter((date): date is string => typeof date === "string" && date !== "");
+  return present.length ? present.reduce((a, b) => (a < b ? a : b)) : null;
+}
+
+/**
+ * Phase 5b: collapse a deadline's old date range to a single due date (its start), and flag an untimed deadline
+ * all-day. Mutates the document, bumps `updated` on changed items so they re-sync, and returns how many were
+ * touched. Pure apart from the passed `now`.
+ */
+export function collapseDeadlineRanges(document: CalendarDocument, now: string): number {
+  let touched = 0;
+  for (const item of document.items) {
+    if (item.kind !== "task") continue;
+    const start = earliest([item.plannedDate, item.dueDate, item.date]) ?? item.date;
+    const nextAllDay = item.time === null ? true : item.allDay;
+    if (item.plannedDate === null && item.date === start && item.dueDate === start && item.allDay === nextAllDay) continue;
+    item.date = start;
+    item.dueDate = start;
+    item.plannedDate = null;
+    item.allDay = nextAllDay;
+    item.updated = now;
+    touched += 1;
+  }
+  return touched;
+}
+
+/** Runs {@link collapseDeadlineRanges} once, recorded in the store, safe to re-run. */
+export class DeadlineRangeMigration {
+  private readonly clock: () => Date;
+  constructor(private readonly store: JsonDocumentStore<CalendarDocument>, options: { clock?: () => Date } = {}) {
+    this.clock = options.clock ?? (() => new Date());
+  }
+  async run(): Promise<{ alreadyDone: boolean; touched: number }> {
+    const current = await this.store.read();
+    if (current.migrations.includes(DEADLINE_RANGE_V1)) return { alreadyDone: true, touched: 0 };
+    const now = this.clock().toISOString();
+    let touched = 0;
+    await this.store.update((draft) => {
+      touched = collapseDeadlineRanges(draft, now);
+      if (!draft.migrations.includes(DEADLINE_RANGE_V1)) draft.migrations.push(DEADLINE_RANGE_V1);
+    });
+    return { alreadyDone: false, touched };
+  }
 }
 
 export interface MigrationPaths {

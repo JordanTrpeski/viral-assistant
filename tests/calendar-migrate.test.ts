@@ -3,9 +3,18 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { emptyCalendarDocument, validateCalendarDocument, type CalendarDocument } from "../src/dashboard/calendar/model.js";
-import { OrganiseMigration, planMigration } from "../src/dashboard/calendar/migrate.js";
+import { emptyCalendarDocument, validateCalendarDocument, type CalendarDocument, type Item } from "../src/dashboard/calendar/model.js";
+import { collapseDeadlineRanges, DeadlineRangeMigration, OrganiseMigration, planMigration } from "../src/dashboard/calendar/migrate.js";
 import { JsonDocumentStore } from "../src/dashboard/store.js";
+
+function deadline(over: Partial<Item>): Item {
+  return {
+    id: over.id ?? "d1", kind: "task", title: over.title ?? "Essay", categoryId: null, subcategoryId: null,
+    allDay: over.allDay ?? false, date: over.date ?? "2026-12-05", time: over.time ?? null, timeZone: "Europe/Ljubljana",
+    dueDate: over.dueDate ?? null, plannedDate: over.plannedDate ?? null, priority: "normal", status: "open",
+    recurrence: null, leadTimes: null, snoozedUntil: null, created: "x", updated: "x"
+  };
+}
 
 const CONTEXT = { today: "2026-11-24", timeZone: "Europe/Ljubljana", now: "2026-11-24T00:00:00.000Z", newId: counter() };
 
@@ -51,6 +60,40 @@ test("migrate: each old reminder and task keeps its date, and a time when presen
 test("migrate: category is left empty (old categories do not map onto the new seven)", () => {
   const plan = planMigration({ dashboardReminders, organiseItems }, { ...CONTEXT, newId: counter() });
   assert.ok(plan.items.every((item) => item.categoryId === null));
+});
+
+test("migrate: an old deadline date range collapses to its start date and an untimed deadline becomes all-day", () => {
+  const document = emptyCalendarDocument();
+  document.items.push(deadline({ date: "2026-12-05", dueDate: "2026-12-10", plannedDate: "2026-12-01", allDay: false, time: null }));
+  const touched = collapseDeadlineRanges(document, "2027-01-01T00:00:00.000Z");
+  assert.equal(touched, 1);
+  const item = document.items[0]!;
+  assert.deepEqual([item.date, item.dueDate, item.plannedDate], ["2026-12-01", "2026-12-01", null], "the single due date is the range's start");
+  assert.equal(item.allDay, true, "a deadline with no time is all-day");
+  assert.equal(item.updated, "2027-01-01T00:00:00.000Z", "a changed item re-syncs");
+});
+
+test("migrate: a timed single-date deadline is left unchanged by the range collapse", () => {
+  const document = emptyCalendarDocument();
+  document.items.push(deadline({ date: "2026-12-05", dueDate: "2026-12-05", plannedDate: null, allDay: false, time: "09:00" }));
+  assert.equal(collapseDeadlineRanges(document, "2027-01-01T00:00:00.000Z"), 0);
+});
+
+test("migrate: the deadline-range migration runs once, records itself, and is idempotent", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "viral-deadline-"));
+  try {
+    const store = new JsonDocumentStore<CalendarDocument>(join(dir, "store.json"), validateCalendarDocument, emptyCalendarDocument);
+    await store.update((draft) => { draft.items.push(deadline({ plannedDate: "2026-12-01", dueDate: "2026-12-10", time: null })); });
+    const migration = new DeadlineRangeMigration(store, { clock: () => new Date("2027-01-01T00:00:00Z") });
+
+    const first = await migration.run();
+    assert.deepEqual([first.alreadyDone, first.touched], [false, 1]);
+    assert.equal((await store.read()).items[0]!.plannedDate, null);
+    assert.ok((await store.read()).migrations.includes("deadline-range-v1"));
+
+    const second = await migration.run();
+    assert.deepEqual([second.alreadyDone, second.touched], [true, 0], "a re-run does nothing");
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 async function gone(path: string): Promise<boolean> {

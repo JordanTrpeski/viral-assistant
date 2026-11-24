@@ -232,6 +232,9 @@ async function main(): Promise<void> {
       try {
         const migration = await dashboardContext.calendarMigration.run();
         if (!migration.alreadyDone) console.log(`[calendar] migrated old data: ${migration.reminders} reminders, ${migration.tasks} tasks, ${migration.exported} exported.`);
+        // Phase 5b: collapse old deadline date ranges to a single due date (once, recorded in the store).
+        const deadlines = await dashboardContext.deadlineMigration.run();
+        if (!deadlines.alreadyDone) console.log(`[calendar] collapsed ${deadlines.touched} deadline date range(s) to a single due date.`);
       } catch (error) { console.error(`[calendar] migration failed: ${(error as Error).message}`); }
       try {
         if (!(await dashboardContext.googleCalendar.status()).connected) return;

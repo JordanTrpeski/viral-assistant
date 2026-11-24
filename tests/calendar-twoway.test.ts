@@ -6,7 +6,7 @@ import test from "node:test";
 import type { Item } from "../src/dashboard/calendar/model.js";
 import type { WriteResult } from "../src/dashboard/calendar/google.js";
 import { emptyEventsDocument, validateEventsDocument, type EventFetchRequest, type EventFetchResult, type EventsDocument } from "../src/dashboard/calendar/events.js";
-import { buildEventBody, MAX_LEAD_MINUTES, MAX_OVERRIDES, reminderOverrides } from "../src/dashboard/calendar/push.js";
+import { buildEventBody, isPushable, MAX_LEAD_MINUTES, MAX_OVERRIDES, parseEventForPull, reminderOverrides } from "../src/dashboard/calendar/push.js";
 import { CalendarService } from "../src/dashboard/calendar/service.js";
 import { JsonDocumentStore } from "../src/dashboard/store.js";
 import {
@@ -19,7 +19,7 @@ const ZONE = "Europe/Ljubljana";
 function timedItem(date: string, time: string, over: Partial<Item> = {}): Item {
   return {
     id: over.id ?? "item-1", kind: over.kind ?? "task", title: over.title ?? "Thing",
-    categoryId: over.categoryId ?? null, subcategoryId: null, allDay: false, date, time, timeZone: ZONE,
+    categoryId: over.categoryId ?? null, subcategoryId: null, allDay: over.allDay ?? false, date, time: over.time !== undefined ? over.time : time, timeZone: ZONE,
     dueDate: null, plannedDate: null, priority: "normal", status: "open", recurrence: over.recurrence ?? null,
     leadTimes: over.leadTimes ?? null, snoozedUntil: null, created: "x", updated: over.updated ?? "2027-01-01T00:00:00Z"
   };
@@ -64,6 +64,31 @@ test("two-way: colour maps to the category, item/category ids go to private prop
 test("two-way: reminder overrides keep the first 5 and clamp to Google's 40320-minute maximum", () => {
   assert.equal(reminderOverrides([1, 2, 3, 4, 5, 6, 7]).length, MAX_OVERRIDES);
   assert.deepEqual(reminderOverrides([100]), [{ method: "popup", minutes: MAX_LEAD_MINUTES }]);
+});
+
+const recurrence = { freq: "weekly" as const, anchor: "2027-02-10", until: null, skips: [] };
+
+test("5b: a deadline with a time is a timed event; without a time it is an all-day event on its due date", () => {
+  const ctx = { colorId: null, leadDays: [], categoryId: null, zone: ZONE };
+  const timed = buildEventBody(timedItem("2027-02-10", "09:00", { kind: "task" }), ctx);
+  assert.deepEqual(timed.start, { dateTime: "2027-02-10T08:00:00.000Z", timeZone: ZONE });
+
+  const allDay = buildEventBody(timedItem("2027-02-10", "09:00", { kind: "task", allDay: true, time: null }), ctx);
+  assert.deepEqual(allDay.start, { date: "2027-02-10" });
+  assert.deepEqual(allDay.end, { date: "2027-02-11" }, "Google's end date is the day after (exclusive)");
+});
+
+test("5b: a deadline pushes whether timed or all-day; an all-day event stays in the app; recurring never pushes", () => {
+  assert.equal(isPushable(timedItem("2027-02-10", "09:00", { kind: "task" })), true);
+  assert.equal(isPushable(timedItem("2027-02-10", "09:00", { kind: "task", allDay: true, time: null })), true, "all-day deadline pushes");
+  assert.equal(isPushable(timedItem("2027-02-10", "09:00", { kind: "reminder", allDay: true, time: null })), false, "all-day event stays in the app");
+  assert.equal(isPushable(timedItem("2027-02-10", "09:00", { kind: "reminder" })), true, "timed event pushes");
+  assert.equal(isPushable(timedItem("2027-02-10", "09:00", { kind: "task", recurrence })), false, "recurring never pushes");
+});
+
+test("5b: an all-day Google event parses to an all-day app item on its date", () => {
+  const fields = parseEventForPull({ summary: "Holiday", start: { date: "2027-02-10" }, end: { date: "2027-02-11" } }, ZONE)!;
+  assert.deepEqual([fields.date, fields.time, fields.allDay], ["2027-02-10", null, true]);
 });
 
 // ---- reconciler over a simulated calendar -------------------------------------------------------------------

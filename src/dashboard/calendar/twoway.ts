@@ -166,7 +166,7 @@ export class TwoWaySync {
     const applyPull = async (itemId: string, event: Record<string, unknown>): Promise<string> => {
       const fields = parseEventForPull(event, zone);
       if (!fields) return this.clock().toISOString();
-      const next = await this.calendar.updateItem(itemId, { title: fields.title, date: fields.date, allDay: false, time: fields.time, timeZone: fields.timeZone, categoryId: categoryExists(fields.categoryId) });
+      const next = await this.calendar.updateItem(itemId, { title: fields.title, date: fields.date, allDay: fields.allDay, time: fields.time, timeZone: fields.timeZone, categoryId: categoryExists(fields.categoryId) });
       return next.updated;
     };
 

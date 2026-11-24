@@ -7,6 +7,7 @@
 // - at most 5 override reminders per event;
 // - each override's `minutes` is between 0 and 40320 (4 weeks);
 // - method is "email" or "popup"; when overrides are used, reminders.useDefault must be false so only ours apply.
+import { addDays } from "../shared/dates.js";
 import { instantToWallClock, zonedToInstant } from "./timezone.js";
 import type { Item } from "./model.js";
 
@@ -15,9 +16,19 @@ export const MAX_LEAD_MINUTES = 40_320;
 export const DEFAULT_DURATION_MIN = 30;
 const MIN_PER_DAY = 1_440;
 
-/** The only items phase 5 pushes: timed (has a time, not all-day) and not recurring. */
+/** True when an item is shown/pushed as all-day: a deadline with no time, or any item flagged all-day. */
+export function isAllDay(item: Item): boolean {
+  return item.allDay || item.time === null;
+}
+
+/**
+ * What is pushed to Google. Recurring items never push. Deadlines (kind "task") push whether timed or all-day
+ * (phase 5b). Events (kind "reminder") push only when timed, as before.
+ */
 export function isPushable(item: Item): boolean {
-  return !item.allDay && item.time !== null && item.recurrence === null;
+  if (item.recurrence !== null) return false;
+  if (item.kind === "task") return true;
+  return !isAllDay(item);
 }
 
 /** A raw Google event is pullable as a new app item when it is timed, not recurring and not cancelled. */
@@ -55,15 +66,20 @@ export interface EventBodyContext {
  */
 export function buildEventBody(item: Item, context: EventBodyContext): Record<string, unknown> {
   const zone = item.timeZone && item.timeZone.trim() !== "" ? item.timeZone : context.zone;
-  const start = zonedToInstant(item.date, item.time!, zone);
-  const endInstant = new Date(start.instantMs + DEFAULT_DURATION_MIN * 60_000).toISOString();
   const body: Record<string, unknown> = {
     summary: item.title,
-    start: { dateTime: start.instant, timeZone: zone },
-    end: { dateTime: endInstant, timeZone: zone },
     reminders: { useDefault: false, overrides: reminderOverrides(context.leadDays) },
     extendedProperties: { private: { viralItemId: item.id, viralCategoryId: context.categoryId ?? "" } }
   };
+  if (isAllDay(item)) {
+    // All-day: Google's end date is exclusive, so the day after the due date.
+    body.start = { date: item.date };
+    body.end = { date: addDays(item.date, 1) };
+  } else {
+    const start = zonedToInstant(item.date, item.time!, zone);
+    body.start = { dateTime: start.instant, timeZone: zone };
+    body.end = { dateTime: new Date(start.instantMs + DEFAULT_DURATION_MIN * 60_000).toISOString(), timeZone: zone };
+  }
   if (context.colorId) body.colorId = context.colorId;
   return body;
 }
@@ -71,28 +87,29 @@ export function buildEventBody(item: Item, context: EventBodyContext): Record<st
 export interface PulledFields {
   title: string;
   date: string;
-  time: string;
+  /** null for an all-day event. */
+  time: string | null;
+  allDay: boolean;
   timeZone: string;
   categoryId: string | null;
 }
 
-/** The app-stored fields read back from a raw Google event, using `zone` for the local wall clock. */
+/** The app-stored fields read back from a raw Google event (timed or all-day), using `zone` for the wall clock. */
 export function parseEventForPull(raw: Record<string, unknown>, zone: string): PulledFields | null {
   const start = isObject(raw.start) ? raw.start : {};
+  const title = typeof raw.summary === "string" && raw.summary.trim() !== "" ? raw.summary : "(no title)";
+  const extended = isObject(raw.extendedProperties) && isObject(raw.extendedProperties.private) ? raw.extendedProperties.private : {};
+  const categoryId = typeof extended.viralCategoryId === "string" && extended.viralCategoryId !== "" ? extended.viralCategoryId : null;
+
+  if (typeof start.date === "string") {
+    return { title, date: start.date, time: null, allDay: true, timeZone: zone, categoryId };
+  }
   if (typeof start.dateTime !== "string") return null;
   const instantMs = Date.parse(start.dateTime);
   if (Number.isNaN(instantMs)) return null;
   const eventZone = typeof start.timeZone === "string" && start.timeZone.trim() !== "" ? start.timeZone : zone;
   const wall = instantToWallClock(instantMs, eventZone);
-  const extended = isObject(raw.extendedProperties) && isObject(raw.extendedProperties.private) ? raw.extendedProperties.private : {};
-  const categoryId = typeof extended.viralCategoryId === "string" && extended.viralCategoryId !== "" ? extended.viralCategoryId : null;
-  return {
-    title: typeof raw.summary === "string" && raw.summary.trim() !== "" ? raw.summary : "(no title)",
-    date: wall.date,
-    time: wall.time,
-    timeZone: eventZone,
-    categoryId
-  };
+  return { title, date: wall.date, time: wall.time, allDay: false, timeZone: eventZone, categoryId };
 }
 
 /** The viral item id written into a Google event's private extended properties, if any. */

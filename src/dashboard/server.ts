@@ -6,7 +6,7 @@ import { GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredEr
 import { CalendarService } from "./calendar/service.js";
 import { emptyEventsDocument, upcomingEvents, validateEventsDocument, type EventsDocument } from "./calendar/events.js";
 import { CalendarSync } from "./calendar/sync.js";
-import { OrganiseMigration } from "./calendar/migrate.js";
+import { DeadlineRangeMigration, OrganiseMigration } from "./calendar/migrate.js";
 import { registerCalendarAppRoutes } from "./calendar/app-routes.js";
 import { TwoWaySync, emptyConflictsDocument, emptyLinksDocument, validateConflictsDocument, validateLinksDocument, type ConflictsDocument, type LinksDocument } from "./calendar/twoway.js";
 import { JsonDocumentStore } from "./store.js";
@@ -41,6 +41,7 @@ export interface DashboardContext {
   calendarEvents: JsonDocumentStore<EventsDocument>;
   calendarSync: CalendarSync;
   calendarMigration: OrganiseMigration;
+  deadlineMigration: DeadlineRangeMigration;
   calendarLinks: JsonDocumentStore<LinksDocument>;
   calendarConflicts: JsonDocumentStore<ConflictsDocument>;
   twoWaySync: TwoWaySync;
@@ -82,6 +83,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     organiseItems: join(options.dataDir, "dashboard", "organise", "items.json"),
     exported: join(calendarDir, "exported-old-organise.json")
   }, { clock });
+  const deadlineMigration = new DeadlineRangeMigration(calendar.store, { clock });
   const calendarLinks = new JsonDocumentStore<LinksDocument>(join(calendarDir, "links.json"), validateLinksDocument, emptyLinksDocument);
   const calendarConflicts = new JsonDocumentStore<ConflictsDocument>(join(calendarDir, "conflicts.json"), validateConflictsDocument, emptyConflictsDocument);
   const twoWaySync = new TwoWaySync(googleCalendar, calendar, calendarEvents, calendarLinks, calendarConflicts, { clock, zone: async () => (await calendar.getSettings()).timeZone });
@@ -98,6 +100,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     calendarEvents,
     calendarSync,
     calendarMigration,
+    deadlineMigration,
     calendarLinks,
     calendarConflicts,
     twoWaySync,
