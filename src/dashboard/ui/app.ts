@@ -4,16 +4,17 @@ import { api, type AppContext } from "./api.js";
 import { h } from "./dom.js";
 import { renderFinance } from "./finance.js";
 import { renderGroceries } from "./groceries.js";
-import { renderOrganiseOverview } from "./organise/overview.js";
-import { renderNotesAndLists } from "./organise/notes.js";
-import { renderProjects } from "./organise/projects.js";
-import { renderOrganiseReminders } from "./organise/reminders.js";
-import { renderReview } from "./organise/review.js";
-import { renderTasks } from "./organise/tasks.js";
-import { renderTrackers } from "./organise/trackers.js";
+// Phase 4 rebuilt Organise (new calendar). The old organise/* renderers stay in the tree but are no longer
+// reachable from the nav; phase 8 removes them.
+import { renderCalendarOverview } from "./cal-overview.js";
+import { renderCalendarViews } from "./cal-views.js";
+import { renderCalendarTasks } from "./cal-tasks.js";
+import { renderCalendarReminders } from "./cal-reminders.js";
+import { renderCalendarSearch } from "./cal-search.js";
+import { renderCalendarExport } from "./cal-export.js";
+import { renderCalendarSettings } from "./cal-settings.js";
 import { renderOverview } from "./overview.js";
 import { renderReminders } from "./reminders.js";
-import { renderCalendarConnect } from "./calendar-connect.js";
 import { renderSettings } from "./settings.js";
 
 type Renderer = (container: HTMLElement, context: AppContext) => Promise<void>;
@@ -33,17 +34,15 @@ const navItems: NavItem[] = [
   { route: "overview", label: "Overview", render: renderOverview },
   { route: "finance", label: "Finance", render: renderFinance },
   { route: "groceries", label: "Groceries", render: renderGroceries },
-  // The earlier dashboard Reminders page stays reachable (calendar links, its own data) but leaves the nav to Organise > Reminders.
+  // The earlier dashboard Reminders page stays reachable (its own data) but leaves the nav to Organise > Reminders.
   { route: "reminders", label: "Reminders", render: renderReminders, hidden: true },
-  { route: "organise", label: "Overview", render: renderOrganiseOverview, group: "Organise" },
-  { route: "organise-tasks", label: "Tasks", render: renderTasks, group: "Organise" },
-  { route: "organise-reminders", label: "Reminders", render: renderOrganiseReminders, group: "Organise" },
-  { route: "organise-notes", label: "Notes and lists", render: renderNotesAndLists, group: "Organise" },
-  { route: "organise-projects", label: "Projects", render: renderProjects, group: "Organise" },
-  { route: "organise-trackers", label: "Trackers", render: renderTrackers, group: "Organise" },
-  { route: "organise-review", label: "Weekly review", render: renderReview, group: "Organise", hidden: true },
-  // Temporary Google connection page for phase 2; phase 4 replaces it with the real calendar screens.
-  { route: "calendar-connect", label: "Calendar setup", render: renderCalendarConnect },
+  { route: "organise", label: "Overview", render: renderCalendarOverview, group: "Organise" },
+  { route: "organise-calendar", label: "Calendar", render: renderCalendarViews, group: "Organise" },
+  { route: "organise-tasks", label: "Tasks", render: renderCalendarTasks, group: "Organise" },
+  { route: "organise-reminders", label: "Reminders", render: renderCalendarReminders, group: "Organise" },
+  { route: "organise-search", label: "Search", render: renderCalendarSearch, group: "Organise" },
+  { route: "organise-export", label: "Export", render: renderCalendarExport, group: "Organise" },
+  { route: "organise-settings", label: "Settings", render: renderCalendarSettings, group: "Organise" },
   { route: "gym", label: "Gym" },
   { route: "viral-tasks", label: "Viral tasks" }
 ];
@@ -87,7 +86,6 @@ const context: AppContext = {
     renderNav(route);
     try { await item?.render?.(main, context); }
     catch (error) { context.notify((error as Error).message); }
-    void updateInboxBadge();
     if (focused) document.querySelector<HTMLElement>(`[data-focus="${CSS.escape(focused)}"]`)?.focus();
   }
 };
@@ -107,17 +105,6 @@ function renderNav(active: string): void {
     entries.push(navLink(item, active));
   }
   nav.replaceChildren(...entries, h("div", { class: "nav-bottom" }, navLink(settingsItem, active)));
-}
-
-/** Unsorted inbox count as a badge on the Organise nav item. */
-async function updateInboxBadge(): Promise<void> {
-  try {
-    const { count } = await api<{ count: number }>("GET", "/api/organise/inbox");
-    const link = nav.querySelector<HTMLElement>("[data-route='organise']");
-    if (!link) return;
-    link.querySelector(".nav-badge")?.remove();
-    if (count > 0) link.append(h("span", { class: "nav-badge", title: `${count} unsorted in the inbox` }, String(count)));
-  } catch { /* the badge is a convenience; the page works without it */ }
 }
 
 async function pollStatus(): Promise<void> {
