@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget, weeklyAllowanceBudget } from "./budget.js";
 import { buildCalendar, itemsInWindow } from "./calendar.js";
 import { GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError } from "./calendar/google.js";
+import { CalendarService } from "./calendar/service.js";
+import { emptyEventsDocument, upcomingEvents, validateEventsDocument, type EventsDocument } from "./calendar/events.js";
+import { CalendarSync } from "./calendar/sync.js";
+import { JsonDocumentStore } from "./store.js";
 import { ChatService } from "./chat.js";
 import { OllamaProposer } from "./commands/ollama.js";
 import { PlaceholderProposer, type Proposer } from "./commands/proposer.js";
@@ -30,6 +34,9 @@ export interface DashboardContext {
   chat: ChatService;
   organise: OrganiseService;
   googleCalendar: GoogleCalendarConnection;
+  calendar: CalendarService;
+  calendarEvents: JsonDocumentStore<EventsDocument>;
+  calendarSync: CalendarSync;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -58,6 +65,11 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     ?? (options.localModel && options.chat && options.chat.proposerEnabled
       ? new OllamaProposer(options.localModel, { model: options.chat.model, timeoutMs: options.chat.timeoutMs }, async () => (await finance.snapshot()).categories)
       : new PlaceholderProposer());
+  const calendarDir = join(options.dataDir, "calendar");
+  const calendar = new CalendarService(join(calendarDir, "store.json"), { clock });
+  const googleCalendar = new GoogleCalendarConnection(calendarDir, { now: clock });
+  const calendarEvents = new JsonDocumentStore<EventsDocument>(join(calendarDir, "events.json"), validateEventsDocument, emptyEventsDocument);
+  const calendarSync = new CalendarSync(googleCalendar, calendarEvents, { clock, zone: async () => (await calendar.getSettings()).timeZone });
   return {
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
@@ -66,7 +78,10 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
       clock, finance, proposer, ...(options.chatMaxAmountCents ? { maxAmountCents: options.chatMaxAmountCents } : {})
     }),
     organise: new OrganiseService(join(options.dataDir, "dashboard", "organise"), { clock }),
-    googleCalendar: new GoogleCalendarConnection(join(options.dataDir, "calendar"), { now: clock }),
+    googleCalendar,
+    calendar,
+    calendarEvents,
+    calendarSync,
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -225,6 +240,13 @@ export function registerGoogleCalendarRoutes(router: Router, context: DashboardC
       if (error instanceof GoogleClientMissingError) return { clientPresent: false, error: error.message, calendars: [] };
       throw error;
     }
+  });
+  router.add("POST", "/api/calendar/google/sync", () => context.calendarSync.syncAll(), 200);
+  router.add("GET", "/api/calendar/google/events", async ({ query }) => {
+    const requested = Number(query.get("days") ?? 7);
+    const days = Number.isSafeInteger(requested) ? Math.min(60, Math.max(1, requested)) : 7;
+    const document = await context.calendarEvents.read();
+    return { lastSync: document.lastSync, days, events: upcomingEvents(document, today(context), days) };
   });
 }
 

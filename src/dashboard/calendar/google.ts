@@ -14,10 +14,12 @@ import { createServer } from "node:http";
 import * as nodeFs from "node:fs/promises";
 import { join } from "node:path";
 import { writeJsonAtomic, type StoreFileSystem } from "../store.js";
+import type { EventFetchRequest, EventFetchResult } from "./events.js";
 
 export const CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 const REVOKE_URI = "https://oauth2.googleapis.com/revoke";
 const CALENDAR_LIST_URL = "https://www.googleapis.com/calendar/v3/users/me/calendarList";
+const eventsUrl = (calendarId: string): string => `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
 
 export class GoogleClientMissingError extends Error {
   constructor(readonly path: string) {
@@ -55,6 +57,8 @@ export interface GoogleCalendar {
   primary: boolean;
   /** True when the role allows writing (owner or writer); kept for phase 5. Nothing writes in phase 2. */
   writable: boolean;
+  /** The calendar's background colour from Google, for dimmed display; null when Google gives none. */
+  colour: string | null;
 }
 
 export interface GoogleStatus {
@@ -117,7 +121,8 @@ export function parseCalendarList(json: unknown): GoogleCalendar[] {
     const name = typeof item.summaryOverride === "string" && item.summaryOverride.trim() !== ""
       ? item.summaryOverride
       : typeof item.summary === "string" && item.summary.trim() !== "" ? item.summary : id;
-    return { id, name, accessRole, primary: item.primary === true, writable: WRITABLE_ROLES.has(accessRole) };
+    const colour = typeof item.backgroundColor === "string" ? item.backgroundColor : null;
+    return { id, name, accessRole, primary: item.primary === true, writable: WRITABLE_ROLES.has(accessRole), colour };
   }).filter((calendar) => calendar.id !== "");
 }
 
@@ -265,6 +270,37 @@ export class GoogleCalendarConnection {
     if (response.status === 401 || response.status === 403) throw new ReconnectRequiredError("Reconnect Google: access was refused.");
     if (response.status < 200 || response.status >= 300) throw new Error(`Google calendar list failed: HTTP ${response.status}`);
     return parseCalendarList(response.json);
+  }
+
+  /**
+   * One page of events for a calendar (phase 3, read-only). With a syncToken Google returns only changes and we
+   * must not send a time window; without one we send the 30-days-back / 365-days-ahead window. singleEvents=true
+   * expands recurring events to instances; showDeleted=true surfaces cancellations. 410 Gone (expired token)
+   * becomes status "gone" so the caller does a full resync; 401/403 become "reconnect". No body is ever returned.
+   */
+  async fetchEvents(calendarId: string, request: EventFetchRequest): Promise<EventFetchResult> {
+    let access: string;
+    try { access = await this.accessToken(); }
+    catch (error) {
+      if (error instanceof ReconnectRequiredError) return { status: "reconnect", items: [], nextSyncToken: null, nextPageToken: null };
+      throw error;
+    }
+    const query = new URLSearchParams({ singleEvents: "true", showDeleted: "true", maxResults: "2500" });
+    if (request.syncToken) query.set("syncToken", request.syncToken);
+    else { query.set("timeMin", request.timeMin); query.set("timeMax", request.timeMax); }
+    if (request.pageToken) query.set("pageToken", request.pageToken);
+
+    const response = await this.http({ url: `${eventsUrl(calendarId)}?${query.toString()}`, method: "GET", headers: { authorization: `Bearer ${access}` } });
+    if (response.status === 410) return { status: "gone", items: [], nextSyncToken: null, nextPageToken: null };
+    if (response.status === 401 || response.status === 403) return { status: "reconnect", items: [], nextSyncToken: null, nextPageToken: null };
+    if (response.status < 200 || response.status >= 300) return { status: "error", items: [], nextSyncToken: null, nextPageToken: null, error: `HTTP ${response.status}` };
+    const json = isObject(response.json) ? response.json : {};
+    return {
+      status: "ok",
+      items: Array.isArray(json.items) ? json.items : [],
+      nextSyncToken: typeof json.nextSyncToken === "string" ? json.nextSyncToken : null,
+      nextPageToken: typeof json.nextPageToken === "string" ? json.nextPageToken : null
+    };
   }
 
   /** Builds the consent URL for the installed-app flow with PKCE and read-only Calendar scope. */

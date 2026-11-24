@@ -23,6 +23,21 @@ export function formatOffset(offsetMinutes: number): string {
   return `${sign}${pad(Math.trunc(offsetMinutes / 60))}:${pad(offsetMinutes % 60)}`;
 }
 
+export interface WallClock {
+  date: IsoDate;
+  /** HH:MM in 24-hour form. */
+  time: string;
+}
+
+/** The local wall-clock date and HH:MM for an absolute instant, read in the given IANA zone. */
+export function instantToWallClock(instantMs: number, timeZone: string): WallClock {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date(instantMs));
+  const get = (type: string): string => parts.find((part) => part.type === type)!.value;
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, time: `${get("hour")}:${get("minute")}` };
+}
+
 export interface ZonedInstant {
   /** The absolute instant as an ISO-8601 UTC string (…Z). */
   instant: string;

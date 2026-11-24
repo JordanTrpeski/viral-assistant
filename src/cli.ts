@@ -215,7 +215,8 @@ async function main(): Promise<void> {
     if (!Number.isSafeInteger(port) || port < 0 || port > 65_535) throw new Error("--port must be an integer from 0 to 65535");
     const dataDir = resolve(root, option("--data-dir") ?? ".viral");
     const localModel = await createLocalModel(root);
-    const server = await startDashboardServer(createDashboardContext({ dataDir, budgetStepCents: config.budgetStepCents, chatMaxAmountCents: config.chatMaxAmountCents, localModel, chat: { model: config.model, timeoutMs: config.timeoutMs, proposerEnabled: config.proposerEnabled } }), config.host, port);
+    const dashboardContext = createDashboardContext({ dataDir, budgetStepCents: config.budgetStepCents, chatMaxAmountCents: config.chatMaxAmountCents, localModel, chat: { model: config.model, timeoutMs: config.timeoutMs, proposerEnabled: config.proposerEnabled } });
+    const server = await startDashboardServer(dashboardContext, config.host, port);
     const shutdown = (): void => { void server.stop().then(() => process.exit(0)); };
     process.once("SIGINT", shutdown);
     process.once("SIGTERM", shutdown);
@@ -225,6 +226,14 @@ async function main(): Promise<void> {
     try { commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim(); } catch { /* not a git checkout */ }
     console.log(`Viral dashboard build commit: ${commit}`);
     console.log(`Viral dashboard on http://${shown}:${server.port} (loopback only; data in ${dataDir})`);
+    // Phase 3: one read-only calendar sync at startup, only when Google is connected. Silent otherwise; never fatal.
+    void (async () => {
+      try {
+        if (!(await dashboardContext.googleCalendar.status()).connected) return;
+        const result = await dashboardContext.calendarSync.syncAll();
+        console.log(`[calendar] startup sync: ${result.line}`);
+      } catch (error) { console.error(`[calendar] startup sync failed: ${(error as Error).message}`); }
+    })();
   } else if (command === "summary") {
     const daysArg = process.argv[3];
     const days = daysArg && !daysArg.startsWith("--") ? Number(daysArg) : 1;
