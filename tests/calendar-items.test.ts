@@ -11,7 +11,7 @@ test("items: create fills sensible defaults (open, normal, not all-day, UTC)", a
     assert.equal(item.categoryId, null);
     assert.equal(item.subcategoryId, null);
     assert.equal(item.leadTimes, null);
-    assert.equal(item.timeZone, "UTC");
+    assert.equal(item.timeZone, "Europe/Ljubljana", "new items default to the settings time zone");
   });
 });
 

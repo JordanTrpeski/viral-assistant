@@ -2,6 +2,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { monthBudget, weekBudget, weeklyAllowanceBudget } from "./budget.js";
 import { buildCalendar, itemsInWindow } from "./calendar.js";
+import { GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError } from "./calendar/google.js";
 import { ChatService } from "./chat.js";
 import { OllamaProposer } from "./commands/ollama.js";
 import { PlaceholderProposer, type Proposer } from "./commands/proposer.js";
@@ -28,6 +29,7 @@ export interface DashboardContext {
   reminders: RemindersService;
   chat: ChatService;
   organise: OrganiseService;
+  googleCalendar: GoogleCalendarConnection;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -64,6 +66,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
       clock, finance, proposer, ...(options.chatMaxAmountCents ? { maxAmountCents: options.chatMaxAmountCents } : {})
     }),
     organise: new OrganiseService(join(options.dataDir, "dashboard", "organise"), { clock }),
+    googleCalendar: new GoogleCalendarConnection(join(options.dataDir, "calendar"), { now: clock }),
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -203,6 +206,28 @@ export function registerChatRoutes(router: Router, context: DashboardContext): v
   router.add("POST", "/api/chat/undo/:token", ({ params }) => chat.undo(params.token!), 200);
 }
 
+export function registerGoogleCalendarRoutes(router: Router, context: DashboardContext): void {
+  const google = context.googleCalendar;
+  router.add("GET", "/api/calendar/google/status", () => google.status());
+  router.add("POST", "/api/calendar/google/connect", async () => {
+    try { return await google.connect(); }
+    catch (error) {
+      if (error instanceof GoogleClientMissingError) throw new ValidationError(error.message);
+      if (error instanceof ReconnectRequiredError) throw new ValidationError(error.message);
+      throw error;
+    }
+  }, 200);
+  router.add("POST", "/api/calendar/google/disconnect", async () => { await google.disconnect(); return google.status(); }, 200);
+  router.add("GET", "/api/calendar/google/calendars", async () => {
+    try { return { calendars: await google.listCalendars() }; }
+    catch (error) {
+      if (error instanceof ReconnectRequiredError) return { reconnect: true, error: error.message, calendars: [] };
+      if (error instanceof GoogleClientMissingError) return { clientPresent: false, error: error.message, calendars: [] };
+      throw error;
+    }
+  });
+}
+
 export function registerOverviewRoutes(router: Router, context: DashboardContext): void {
   router.add("GET", "/api/overview", async () => {
     const date = today(context);
@@ -230,6 +255,7 @@ export function createRouter(context: DashboardContext): Router {
   registerReminderRoutes(router, context);
   registerChatRoutes(router, context);
   registerOrganiseRoutes(router, context.organise);
+  registerGoogleCalendarRoutes(router, context);
   return router;
 }
 

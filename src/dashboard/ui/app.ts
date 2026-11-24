@@ -13,6 +13,7 @@ import { renderTasks } from "./organise/tasks.js";
 import { renderTrackers } from "./organise/trackers.js";
 import { renderOverview } from "./overview.js";
 import { renderReminders } from "./reminders.js";
+import { renderCalendarConnect } from "./calendar-connect.js";
 import { renderSettings } from "./settings.js";
 
 type Renderer = (container: HTMLElement, context: AppContext) => Promise<void>;
@@ -41,6 +42,8 @@ const navItems: NavItem[] = [
   { route: "organise-projects", label: "Projects", render: renderProjects, group: "Organise" },
   { route: "organise-trackers", label: "Trackers", render: renderTrackers, group: "Organise" },
   { route: "organise-review", label: "Weekly review", render: renderReview, group: "Organise", hidden: true },
+  // Temporary Google connection page for phase 2; phase 4 replaces it with the real calendar screens.
+  { route: "calendar-connect", label: "Calendar setup", render: renderCalendarConnect },
   { route: "gym", label: "Gym" },
   { route: "viral-tasks", label: "Viral tasks" }
 ];

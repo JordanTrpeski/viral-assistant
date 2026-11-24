@@ -84,7 +84,11 @@ export interface TrashEntry {
 export interface Settings {
   trashDays: number;
   allDayReminderTime: string;
+  /** Default IANA zone for new items; each item still keeps its own zone. */
+  timeZone: string;
 }
+
+export const defaultTimeZone = "Europe/Ljubljana";
 
 export interface CalendarDocument {
   schemaVersion: 1;
@@ -96,7 +100,7 @@ export interface CalendarDocument {
 }
 
 export function emptyCalendarDocument(): CalendarDocument {
-  return { schemaVersion: 1, categories: [], items: [], doneLog: [], trash: [], settings: { trashDays: 7, allDayReminderTime: "09:00" } };
+  return { schemaVersion: 1, categories: [], items: [], doneLog: [], trash: [], settings: { trashDays: 7, allDayReminderTime: "09:00", timeZone: defaultTimeZone } };
 }
 
 const timePattern = /^\d{2}:\d{2}$/;
@@ -219,7 +223,8 @@ export function validateCalendarDocument(value: unknown): CalendarDocument {
     trash: (Array.isArray(value.trash) ? value.trash : []).map(validateTrash),
     settings: {
       trashDays: typeof settings.trashDays === "number" && Number.isInteger(settings.trashDays) && settings.trashDays > 0 ? settings.trashDays : 7,
-      allDayReminderTime: typeof settings.allDayReminderTime === "string" && timePattern.test(settings.allDayReminderTime) ? settings.allDayReminderTime : "09:00"
+      allDayReminderTime: typeof settings.allDayReminderTime === "string" && timePattern.test(settings.allDayReminderTime) ? settings.allDayReminderTime : "09:00",
+      timeZone: typeof settings.timeZone === "string" && settings.timeZone.trim() !== "" ? settings.timeZone : defaultTimeZone
     }
   };
 }

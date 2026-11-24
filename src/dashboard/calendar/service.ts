@@ -7,7 +7,7 @@ import { JsonDocumentStore, type StoreFileSystem } from "../store.js";
 import {
   emptyCalendarDocument, validateCalendarDocument,
   itemKinds, priorities, recurrenceFreqs,
-  type CalendarDocument, type Category, type Item, type ItemKind, type Priority, type Recurrence, type RecurrenceFreq, type Subcategory, type TrashEntry
+  type CalendarDocument, type Category, type Item, type ItemKind, type Priority, type Recurrence, type RecurrenceFreq, type Settings, type Subcategory, type TrashEntry
 } from "./model.js";
 import { occurrences } from "./recurrence.js";
 import { reminderTimes, type ReminderTime } from "./reminders.js";
@@ -88,6 +88,33 @@ export class CalendarService {
       trash: structuredClone(before.trash),
       doneLog: structuredClone(before.doneLog)
     };
+  }
+
+  // ---- Settings -----------------------------------------------------------
+
+  async getSettings(): Promise<Settings> {
+    await this.purge();
+    return (await this.store.read()).settings;
+  }
+
+  /** Changes stored settings (the default time zone, all-day reminder time, trash days). Items keep their own zone. */
+  async updateSettings(patch: Partial<Settings>): Promise<Settings> {
+    await this.purge();
+    return this.store.update((draft) => {
+      if (patch.timeZone !== undefined) {
+        if (typeof patch.timeZone !== "string" || patch.timeZone.trim() === "") throw new ValidationError("timeZone must be a non-empty IANA zone name");
+        draft.settings.timeZone = patch.timeZone;
+      }
+      if (patch.allDayReminderTime !== undefined) {
+        if (!timePattern.test(patch.allDayReminderTime)) throw new ValidationError("allDayReminderTime must be HH:MM");
+        draft.settings.allDayReminderTime = patch.allDayReminderTime;
+      }
+      if (patch.trashDays !== undefined) {
+        if (!Number.isInteger(patch.trashDays) || patch.trashDays <= 0) throw new ValidationError("trashDays must be a positive whole number");
+        draft.settings.trashDays = patch.trashDays;
+      }
+      return draft.settings;
+    });
   }
 
   // ---- Categories ---------------------------------------------------------
@@ -210,7 +237,7 @@ export class CalendarService {
     const timestamp = this.now();
     const item: Item = {
       id: randomUUID(), kind: input.kind, title, categoryId, subcategoryId,
-      allDay, date: input.date, time: allDay ? null : input.time ?? null, timeZone: input.timeZone ?? "UTC",
+      allDay, date: input.date, time: allDay ? null : input.time ?? null, timeZone: input.timeZone ?? document.settings.timeZone,
       dueDate: input.dueDate ?? null, plannedDate: input.plannedDate ?? null,
       priority, status: "open", recurrence, leadTimes: input.leadTimes ?? null, snoozedUntil: null,
       created: timestamp, updated: timestamp
