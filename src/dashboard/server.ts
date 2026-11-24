@@ -7,6 +7,7 @@ import { CalendarService } from "./calendar/service.js";
 import { emptyEventsDocument, upcomingEvents, validateEventsDocument, type EventsDocument } from "./calendar/events.js";
 import { CalendarSync } from "./calendar/sync.js";
 import { OrganiseMigration } from "./calendar/migrate.js";
+import { registerCalendarAppRoutes } from "./calendar/app-routes.js";
 import { JsonDocumentStore } from "./store.js";
 import { ChatService } from "./chat.js";
 import { OllamaProposer } from "./commands/ollama.js";
@@ -286,6 +287,7 @@ export function createRouter(context: DashboardContext): Router {
   registerChatRoutes(router, context);
   registerOrganiseRoutes(router, context.organise);
   registerGoogleCalendarRoutes(router, context);
+  registerCalendarAppRoutes(router, context);
   return router;
 }
 

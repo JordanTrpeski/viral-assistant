@@ -43,16 +43,26 @@ export interface SyncedCalendar {
   syncToken: string | null;
 }
 
+/** Per-calendar display preferences, owned by the app (never sent to Google) and kept across syncs. */
+export interface CalendarPref {
+  /** Emphasise this calendar's events in the views. Display-only. */
+  highlight: boolean;
+  /** Hide this calendar's events from the views without deleting them. */
+  hidden: boolean;
+}
+
 export interface EventsDocument {
   schemaVersion: 1;
   calendars: SyncedCalendar[];
   events: StoredEvent[];
+  /** calendarId → display preference. */
+  prefs: Record<string, CalendarPref>;
   /** ISO time of the last successful sync, or null if none has run. */
   lastSync: string | null;
 }
 
 export function emptyEventsDocument(): EventsDocument {
-  return { schemaVersion: 1, calendars: [], events: [], lastSync: null };
+  return { schemaVersion: 1, calendars: [], events: [], prefs: {}, lastSync: null };
 }
 
 // ---- The fetcher's vocabulary (implemented for real in google.ts, faked in tests) ---------------------------
@@ -164,12 +174,23 @@ function validateSyncedCalendar(value: unknown): SyncedCalendar | null {
   };
 }
 
+function validatePrefs(value: unknown): Record<string, CalendarPref> {
+  if (!isObject(value)) return {};
+  const prefs: Record<string, CalendarPref> = {};
+  for (const [id, pref] of Object.entries(value)) {
+    if (!isObject(pref)) continue;
+    prefs[id] = { highlight: pref.highlight === true, hidden: pref.hidden === true };
+  }
+  return prefs;
+}
+
 export function validateEventsDocument(value: unknown): EventsDocument {
   if (!isObject(value) || value.schemaVersion !== 1) throw new Error("events store must be an object with schemaVersion 1");
   return {
     schemaVersion: 1,
     calendars: (Array.isArray(value.calendars) ? value.calendars : []).map(validateSyncedCalendar).filter((calendar): calendar is SyncedCalendar => calendar !== null),
     events: (Array.isArray(value.events) ? value.events : []).map(validateStoredEvent).filter((event): event is StoredEvent => event !== null),
+    prefs: validatePrefs(value.prefs),
     lastSync: strOrNull(value.lastSync)
   };
 }
