@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { CALENDAR_READONLY_SCOPE, GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError, parseCalendarList, type GoogleClientConfig, type HttpResponse } from "../src/dashboard/calendar/google.js";
+import { CALENDAR_READONLY_SCOPE, GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError, describeAuthRequest, parseCalendarList, type GoogleClientConfig, type HttpResponse } from "../src/dashboard/calendar/google.js";
 
 const clientJson = JSON.stringify({ installed: { client_id: "cid", client_secret: "secret", auth_uri: "https://accounts.google.com/o/oauth2/auth", token_uri: "https://oauth2.googleapis.com/token" } });
 const tokenJson = JSON.stringify({ refreshToken: "rt", account: "a@example.com", scope: "https://www.googleapis.com/auth/calendar.readonly", obtainedAt: "2026-11-01T00:00:00.000Z" });
@@ -56,6 +56,25 @@ test("google: the sign-in URL carries every parameter Google's installed-app flo
   assert.equal(query.get("code_challenge_method"), "S256");
   assert.equal(query.get("access_type"), "offline", "needed for a refresh token");
   assert.equal(query.get("prompt"), "consent");
+});
+
+test("google: the sign-in diagnostic log shows response_type=code and never the client secret", () => {
+  const secret = "fake-client-secret-never-log-me";
+  const config: GoogleClientConfig = {
+    clientId: "fake-client-id.apps.googleusercontent.com",
+    clientSecret: secret,
+    authUri: "https://accounts.google.com/o/oauth2/auth",
+    tokenUri: "https://oauth2.googleapis.com/token"
+  };
+  const connection = new GoogleCalendarConnection("/fake/calendar", { readFile: files({}) });
+  const url = connection.buildAuthUrl(config, "http://127.0.0.1:54321", "challenge-abcdefghijklmnop", "state-xyz9876543");
+  const log = describeAuthRequest(url);
+
+  assert.match(log, /response_type=code/, "the diagnostic names response_type=code");
+  assert.ok(!log.includes(secret), "the client secret never appears in the diagnostic");
+  assert.match(log, /endpoint: https:\/\/accounts\.google\.com\/o\/oauth2\/auth/);
+  assert.match(log, /state=state-xy… \(truncated\)/, "state is truncated to 8 characters");
+  assert.match(log, /code_challenge=challeng… \(truncated\)/, "code_challenge is truncated to 8 characters");
 });
 
 test("google: a missing client file gives a clear message that says where to put it", async () => {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { generateCheckpoint } from "./checkpoint.js";
 import { loadProjectContext } from "./context.js";
@@ -219,6 +220,10 @@ async function main(): Promise<void> {
     process.once("SIGINT", shutdown);
     process.once("SIGTERM", shutdown);
     const shown = server.host.includes(":") ? `[${server.host}]` : server.host;
+    // Temporary phase-2 diagnostic: the commit the running build was compiled from, to confirm it is the latest.
+    let commit = "unknown";
+    try { commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim(); } catch { /* not a git checkout */ }
+    console.log(`Viral dashboard build commit: ${commit}`);
     console.log(`Viral dashboard on http://${shown}:${server.port} (loopback only; data in ${dataDir})`);
   } else if (command === "summary") {
     const daysArg = process.argv[3];

@@ -81,6 +81,31 @@ export interface GoogleOptions {
 
 const WRITABLE_ROLES = new Set(["owner", "writer"]);
 
+/**
+ * Temporary phase-2 diagnostic: a human-readable description of the sign-in request for the dashboard console,
+ * so we can confirm the parameters Google receives. Pure and secret-free — it reads only the authorization URL,
+ * which never carries the client secret, the PKCE verifier or any token. state and code_challenge are truncated.
+ */
+export function describeAuthRequest(authUrl: string): string {
+  const url = new URL(authUrl);
+  const query = url.searchParams;
+  const full = (name: string): string => `  ${name}=${query.get(name) ?? ""}`;
+  const short = (name: string): string => `  ${name}=${(query.get(name) ?? "").slice(0, 8)}… (truncated)`;
+  return [
+    "[calendar] Google sign-in request (diagnostic, no secrets):",
+    `  endpoint: ${url.protocol}//${url.host}${url.pathname}`,
+    `  params (in order): ${[...query.keys()].join(", ")}`,
+    full("client_id"),
+    full("redirect_uri"),
+    full("scope"),
+    full("response_type"),
+    full("access_type"),
+    full("prompt"),
+    short("state"),
+    short("code_challenge")
+  ].join("\n");
+}
+
 /** Parses a Google calendarList response into our shape. Pure, so tests can check role mapping directly. */
 export function parseCalendarList(json: unknown): GoogleCalendar[] {
   const items = isObject(json) && Array.isArray(json.items) ? json.items : [];
@@ -254,7 +279,9 @@ export class GoogleCalendarConnection {
       server.on("error", reject);
       server.listen(0, "127.0.0.1", () => {
         const port = (server.address() as { port: number }).port;
-        void this.openBrowser(this.buildAuthUrl(config, `http://127.0.0.1:${port}`, challenge, state));
+        const authUrl = this.buildAuthUrl(config, `http://127.0.0.1:${port}`, challenge, state);
+        console.error(describeAuthRequest(authUrl)); // temporary phase-2 diagnostic; no secrets
+        void this.openBrowser(authUrl);
       });
       setTimeout(() => { server.close(); reject(new Error("Google sign-in timed out.")); }, timeoutMs);
     });
