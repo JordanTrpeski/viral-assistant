@@ -75,6 +75,8 @@ export interface GoogleOptions {
   http?: HttpClient;
   openBrowser?: (url: string) => Promise<void>;
   now?: () => Date;
+  /** Diagnostic sink (dashboard console by default). Override in tests to capture or silence the log. */
+  log?: (line: string) => void;
   /** Override only in tests. */
   readFile?: (path: string) => Promise<string>;
 }
@@ -136,9 +138,16 @@ const defaultHttp: HttpClient = async ({ url, method, headers, body }) => {
 
 async function openInBrowser(url: string): Promise<void> {
   const { spawn } = await import("node:child_process");
-  const command = process.platform === "win32" ? "cmd" : process.platform === "darwin" ? "open" : "xdg-open";
-  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
-  spawn(command, args, { detached: true, stdio: "ignore" }).unref();
+  if (process.platform === "win32") {
+    // Not `cmd /c start "" <url>`: cmd's `start` treats "&" as a command separator, so the auth URL would be
+    // cut off at the first query separator and the browser would only receive `...?client_id=...`. rundll32
+    // FileProtocolHandler takes the URL as a single CreateProcess argument (no shell parses it), so every "&"
+    // reaches the default browser intact. The whole URL is one argv entry, so Node does not split it either.
+    spawn("rundll32", ["url.dll,FileProtocolHandler", url], { detached: true, stdio: "ignore" }).unref();
+    return;
+  }
+  const command = process.platform === "darwin" ? "open" : "xdg-open";
+  spawn(command, [url], { detached: true, stdio: "ignore" }).unref();
 }
 
 export class GoogleCalendarConnection {
@@ -148,6 +157,7 @@ export class GoogleCalendarConnection {
   private readonly http: HttpClient;
   private readonly openBrowser: (url: string) => Promise<void>;
   private readonly now: () => Date;
+  private readonly log: (line: string) => void;
   private readonly readFile: (path: string) => Promise<string>;
 
   constructor(directory: string, options: GoogleOptions = {}) {
@@ -157,7 +167,22 @@ export class GoogleCalendarConnection {
     this.http = options.http ?? defaultHttp;
     this.openBrowser = options.openBrowser ?? openInBrowser;
     this.now = options.now ?? (() => new Date());
+    this.log = options.log ?? ((line) => console.error(line));
     this.readFile = options.readFile ?? ((path) => nodeFs.readFile(path, "utf8"));
+  }
+
+  /**
+   * Builds the sign-in URL, logs a non-secret summary, and hands the FULL url to the opener. Split out from
+   * connect() so a test can inject a fake opener and confirm the whole URL (every "&"-joined query parameter)
+   * arrives intact. Returns the url it opened.
+   */
+  launchSignIn(config: GoogleClientConfig, redirectUri: string, codeChallenge: string, state: string): string {
+    const authUrl = this.buildAuthUrl(config, redirectUri, codeChallenge, state);
+    const paramCount = new URL(authUrl).searchParams.size;
+    this.log(describeAuthRequest(authUrl));
+    this.log(`[calendar] opening sign-in URL: ${paramCount} query params; starts: ${authUrl.slice(0, 60)}`);
+    void this.openBrowser(authUrl);
+    return authUrl;
   }
 
   /** Reads and parses the OAuth desktop client JSON. Missing file throws GoogleClientMissingError with guidance. */
@@ -279,9 +304,7 @@ export class GoogleCalendarConnection {
       server.on("error", reject);
       server.listen(0, "127.0.0.1", () => {
         const port = (server.address() as { port: number }).port;
-        const authUrl = this.buildAuthUrl(config, `http://127.0.0.1:${port}`, challenge, state);
-        console.error(describeAuthRequest(authUrl)); // temporary phase-2 diagnostic; no secrets
-        void this.openBrowser(authUrl);
+        this.launchSignIn(config, `http://127.0.0.1:${port}`, challenge, state);
       });
       setTimeout(() => { server.close(); reject(new Error("Google sign-in timed out.")); }, timeoutMs);
     });

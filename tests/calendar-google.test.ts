@@ -77,6 +77,39 @@ test("google: the sign-in diagnostic log shows response_type=code and never the 
   assert.match(log, /code_challenge=challeng… \(truncated\)/, "code_challenge is truncated to 8 characters");
 });
 
+test("google: the browser opener receives the full sign-in URL with every query parameter intact", () => {
+  const config: GoogleClientConfig = {
+    clientId: "fake-client-id.apps.googleusercontent.com",
+    clientSecret: "fake-secret",
+    authUri: "https://accounts.google.com/o/oauth2/auth",
+    tokenUri: "https://oauth2.googleapis.com/token"
+  };
+  let opened = "";
+  const logs: string[] = [];
+  const connection = new GoogleCalendarConnection("/fake/calendar", {
+    readFile: files({}),
+    openBrowser: async (url) => { opened = url; },
+    log: (line) => logs.push(line)
+  });
+  const redirectUri = "http://127.0.0.1:54321";
+  const returned = connection.launchSignIn(config, redirectUri, "fake-code-challenge", "fake-state-value");
+
+  // The opener must get exactly the URL that was built — not a prefix truncated at the first "&".
+  assert.equal(opened, returned, "the opener receives the full URL");
+  const params = new URL(opened).searchParams;
+  assert.equal(params.get("response_type"), "code", "response_type=code survived");
+  assert.equal(params.get("client_id"), config.clientId);
+  assert.equal(params.get("redirect_uri"), redirectUri);
+  assert.equal(params.get("scope"), CALENDAR_READONLY_SCOPE);
+  assert.equal(params.get("access_type"), "offline");
+  assert.equal(params.get("prompt"), "consent");
+  assert.equal(params.get("code_challenge"), "fake-code-challenge");
+  assert.equal(params.get("code_challenge_method"), "S256");
+  assert.equal(params.get("state"), "fake-state-value");
+  assert.equal(params.size, 9, "all nine &-joined parameters are present");
+  assert.ok(logs.some((line) => line.includes("9 query params")), "logs the parameter count before opening");
+});
+
 test("google: a missing client file gives a clear message that says where to put it", async () => {
   const connection = new GoogleCalendarConnection("/fake/calendar", { readFile: files({}) });
   await assert.rejects(connection.loadClientConfig(), (error: unknown) => {
