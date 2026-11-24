@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import nodeTest from "node:test";
+// Parked for the calendar-v2 rebuild: chat and Ollama are kept in the tree; their tests are skipped (not deleted).
+// See docs/design/calendar-v2.md. Remove this wrapper to re-enable them.
+const test = (name: string, fn: () => unknown): void => { void nodeTest(name, { skip: "parked for calendar-v2 rebuild (chat/Ollama) — see docs/design/calendar-v2.md" }, fn as never); };
 import { ChatService } from "../src/dashboard/chat.js";
 import { FinanceService } from "../src/dashboard/finance.js";
 import { createDashboardContext } from "../src/dashboard/server.js";

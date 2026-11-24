@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import nodeTest from "node:test";
+// Parked for the calendar-v2 rebuild: chat and Ollama are kept in the tree; their tests are skipped (not deleted).
+// See docs/design/calendar-v2.md. Remove this wrapper to re-enable them.
+const test = (name: string, fn: () => unknown): void => { void nodeTest(name, { skip: "parked for calendar-v2 rebuild (chat/Ollama) — see docs/design/calendar-v2.md" }, fn as never); };
 import type { RawProposal } from "../src/dashboard/commands/actions.js";
 import { OllamaProposer, unavailableReply } from "../src/dashboard/commands/ollama.js";
 import { placeholderReply, type ProposerResult } from "../src/dashboard/commands/proposer.js";

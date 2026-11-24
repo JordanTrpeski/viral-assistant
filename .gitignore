@@ -7,3 +7,7 @@ dist/
 .viral/logs/
 .viral/finance/
 .viral/dashboard/
+
+# Calendar v2: ignore the whole local state dir and any Google OAuth client secret
+.viral/
+client_secret*.json

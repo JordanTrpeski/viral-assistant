@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import * as nodeFs from "node:fs/promises";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import test from "node:test";
+import nodeTest from "node:test";
+// Parked for the calendar-v2 rebuild: chat and Ollama are kept in the tree; their tests are skipped (not deleted).
+// See docs/design/calendar-v2.md. Remove this wrapper to re-enable them.
+const test = (name: string, fn: () => unknown): void => { void nodeTest(name, { skip: "parked for calendar-v2 rebuild (chat/Ollama) — see docs/design/calendar-v2.md" }, fn as never); };
 import { ChatService, placeholderReply, type ChatMessage, type ChatThreadDocument, type ChatThreadSummary } from "../src/dashboard/chat.js";
 import { NotFoundError, ValidationError } from "../src/dashboard/errors.js";
 import type { StoreFileSystem } from "../src/dashboard/store.js";

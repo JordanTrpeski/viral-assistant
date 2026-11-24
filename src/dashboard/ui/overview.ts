@@ -1,4 +1,5 @@
-// Overview: month calendar in the centre; right column with Next 7 days, Reminders, Budget and the chat pane.
+// Overview: month calendar in the centre; right column with Next 7 days, Reminders and Budget.
+// The chat pane is parked for the calendar-v2 rebuild (code kept in ./chat.js); see docs/design/calendar-v2.md.
 import type { ReminderPanelItem } from "../overview.js";
 import { colourInfo } from "../shared/colours.js";
 import { daysBetween } from "../shared/dates.js";
@@ -7,7 +8,6 @@ import type { TimelineItem } from "../timeline.js";
 import { api, type AppContext } from "./api.js";
 import { monthView, weekView, type OverviewBudget } from "./budget-view.js";
 import { openSource, renderCalendar } from "./calendar.js";
-import { isChatExpanded, renderChat } from "./chat.js";
 import { h } from "./dom.js";
 
 interface OverviewResponse {
@@ -64,14 +64,11 @@ function budgetPanel(context: AppContext, data: OverviewResponse): HTMLElement {
 }
 
 export async function renderOverview(container: HTMLElement, context: AppContext): Promise<void> {
-  const [calendar, data, chat] = await Promise.all([renderCalendar(context), api<OverviewResponse>("GET", "/api/overview"), renderChat(context)]);
-  // Expanded chat takes the Overview area; the calendar and the other right-column panels collapse out of the way.
-  const expanded = isChatExpanded();
-  container.replaceChildren(h("div", { class: `overview${expanded ? " chat-expanded" : ""}` },
-    expanded ? null : calendar,
+  const [calendar, data] = await Promise.all([renderCalendar(context), api<OverviewResponse>("GET", "/api/overview")]);
+  container.replaceChildren(h("div", { class: "overview" },
+    calendar,
     h("div", { class: "right-column" },
-      expanded ? null : nextSevenPanel(context, data),
-      expanded ? null : remindersPanel(context, data),
-      expanded ? null : budgetPanel(context, data),
-      chat)));
+      nextSevenPanel(context, data),
+      remindersPanel(context, data),
+      budgetPanel(context, data))));
 }
