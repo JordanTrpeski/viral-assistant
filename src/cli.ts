@@ -237,6 +237,9 @@ async function main(): Promise<void> {
         if (!(await dashboardContext.googleCalendar.status()).connected) return;
         const result = await dashboardContext.calendarSync.syncAll();
         console.log(`[calendar] startup sync: ${result.line}`);
+        // Phase 5: also reconcile the writable target (push/pull). Only runs when a target is set; never the primary by default.
+        const twoWay = await dashboardContext.twoWaySync.reconcile();
+        console.log(`[calendar] startup push/pull: ${twoWay.line}`);
       } catch (error) { console.error(`[calendar] startup sync failed: ${(error as Error).message}`); }
     })();
   } else if (command === "summary") {

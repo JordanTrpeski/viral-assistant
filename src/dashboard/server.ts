@@ -8,6 +8,7 @@ import { emptyEventsDocument, upcomingEvents, validateEventsDocument, type Event
 import { CalendarSync } from "./calendar/sync.js";
 import { OrganiseMigration } from "./calendar/migrate.js";
 import { registerCalendarAppRoutes } from "./calendar/app-routes.js";
+import { TwoWaySync, emptyConflictsDocument, emptyLinksDocument, validateConflictsDocument, validateLinksDocument, type ConflictsDocument, type LinksDocument } from "./calendar/twoway.js";
 import { JsonDocumentStore } from "./store.js";
 import { ChatService } from "./chat.js";
 import { OllamaProposer } from "./commands/ollama.js";
@@ -40,6 +41,9 @@ export interface DashboardContext {
   calendarEvents: JsonDocumentStore<EventsDocument>;
   calendarSync: CalendarSync;
   calendarMigration: OrganiseMigration;
+  calendarLinks: JsonDocumentStore<LinksDocument>;
+  calendarConflicts: JsonDocumentStore<ConflictsDocument>;
+  twoWaySync: TwoWaySync;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -78,6 +82,9 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     organiseItems: join(options.dataDir, "dashboard", "organise", "items.json"),
     exported: join(calendarDir, "exported-old-organise.json")
   }, { clock });
+  const calendarLinks = new JsonDocumentStore<LinksDocument>(join(calendarDir, "links.json"), validateLinksDocument, emptyLinksDocument);
+  const calendarConflicts = new JsonDocumentStore<ConflictsDocument>(join(calendarDir, "conflicts.json"), validateConflictsDocument, emptyConflictsDocument);
+  const twoWaySync = new TwoWaySync(googleCalendar, calendar, calendarEvents, calendarLinks, calendarConflicts, { clock, zone: async () => (await calendar.getSettings()).timeZone });
   return {
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
@@ -91,6 +98,9 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     calendarEvents,
     calendarSync,
     calendarMigration,
+    calendarLinks,
+    calendarConflicts,
+    twoWaySync,
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()
@@ -250,7 +260,13 @@ export function registerGoogleCalendarRoutes(router: Router, context: DashboardC
       throw error;
     }
   });
-  router.add("POST", "/api/calendar/google/sync", () => context.calendarSync.syncAll(), 200);
+  // Sync now does both directions (phase 5): read-only pull of every calendar, then two-way reconcile of the target.
+  router.add("POST", "/api/calendar/google/sync", async () => {
+    const readOnly = await context.calendarSync.syncAll();
+    const twoWay = await context.twoWaySync.reconcile();
+    return { ...twoWay, readOnly: readOnly.line, lastSync: readOnly.lastSync, reconnect: readOnly.reconnect || twoWay.reconnect };
+  }, 200);
+
   router.add("GET", "/api/calendar/google/events", async ({ query }) => {
     const requested = Number(query.get("days") ?? 7);
     const days = Number.isSafeInteger(requested) ? Math.min(60, Math.max(1, requested)) : 7;
