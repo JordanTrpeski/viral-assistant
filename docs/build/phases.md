@@ -2,13 +2,16 @@
 
 Decisions: `docs/design/calendar-v2.md` (source of truth). Branch: `feat/calendar-v2`.
 
+Naming (phase 5b): the user sees **Deadline** (stored kind `task`) and **Event** (stored kind `reminder`).
+Stored kinds are unchanged; only display names differ.
+
 ## 0 — Cleanup and brief
 Branch, decisions file, parked code, app still runs.
 **Done when:** the branch exists with the decisions file and phases file, self-development and chat are
 parked (code kept), and the dashboard still runs with Finance, Groceries, Budget and Overview loading.
 
 ## 1 — Data model
-Categories, subcategories, tasks, reminders, all-day, time zones, trash, done log. No Google.
+Categories, subcategories, deadlines (task), events (reminder), all-day, time zones, trash, done log. No Google.
 **Done when:** unit tests cover create, move, restore and delete.
 
 ## 2 — Google connection

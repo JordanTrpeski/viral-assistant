@@ -1,5 +1,5 @@
-// Organise Reminders (phase 4): list and add reminders. Fields: title, category (optional), date, time or
-// all-day, lead time in days. No writes to Google.
+// Organise Events (phase 4; renamed from Reminders in phase 5b — the stored kind stays "reminder"): list and
+// add events. Fields: title, category (optional), date, time or all-day, lead time in days. No writes to Google.
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
 import { loadCategories } from "./cal-common.js";
@@ -15,7 +15,7 @@ export async function renderCalendarReminders(container: HTMLElement, context: A
     loadCategories()
   ]);
 
-  const title = h("input", { type: "text", placeholder: "New reminder", class: "grow" });
+  const title = h("input", { type: "text", placeholder: "New event", class: "grow" });
   const category = h("select", {}, h("option", { value: "" }, "No category"), ...categories.map((cat) => h("option", { value: cat.id }, cat.name)));
   const date = h("input", { type: "date" });
   const time = h("input", { type: "time", title: "Time (leave empty for all-day)" });
@@ -43,7 +43,7 @@ export async function renderCalendarReminders(container: HTMLElement, context: A
     reminder.categoryId ? h("span", { class: "cal-cat" }, categories.find((category) => category.id === reminder.categoryId)?.name ?? "") : h("span", {}));
 
   container.replaceChildren(h("div", { class: "page cal-reminders" },
-    h("h2", {}, "Reminders"),
+    h("h2", {}, "Events"),
     h("div", { class: "panel addbar" }, title, category, date, time, lead, h("button", { class: "primary", onclick: add }, "Add")),
-    h("div", { class: "panel" }, h("h3", {}, `Reminders (${reminders.length})`), ...(reminders.length ? reminders.map(row) : [h("p", { class: "muted small" }, "No reminders yet.")]))));
+    h("div", { class: "panel" }, h("h3", {}, `Events (${reminders.length})`), ...(reminders.length ? reminders.map(row) : [h("p", { class: "muted small" }, "No events yet.")]))));
 }

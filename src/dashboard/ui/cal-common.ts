@@ -2,6 +2,7 @@
 // renderers, and the Today strip. Browser-only; no server imports.
 import { api } from "./api.js";
 import { h } from "./dom.js";
+import { kindLabel } from "../shared/kind-labels.js";
 
 export interface DisplayItem {
   id: string;
@@ -38,7 +39,7 @@ export function itemRow(item: DisplayItem): HTMLElement {
   return h("div", { class: `cal-row item${item.overdue ? " overdue" : ""}${item.status === "done" ? " done" : ""}` },
     h("span", { class: "cal-when" }, when),
     h("span", { class: "cal-title" }, item.title),
-    h("span", { class: "cal-tag" }, item.kind));
+    h("span", { class: "cal-tag" }, kindLabel(item.kind)));
 }
 
 export function eventRow(event: DisplayEvent): HTMLElement {

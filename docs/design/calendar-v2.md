@@ -4,12 +4,19 @@ This file is the source of truth for the calendar rebuild (branch `feat/calendar
 (see `docs/build/phases.md`) follow the decisions below. Where a phase would change a decision here, update
 this file first.
 
+## Naming (phase 5b)
+
+The user-facing names are **Deadline** and **Event**. The **stored kinds are unchanged**: a Deadline is kind
+`"task"` and an Event is kind `"reminder"` in the data. No stored data is renamed. This document and the UI use
+the display names; code still uses `task`/`reminder`. A Deadline has one due date plus an optional time (all-day
+when no time); an Event is a dated reminder with an optional time and lead-time reminders.
+
 ## Organise (rebuilt from scratch on this branch)
 
 The old Organise is **removed only after migration in phase 8**; until then it stays in place, parked.
 
-- **Keep:** Calendar view (full view in Organise; read-only preview on the main dashboard), Reminders,
-  Tasks, Today strip, weekly and monthly overviews, search, export.
+- **Keep:** Calendar view (full view in Organise; read-only preview on the main dashboard), Events,
+  Deadlines, Today strip, weekly and monthly overviews, search, export.
 - **Remove:** Inbox, Money, Notes and lists, Projects, Trackers, Auto-suggest and rules, and Weekly review
   as a separate page (the weekly overview replaces it).
 - **Settings** live inside the Organise dashboard.
@@ -27,15 +34,20 @@ The old Organise is **removed only after migration in phase 8**; until then it s
 - Each category has a **colour for Google events**, taken from Google's event colour palette at runtime. The
   app owns that colour.
 
-## Tasks
+## Deadlines (stored kind: `task`)
 
-- **Fields:** due date, planned day, priority (low, normal, high), status (open or done), recurrence (weekly,
-  monthly, yearly), done log, carry-over of unfinished tasks to today, snooze, and undo for a short time.
-- **Recurring tasks stay in the app only** in version one (not pushed to Google as recurring series).
+- **Fields:** one **due date** plus an **optional time** (phase 5b — the earlier date range was collapsed to a
+  single due date), priority (low, normal, high), status (open or done), recurrence (weekly, monthly, yearly),
+  done log, carry-over of unfinished deadlines to today, snooze, and undo for a short time.
+- A Deadline **with a time** is a timed item; **without a time** it is an all-day item on its due date.
+- Deadlines are **pushed to the writable target calendar** (timed or all-day), using the same two-way rules as
+  Events. Ticking one off sets its status done and changes its Google title to `✓ Done: <title>` (colour kept);
+  un-ticking removes the prefix.
+- **Recurring deadlines stay in the app only** in version one (not pushed to Google as recurring series).
 - **Deleting a recurring item** offers: this occurrence (no trash entry), this and all future, or the entire
   series.
 
-## Reminders
+## Events (stored kind: `reminder`)
 
 - **Lead time in days.** Each category has a **default set** of reminders. An item inherits it, or overrides
   it. An **override replaces** the default — it does not add to it. A category can hold **more than one**

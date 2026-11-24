@@ -3,6 +3,7 @@
 // clock — the caller passes the date range and today. Read-only calendars (subscribed, holidays) are flagged
 // "dimmed" and carry their calendar name. Nothing here writes to Google. See docs/design/calendar-v2.md.
 import { addDays, mondayOf, monthGrid, type IsoDate, type IsoMonth } from "../shared/dates.js";
+import { kindLabel } from "../shared/kind-labels.js";
 import type { Item } from "./model.js";
 import { occurrences } from "./recurrence.js";
 import type { EventsDocument, StoredEvent } from "./events.js";
@@ -173,6 +174,8 @@ export function searchItems(items: Item[], query: string): Item[] {
 }
 
 const CSV_COLUMNS = ["kind", "title", "date", "time", "allDay", "dueDate", "plannedDate", "priority", "status", "categoryId"] as const;
+// The export header uses the display names (phase 5b): the "kind" column is shown as "type" with Deadline/Event.
+const CSV_HEADERS = ["type", "title", "date", "time", "allDay", "dueDate", "plannedDate", "priority", "status", "categoryId"];
 
 function csvCell(value: unknown): string {
   const text = value === null || value === undefined ? "" : String(value);
@@ -181,9 +184,9 @@ function csvCell(value: unknown): string {
 
 /** CSV of every item, one row each (keeps the old Organise export behaviour, pointed at the new store). */
 export function itemsToCsv(items: Item[]): string {
-  const rows = [CSV_COLUMNS.join(",")];
+  const rows = [CSV_HEADERS.join(",")];
   for (const item of items) {
-    rows.push(CSV_COLUMNS.map((column) => csvCell((item as unknown as Record<string, unknown>)[column])).join(","));
+    rows.push(CSV_COLUMNS.map((column) => csvCell(column === "kind" ? kindLabel(item.kind) : (item as unknown as Record<string, unknown>)[column])).join(","));
   }
   return `${rows.join("\n")}\n`;
 }

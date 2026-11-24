@@ -38,8 +38,9 @@ const navItems: NavItem[] = [
   { route: "reminders", label: "Reminders", render: renderReminders, hidden: true },
   { route: "organise", label: "Overview", render: renderCalendarOverview, group: "Organise" },
   { route: "organise-calendar", label: "Calendar", render: renderCalendarViews, group: "Organise" },
-  { route: "organise-tasks", label: "Tasks", render: renderCalendarTasks, group: "Organise" },
-  { route: "organise-reminders", label: "Reminders", render: renderCalendarReminders, group: "Organise" },
+  // Display names (phase 5b): a "task" is shown as "Deadline", a "reminder" as "Event". Routes/kinds unchanged.
+  { route: "organise-tasks", label: "Deadlines", render: renderCalendarTasks, group: "Organise" },
+  { route: "organise-reminders", label: "Events", render: renderCalendarReminders, group: "Organise" },
   { route: "organise-search", label: "Search", render: renderCalendarSearch, group: "Organise" },
   { route: "organise-export", label: "Export", render: renderCalendarExport, group: "Organise" },
   { route: "organise-settings", label: "Settings", render: renderCalendarSettings, group: "Organise" },
