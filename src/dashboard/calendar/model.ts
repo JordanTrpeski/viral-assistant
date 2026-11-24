@@ -90,6 +90,9 @@ export interface Settings {
 
 export const defaultTimeZone = "Europe/Ljubljana";
 
+/** The seven default categories from the decisions file. A fixed dropdown in phase 4; management arrives in phase 7. */
+export const defaultCategoryNames = ["Study", "Work", "Admin", "Home", "Health", "People", "Personal"] as const;
+
 export interface CalendarDocument {
   schemaVersion: 1;
   categories: Category[];
@@ -97,10 +100,12 @@ export interface CalendarDocument {
   doneLog: DoneLogEntry[];
   trash: TrashEntry[];
   settings: Settings;
+  /** Ids of one-off migrations already applied (e.g. "organise-v1"), so each runs at most once. */
+  migrations: string[];
 }
 
 export function emptyCalendarDocument(): CalendarDocument {
-  return { schemaVersion: 1, categories: [], items: [], doneLog: [], trash: [], settings: { trashDays: 7, allDayReminderTime: "09:00", timeZone: defaultTimeZone } };
+  return { schemaVersion: 1, categories: [], items: [], doneLog: [], trash: [], settings: { trashDays: 7, allDayReminderTime: "09:00", timeZone: defaultTimeZone }, migrations: [] };
 }
 
 const timePattern = /^\d{2}:\d{2}$/;
@@ -225,6 +230,7 @@ export function validateCalendarDocument(value: unknown): CalendarDocument {
       trashDays: typeof settings.trashDays === "number" && Number.isInteger(settings.trashDays) && settings.trashDays > 0 ? settings.trashDays : 7,
       allDayReminderTime: typeof settings.allDayReminderTime === "string" && timePattern.test(settings.allDayReminderTime) ? settings.allDayReminderTime : "09:00",
       timeZone: typeof settings.timeZone === "string" && settings.timeZone.trim() !== "" ? settings.timeZone : defaultTimeZone
-    }
+    },
+    migrations: (Array.isArray(value.migrations) ? value.migrations : []).filter((entry): entry is string => typeof entry === "string")
   };
 }

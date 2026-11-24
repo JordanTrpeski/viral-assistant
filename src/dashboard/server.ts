@@ -6,6 +6,7 @@ import { GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredEr
 import { CalendarService } from "./calendar/service.js";
 import { emptyEventsDocument, upcomingEvents, validateEventsDocument, type EventsDocument } from "./calendar/events.js";
 import { CalendarSync } from "./calendar/sync.js";
+import { OrganiseMigration } from "./calendar/migrate.js";
 import { JsonDocumentStore } from "./store.js";
 import { ChatService } from "./chat.js";
 import { OllamaProposer } from "./commands/ollama.js";
@@ -37,6 +38,7 @@ export interface DashboardContext {
   calendar: CalendarService;
   calendarEvents: JsonDocumentStore<EventsDocument>;
   calendarSync: CalendarSync;
+  calendarMigration: OrganiseMigration;
   budgetStepCents: number;
   clock: () => Date;
   startedAt: Date;
@@ -70,6 +72,11 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
   const googleCalendar = new GoogleCalendarConnection(calendarDir, { now: clock });
   const calendarEvents = new JsonDocumentStore<EventsDocument>(join(calendarDir, "events.json"), validateEventsDocument, emptyEventsDocument);
   const calendarSync = new CalendarSync(googleCalendar, calendarEvents, { clock, zone: async () => (await calendar.getSettings()).timeZone });
+  const calendarMigration = new OrganiseMigration(calendar.store, {
+    dashboardReminders: join(options.dataDir, "dashboard", "reminders.json"),
+    organiseItems: join(options.dataDir, "dashboard", "organise", "items.json"),
+    exported: join(calendarDir, "exported-old-organise.json")
+  }, { clock });
   return {
     finance,
     groceries: GroceriesService.open(join(options.dataDir, "dashboard"), financePortFor(finance), { clock }),
@@ -82,6 +89,7 @@ export function createDashboardContext(options: DashboardOptions): DashboardCont
     calendar,
     calendarEvents,
     calendarSync,
+    calendarMigration,
     budgetStepCents: options.budgetStepCents,
     clock,
     startedAt: clock()

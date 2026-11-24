@@ -226,8 +226,13 @@ async function main(): Promise<void> {
     try { commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim(); } catch { /* not a git checkout */ }
     console.log(`Viral dashboard build commit: ${commit}`);
     console.log(`Viral dashboard on http://${shown}:${server.port} (loopback only; data in ${dataDir})`);
-    // Phase 3: one read-only calendar sync at startup, only when Google is connected. Silent otherwise; never fatal.
+    // Phase 4: one-off migration of the old data into the new calendar store. Runs once (recorded in the store),
+    // safe to re-run, and never fatal. Then phase 3: one read-only sync when Google is connected.
     void (async () => {
+      try {
+        const migration = await dashboardContext.calendarMigration.run();
+        if (!migration.alreadyDone) console.log(`[calendar] migrated old data: ${migration.reminders} reminders, ${migration.tasks} tasks, ${migration.exported} exported.`);
+      } catch (error) { console.error(`[calendar] migration failed: ${(error as Error).message}`); }
       try {
         if (!(await dashboardContext.googleCalendar.status()).connected) return;
         const result = await dashboardContext.calendarSync.syncAll();
