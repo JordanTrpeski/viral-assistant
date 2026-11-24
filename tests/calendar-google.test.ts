@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError, parseCalendarList, type HttpResponse } from "../src/dashboard/calendar/google.js";
+import { CALENDAR_READONLY_SCOPE, GoogleCalendarConnection, GoogleClientMissingError, ReconnectRequiredError, parseCalendarList, type GoogleClientConfig, type HttpResponse } from "../src/dashboard/calendar/google.js";
 
 const clientJson = JSON.stringify({ installed: { client_id: "cid", client_secret: "secret", auth_uri: "https://accounts.google.com/o/oauth2/auth", token_uri: "https://oauth2.googleapis.com/token" } });
 const tokenJson = JSON.stringify({ refreshToken: "rt", account: "a@example.com", scope: "https://www.googleapis.com/auth/calendar.readonly", obtainedAt: "2026-11-01T00:00:00.000Z" });
@@ -32,6 +32,30 @@ test("google: calendar list parsing maps access roles to writable/read-only, nam
     ["Holidays", false, false],   // summaryOverride wins
     ["Busy", false, false]
   ]);
+});
+
+test("google: the sign-in URL carries every parameter Google's installed-app flow requires", () => {
+  const config: GoogleClientConfig = {
+    clientId: "fake-client-id.apps.googleusercontent.com",
+    clientSecret: "fake-secret",
+    authUri: "https://accounts.google.com/o/oauth2/auth",
+    tokenUri: "https://oauth2.googleapis.com/token"
+  };
+  const connection = new GoogleCalendarConnection("/fake/calendar", { readFile: files({}) });
+  const redirectUri = "http://127.0.0.1:54321";
+  const url = new URL(connection.buildAuthUrl(config, redirectUri, "fake-code-challenge", "fake-state"));
+
+  assert.equal(`${url.origin}${url.pathname}`, config.authUri, "points at the client's auth endpoint");
+  const query = url.searchParams;
+  assert.equal(query.get("response_type"), "code", "response_type=code is present");
+  assert.equal(query.get("client_id"), config.clientId);
+  assert.equal(query.get("redirect_uri"), redirectUri, "the 127.0.0.1 loopback redirect");
+  assert.equal(query.get("scope"), CALENDAR_READONLY_SCOPE, "read-only Calendar scope only");
+  assert.equal(query.get("state"), "fake-state");
+  assert.equal(query.get("code_challenge"), "fake-code-challenge");
+  assert.equal(query.get("code_challenge_method"), "S256");
+  assert.equal(query.get("access_type"), "offline", "needed for a refresh token");
+  assert.equal(query.get("prompt"), "consent");
 });
 
 test("google: a missing client file gives a clear message that says where to put it", async () => {
