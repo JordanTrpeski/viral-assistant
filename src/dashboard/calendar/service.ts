@@ -363,6 +363,32 @@ export class CalendarService {
     return (await this.store.read()).trash;
   }
 
+  /** Public purge for the startup/timer sweep (local only; never touches Google). */
+  async purgeExpired(): Promise<void> {
+    await this.purge();
+  }
+
+  /** Adds a snapshot to the Deleted list directly (used for conflict losers and Google-side deletes). */
+  async trashItem(snapshot: Item, reason: TrashEntry["reason"]): Promise<TrashEntry> {
+    await this.purge();
+    const nowMs = this.clock().getTime();
+    const timestamp = this.now();
+    return this.store.update((draft) => {
+      const entry: TrashEntry = { id: randomUUID(), item: structuredClone(snapshot), deletedAt: timestamp, expiresAt: new Date(nowMs + draft.settings.trashDays * 86_400_000).toISOString(), reason };
+      draft.trash.push(entry);
+      return entry;
+    });
+  }
+
+  /** "Delete now": removes one trash entry immediately. The linked Google event is removed on the next sync. */
+  async deleteNow(trashId: string): Promise<void> {
+    await this.purge();
+    await this.store.update((draft) => {
+      if (!draft.trash.some((entry) => entry.id === trashId)) throw new NotFoundError("trash entry", trashId);
+      draft.trash = draft.trash.filter((entry) => entry.id !== trashId);
+    });
+  }
+
   /** Restores a trashed item: removes the trash entry and puts the item back. */
   async restore(trashId: string): Promise<Item> {
     await this.purge();

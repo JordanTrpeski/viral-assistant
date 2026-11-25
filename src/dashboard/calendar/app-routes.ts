@@ -86,11 +86,26 @@ export function registerCalendarAppRoutes(router: Router, context: DashboardCont
     await calendar.reopenItem(params.id!);
     return calendar.getItem(params.id!).catch(() => ({ id: params.id, reopened: true }));
   }, 200);
-  router.add("DELETE", "/api/calendar/items/:id", async ({ params, query }) => {
-    const scope = query.get("scope");
-    await calendar.deleteItem(params.id!, scope === "occurrence" || scope === "future" || scope === "series" ? { scope } : {});
+  router.add("DELETE", "/api/calendar/items/:id", async ({ params, query, body }) => {
+    const scope = query.get("scope") ?? (isObject(body) && typeof body.scope === "string" ? body.scope : null);
+    const occurrenceDate = query.get("occurrenceDate") ?? (isObject(body) && typeof body.occurrenceDate === "string" ? body.occurrenceDate : undefined);
+    await calendar.deleteItem(params.id!, {
+      ...(scope === "occurrence" || scope === "future" || scope === "series" ? { scope } : {}),
+      ...(occurrenceDate ? { occurrenceDate } : {})
+    });
     return { deleted: params.id };
   });
+
+  // The Deleted list (phase 6): items wait 7 days before purge; Restore and Delete now per entry.
+  router.add("GET", "/api/calendar/trash", async () => {
+    const entries = await calendar.listTrash();
+    return entries.map((entry) => ({
+      id: entry.id, reason: entry.reason, deletedAt: entry.deletedAt, expiresAt: entry.expiresAt,
+      title: entry.item.title, kind: entry.item.kind, date: entry.item.date, allDay: entry.item.allDay, time: entry.item.time
+    }));
+  });
+  router.add("POST", "/api/calendar/trash/:id/restore", ({ params }) => calendar.restore(params.id!), 200);
+  router.add("POST", "/api/calendar/trash/:id/delete-now", async ({ params }) => { await calendar.deleteNow(params.id!); return { deleted: params.id }; }, 200);
 
   router.add("GET", "/api/calendar/view", async ({ query }) => {
     const mode = query.get("mode") ?? "week";

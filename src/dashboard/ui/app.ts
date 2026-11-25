@@ -12,6 +12,7 @@ import { renderCalendarTasks } from "./cal-tasks.js";
 import { renderCalendarReminders } from "./cal-reminders.js";
 import { renderCalendarSearch } from "./cal-search.js";
 import { renderCalendarExport } from "./cal-export.js";
+import { renderCalendarTrash } from "./cal-trash.js";
 import { renderCalendarSettings } from "./cal-settings.js";
 import { renderOverview } from "./overview.js";
 import { renderReminders } from "./reminders.js";
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { route: "organise-reminders", label: "Events", render: renderCalendarReminders, group: "Organise" },
   { route: "organise-search", label: "Search", render: renderCalendarSearch, group: "Organise" },
   { route: "organise-export", label: "Export", render: renderCalendarExport, group: "Organise" },
+  { route: "organise-trash", label: "Deleted", render: renderCalendarTrash, group: "Organise" },
   { route: "organise-settings", label: "Settings", render: renderCalendarSettings, group: "Organise" },
   { route: "gym", label: "Gym" },
   { route: "viral-tasks", label: "Viral tasks" }

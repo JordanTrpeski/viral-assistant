@@ -217,7 +217,12 @@ async function main(): Promise<void> {
     const localModel = await createLocalModel(root);
     const dashboardContext = createDashboardContext({ dataDir, budgetStepCents: config.budgetStepCents, chatMaxAmountCents: config.chatMaxAmountCents, localModel, chat: { model: config.model, timeoutMs: config.timeoutMs, proposerEnabled: config.proposerEnabled } });
     const server = await startDashboardServer(dashboardContext, config.host, port);
-    const shutdown = (): void => { void server.stop().then(() => process.exit(0)); };
+    // Phase 6: purge the trash (local only; the linked Google event is removed on the next sync) at startup and
+    // hourly. This is not a background Google sync — it never calls Google.
+    void dashboardContext.calendar.purgeExpired().catch(() => undefined);
+    const purgeTimer = setInterval(() => { void dashboardContext.calendar.purgeExpired().catch(() => undefined); }, 60 * 60 * 1000);
+    purgeTimer.unref();
+    const shutdown = (): void => { clearInterval(purgeTimer); void server.stop().then(() => process.exit(0)); };
     process.once("SIGINT", shutdown);
     process.once("SIGTERM", shutdown);
     const shown = server.host.includes(":") ? `[${server.host}]` : server.host;

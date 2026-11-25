@@ -414,6 +414,17 @@ export class GoogleCalendarConnection {
     return this.write("PATCH", eventUrl(calendarId, eventId), body);
   }
 
+  /** Deletes an event from a calendar. A 404/410 (already gone) counts as success; 401/403 → reconnect. */
+  async deleteEvent(calendarId: string, eventId: string): Promise<{ status: "ok" | "reconnect" | "error"; error?: string }> {
+    let access: string;
+    try { access = await this.accessToken(); }
+    catch (error) { if (error instanceof ReconnectRequiredError) return { status: "reconnect" }; throw error; }
+    const response = await this.http({ url: eventUrl(calendarId, eventId), method: "DELETE", headers: { authorization: `Bearer ${access}` } });
+    if (response.status === 401 || response.status === 403) return { status: "reconnect" };
+    if ((response.status >= 200 && response.status < 300) || response.status === 404 || response.status === 410) return { status: "ok" };
+    return { status: "error", error: `HTTP ${response.status}` };
+  }
+
   private async write(method: HttpMethod, url: string, body: Record<string, unknown>): Promise<WriteResult> {
     let access: string;
     try { access = await this.accessToken(); }
