@@ -2,11 +2,11 @@
 // add events. Fields: title, category (optional), date, time or all-day, lead time in days. No writes to Google.
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
-import { loadCategories } from "./cal-common.js";
+import { deleteControl, loadCategories } from "./cal-common.js";
 
 interface Reminder {
   id: string; title: string; date: string; time: string | null; allDay: boolean;
-  categoryId: string | null; leadTimes: number[] | null;
+  categoryId: string | null; leadTimes: number[] | null; recurrence: { freq: string } | null;
 }
 
 export async function renderCalendarReminders(container: HTMLElement, context: AppContext): Promise<void> {
@@ -40,7 +40,8 @@ export async function renderCalendarReminders(container: HTMLElement, context: A
     h("span", { class: "cal-title" }, reminder.title),
     h("span", { class: "cal-when" }, reminder.date),
     reminder.leadTimes && reminder.leadTimes.length ? h("span", { class: "cal-tag" }, `lead ${reminder.leadTimes.join(", ")}d`) : h("span", {}),
-    reminder.categoryId ? h("span", { class: "cal-cat" }, categories.find((category) => category.id === reminder.categoryId)?.name ?? "") : h("span", {}));
+    reminder.categoryId ? h("span", { class: "cal-cat" }, categories.find((category) => category.id === reminder.categoryId)?.name ?? "") : h("span", {}),
+    deleteControl(context, { id: reminder.id, date: reminder.date, recurrence: reminder.recurrence }));
 
   container.replaceChildren(h("div", { class: "page cal-reminders" },
     h("h2", {}, "Events"),

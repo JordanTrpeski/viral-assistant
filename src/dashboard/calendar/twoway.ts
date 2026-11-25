@@ -57,6 +57,7 @@ export interface GoogleWriter {
   fetchEvents(calendarId: string, request: EventFetchRequest): Promise<EventFetchResult>;
   insertEvent(calendarId: string, body: Record<string, unknown>): Promise<WriteResult>;
   patchEvent(calendarId: string, eventId: string, body: Record<string, unknown>): Promise<WriteResult>;
+  deleteEvent(calendarId: string, eventId: string): Promise<{ status: "ok" | "reconnect" | "error"; error?: string }>;
 }
 
 export interface PushResult {
@@ -65,6 +66,10 @@ export interface PushResult {
   pulled: number;
   conflicts: number;
   pendingDeletes: number;
+  /** Google events deleted from the target because their app item was purged from trash. */
+  deleted: number;
+  /** App items moved to the Deleted list because their target Google event was deleted. */
+  trashedFromGoogle: number;
   failures: { item: string; reason: string }[];
   /** True when the token lacks the write scope; the UI shows "Reconnect Google". */
   reconnect: boolean;
@@ -77,10 +82,10 @@ const DAY_MS = 86_400_000;
 const DAYS_BACK = 30;
 const DAYS_AHEAD = 365;
 
-export function formatPushLine(result: Pick<PushResult, "pushed" | "updated" | "pulled" | "conflicts" | "pendingDeletes" | "failures" | "reconnect" | "target">): string {
+export function formatPushLine(result: Pick<PushResult, "pushed" | "updated" | "pulled" | "conflicts" | "pendingDeletes" | "deleted" | "trashedFromGoogle" | "failures" | "reconnect" | "target">): string {
   if (result.reconnect) return "Reconnect Google to grant write access.";
   if (result.target === null) return "No writable target calendar is set; nothing was pushed.";
-  let line = `Pushed ${result.pushed}, updated ${result.updated}, pulled ${result.pulled}, conflicts ${result.conflicts}, pending deletes ${result.pendingDeletes}.`;
+  let line = `Pushed ${result.pushed}, updated ${result.updated}, pulled ${result.pulled}, conflicts ${result.conflicts}, pending deletes ${result.pendingDeletes}, deleted ${result.deleted}, trashed from Google ${result.trashedFromGoogle}.`;
   if (result.failures.length > 0) line += ` Failed: ${result.failures.map((failure) => `${failure.item} (${failure.reason})`).join("; ")}.`;
   return line;
 }
@@ -129,7 +134,7 @@ export class TwoWaySync {
   }
 
   async reconcile(): Promise<PushResult> {
-    const base = { pushed: 0, updated: 0, pulled: 0, conflicts: 0, pendingDeletes: 0, failures: [] as { item: string; reason: string }[] };
+    const base = { pushed: 0, updated: 0, pulled: 0, conflicts: 0, pendingDeletes: 0, deleted: 0, trashedFromGoogle: 0, failures: [] as { item: string; reason: string }[] };
     const eventsDoc = await this.events.read();
     const target = resolveTarget(eventsDoc);
     if (!target) return { ...base, reconnect: false, target: null, line: formatPushLine({ ...base, reconnect: false, target: null }) };
@@ -151,7 +156,7 @@ export class TwoWaySync {
     const rawByViralItem = new Map<string, Record<string, unknown>>();
     for (const event of raw) { const vid = viralItemIdOf(event); if (vid) rawByViralItem.set(vid, event); }
 
-    let { pushed, updated, pulled } = base;
+    let { pushed, updated, pulled, deleted, trashedFromGoogle } = base;
     let conflictCount = 0;
     const failures = base.failures;
 
@@ -218,9 +223,20 @@ export class TwoWaySync {
       }
     }
 
-    // 2. Pending deletes: a link whose app item is gone (delete is not pushed in phase 5).
-    for (const link of links) {
-      if (!itemById.has(link.itemId)) link.pendingDelete = true;
+    // 2. Pending deletes and purges. A link whose app item is in trash is "pending"; the Google event is left
+    //    alone until the item is fully purged (gone from items AND trash), then the event is deleted from the
+    //    writable target. Restoring the item (it returns to `items`) clears pending. Read-only calendars are never
+    //    linked, so this only ever touches the writable target.
+    const trashedIds = new Set((await this.calendar.listTrash()).map((entry) => entry.item.id));
+    for (const link of [...links]) {
+      const present = itemById.has(link.itemId);
+      link.pendingDelete = !present;
+      if (present || trashedIds.has(link.itemId)) continue; // still live, or waiting in trash
+      const result = await this.source.deleteEvent(target.id, link.eventId);
+      if (result.status === "reconnect") return { ...base, reconnect: true, target: target.name, line: formatPushLine({ ...base, reconnect: true, target: target.name }) };
+      if (result.status === "error") { failures.push({ item: link.itemId, reason: reason(new Error(result.error ?? "HTTP error")) }); continue; }
+      links.splice(links.indexOf(link), 1);
+      deleted += 1;
     }
     const pendingDeletes = links.filter((link) => link.pendingDelete).length;
 
@@ -243,7 +259,7 @@ export class TwoWaySync {
     await this.links.update((draft) => { draft.links = links; });
     if (newConflicts.length) await this.conflicts.update((draft) => { draft.conflicts.push(...newConflicts); });
 
-    const result = { pushed, updated, pulled, conflicts: conflictCount, pendingDeletes, failures, reconnect: false, target: target.name };
+    const result = { pushed, updated, pulled, conflicts: conflictCount, pendingDeletes, deleted, trashedFromGoogle, failures, reconnect: false, target: target.name };
     return { ...result, line: formatPushLine(result) };
   }
 

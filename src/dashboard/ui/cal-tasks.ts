@@ -3,7 +3,7 @@
 // deadline with a time is timed; without a time it is all-day on its due date. Deadlines push to Google.
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
-import { loadCategories } from "./cal-common.js";
+import { deleteControl, loadCategories } from "./cal-common.js";
 
 interface Deadline {
   id: string; title: string; date: string; dueDate: string | null; time: string | null; allDay: boolean;
@@ -53,7 +53,8 @@ export async function renderCalendarTasks(container: HTMLElement, context: AppCo
     h("span", { class: "cal-when" }, `due ${deadline.dueDate ?? deadline.date}${deadline.allDay ? "" : ` ${deadline.time ?? ""}`}`),
     h("span", { class: `pri ${deadline.priority}` }, deadline.priority),
     deadline.recurrence ? h("span", { class: "cal-tag" }, deadline.recurrence.freq) : h("span", {}),
-    deadline.categoryId ? h("span", { class: "cal-cat" }, categories.find((category) => category.id === deadline.categoryId)?.name ?? "") : h("span", {}));
+    deadline.categoryId ? h("span", { class: "cal-cat" }, categories.find((category) => category.id === deadline.categoryId)?.name ?? "") : h("span", {}),
+    deleteControl(context, deadline));
 
   container.replaceChildren(h("div", { class: "page cal-tasks" },
     h("h2", {}, "Deadlines"),

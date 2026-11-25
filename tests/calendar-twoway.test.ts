@@ -172,7 +172,7 @@ test("5b-fix: tick, un-tick, tick again gives exactly one prefix at each step (n
 class FakeGoogle implements GoogleWriter {
   events = new Map<string, Record<string, unknown>>();
   writeScope = true;
-  calls = { insert: 0, patch: 0 };
+  calls = { insert: 0, patch: 0, delete: 0 };
   private tick = 0;
   private stamp(): string { this.tick += 1; return new Date(Date.UTC(2027, 0, 1, 0, 0, 0, this.tick)).toISOString(); }
   async hasWriteScope(): Promise<boolean> { return this.writeScope; }
@@ -189,6 +189,9 @@ class FakeGoogle implements GoogleWriter {
     this.calls.patch += 1; const current = this.events.get(eventId) ?? { id: eventId };
     const event = { ...current, ...body, id: eventId, updated: this.stamp() }; this.events.set(eventId, event);
     return { status: "ok", event };
+  }
+  async deleteEvent(_calendarId: string, eventId: string): Promise<{ status: "ok" | "reconnect" | "error"; error?: string }> {
+    this.calls.delete += 1; this.events.delete(eventId); return { status: "ok" };
   }
   editEvent(id: string, patch: Record<string, unknown>): void {
     const current = this.events.get(id)!;
@@ -297,6 +300,50 @@ test("two-way: an app delete is not pushed; the link is marked pending delete", 
     assert.equal(h.google.calls.insert, before.insert, "the delete causes no insert");
     assert.equal(h.google.calls.patch, before.patch, "the delete is not pushed as a patch");
     assert.equal((await h.links.read()).links[0]!.pendingDelete, true);
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
+test("6: an app delete leaves the Google event until purge, then deletes it on the next sync", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Temp", date: "2027-02-10", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+
+    h.setNow("2027-01-02T00:00:00.000Z");
+    await h.service.deleteItem(item.id);
+    const pending = await h.two.reconcile();
+    assert.equal(pending.pendingDeletes, 1, "pending while the item waits in trash");
+    assert.equal(h.google.calls.delete, 0, "the Google event is not deleted yet");
+    assert.ok(h.google.events.has(eventId));
+
+    h.setNow("2027-01-10T00:00:00.000Z"); // past the 7-day window
+    await h.service.purgeExpired();
+    const purged = await h.two.reconcile();
+    assert.equal(purged.deleted, 1, "the Google event is deleted on sync after purge");
+    assert.equal(h.google.calls.delete, 1);
+    assert.ok(!h.google.events.has(eventId));
+    assert.equal((await h.links.read()).links.length, 0, "the link is removed");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
+test("6: restoring a deleted deadline brings it back and leaves its Google event in place (re-synced)", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Keep", date: "2027-02-10", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+
+    await h.service.deleteItem(item.id);
+    await h.two.reconcile(); // pending, event kept
+    const [entry] = await h.service.listTrash();
+    await h.service.restore(entry!.id);
+    const result = await h.two.reconcile();
+
+    assert.equal(result.deleted, 0, "nothing is deleted on Google");
+    assert.ok(h.google.events.has(eventId), "the event is still there");
+    const link = (await h.links.read()).links.find((candidate) => candidate.itemId === item.id);
+    assert.ok(link && !link.pendingDelete, "the link is live again after restore");
   } finally { await rm(h.dir, { recursive: true, force: true }); }
 });
 
