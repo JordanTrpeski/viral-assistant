@@ -135,6 +135,38 @@ test("5b-fix: un-ticking a deadline sets it open and drops the ✓ prefix on the
   } finally { await rm(h.dir, { recursive: true, force: true }); }
 });
 
+test("5b-fix: a deadline can be ticked done whatever its due date (overdue, today, future)", async () => {
+  const h = await harness();
+  try {
+    const overdue = await h.service.createItem({ kind: "task", title: "Overdue", date: "2020-01-01", time: "09:00" });
+    const future = await h.service.createItem({ kind: "task", title: "Future", date: "2099-01-01", time: "09:00" });
+    await h.service.completeItem(overdue.id);
+    await h.service.completeItem(future.id);
+    assert.equal((await h.service.getItem(overdue.id)).status, "done");
+    assert.equal((await h.service.getItem(future.id)).status, "done", "a future-dated deadline ticks too");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
+test("5b-fix: tick, un-tick, tick again gives exactly one prefix at each step (never two)", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Loop", date: "2099-05-05", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+    const summary = (): string => (h.google.events.get(eventId) as { summary: string }).summary;
+
+    h.setNow("2027-01-02T00:00:00.000Z");
+    await h.service.completeItem(item.id); await h.two.reconcile();
+    assert.equal(summary(), "✓ Done: Loop");
+    h.setNow("2027-01-03T00:00:00.000Z");
+    await h.service.reopenItem(item.id); await h.two.reconcile();
+    assert.equal(summary(), "Loop");
+    h.setNow("2027-01-04T00:00:00.000Z");
+    await h.service.completeItem(item.id); await h.two.reconcile();
+    assert.equal(summary(), "✓ Done: Loop", "one prefix, never two");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
 // ---- reconciler over a simulated calendar -------------------------------------------------------------------
 
 class FakeGoogle implements GoogleWriter {
