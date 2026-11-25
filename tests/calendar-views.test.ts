@@ -22,8 +22,8 @@ function eventsDoc(prefs: EventsDocument["prefs"] = {}): EventsDocument {
       { id: "holidays", name: "Slovenian holidays", colour: "#abc", readOnly: true, syncToken: null }
     ],
     events: [
-      { calendarId: "mine", eventId: "e1", title: "Standup", allDay: false, start: "2026-11-26T09:00:00+01:00", end: null, date: "2026-11-26", time: "09:00", endTime: null, endDate: null, timeZone: "Europe/Ljubljana", status: "confirmed", colour: null },
-      { calendarId: "holidays", eventId: "h1", title: "Holiday", allDay: true, start: null, end: null, date: "2026-11-27", time: null, endTime: null, endDate: "2026-11-27", timeZone: "Europe/Ljubljana", status: "confirmed", colour: "#abc" }
+      { calendarId: "mine", eventId: "e1", title: "Standup", allDay: false, start: "2026-11-26T09:00:00+01:00", end: null, date: "2026-11-26", time: "09:00", endTime: null, endDate: null, timeZone: "Europe/Ljubljana", status: "confirmed", colour: null, appOwned: false },
+      { calendarId: "holidays", eventId: "h1", title: "Holiday", allDay: true, start: null, end: null, date: "2026-11-27", time: null, endTime: null, endDate: "2026-11-27", timeZone: "Europe/Ljubljana", status: "confirmed", colour: "#abc", appOwned: false }
     ],
     prefs,
     writeCalendarId: null,

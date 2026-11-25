@@ -107,27 +107,32 @@ export function registerCalendarAppRoutes(router: Router, context: DashboardCont
   router.add("POST", "/api/calendar/trash/:id/restore", ({ params }) => calendar.restore(params.id!), 200);
   router.add("POST", "/api/calendar/trash/:id/delete-now", async ({ params }) => { await calendar.deleteNow(params.id!); return { deleted: params.id }; }, 200);
 
+  // Event ids the app owns (linked to an app item). Their Google events are hidden from the views so a pushed
+  // deadline/event is not shown twice — once as its app item and once as the stored Google event.
+  const ownedEventIds = async (): Promise<Set<string>> => new Set((await context.calendarLinks.read()).links.map((link) => link.eventId));
+
   router.add("GET", "/api/calendar/view", async ({ query }) => {
     const mode = query.get("mode") ?? "week";
     const date = query.get("date") ? requireDate(query.get("date")!) : today(context);
     const items = await calendar.listItems();
     const events = await context.calendarEvents.read();
-    if (mode === "day") return dayView(date, items, events, today(context));
-    if (mode === "month") return monthView(monthParam(context, query), items, events, today(context));
-    return weekView(date, items, events, today(context));
+    const owned = await ownedEventIds();
+    if (mode === "day") return dayView(date, items, events, today(context), owned);
+    if (mode === "month") return monthView(monthParam(context, query), items, events, today(context), owned);
+    return weekView(date, items, events, today(context), owned);
   });
 
   router.add("GET", "/api/calendar/today", async () => {
     const items = await calendar.listItems();
     const events = await context.calendarEvents.read();
-    return todayStrip(today(context), items, events);
+    return todayStrip(today(context), items, events, await ownedEventIds());
   });
 
   router.add("GET", "/api/calendar/overview", async ({ query }) => {
     const date = query.get("date") ? requireDate(query.get("date")!) : today(context);
     const items = await calendar.listItems();
     const events = await context.calendarEvents.read();
-    return calendarOverview(date, monthOf(date), items, events, today(context));
+    return calendarOverview(date, monthOf(date), items, events, today(context), await ownedEventIds());
   });
 
   router.add("GET", "/api/calendar/search", async ({ query }) => ({ items: searchItems(await calendar.listItems(), query.get("q") ?? "") }));

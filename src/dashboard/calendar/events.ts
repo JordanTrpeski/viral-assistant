@@ -30,6 +30,9 @@ export interface StoredEvent {
   status: string;
   /** The owning calendar's colour, for dimmed display in the week view. */
   colour: string | null;
+  /** True when the event carries our viralItemId (phase 5b push). It is shown as its app item, never as a
+   *  separate Google event, so a pushed deadline/event is not duplicated in the views. */
+  appOwned: boolean;
 }
 
 /** Per-calendar sync state plus the display metadata the 7-day list needs. */
@@ -115,7 +118,9 @@ export function parseGoogleEvent(raw: unknown, context: ParseContext): ParsedEve
   const title = typeof raw.summary === "string" && raw.summary.trim() !== "" ? raw.summary : "(no title)";
   const start = isObject(raw.start) ? raw.start : {};
   const end = isObject(raw.end) ? raw.end : {};
-  const base = { calendarId: context.calendarId, eventId, title, status, colour: context.colour, timeZone: context.zone };
+  const extended = isObject(raw.extendedProperties) && isObject(raw.extendedProperties.private) ? raw.extendedProperties.private : {};
+  const appOwned = typeof extended.viralItemId === "string" && extended.viralItemId !== "";
+  const base = { calendarId: context.calendarId, eventId, title, status, colour: context.colour, timeZone: context.zone, appOwned };
 
   if (typeof start.date === "string" && isIsoDate(start.date)) {
     const endExclusive = typeof end.date === "string" && isIsoDate(end.date) ? end.date : addDays(start.date, 1);
@@ -161,7 +166,8 @@ function validateStoredEvent(value: unknown): StoredEvent | null {
     endDate: isIsoDate(value.endDate) ? value.endDate : null,
     timeZone: str(value.timeZone, "UTC"),
     status: str(value.status, "confirmed"),
-    colour: strOrNull(value.colour)
+    colour: strOrNull(value.colour),
+    appOwned: value.appOwned === true
   };
 }
 
@@ -214,6 +220,7 @@ export function upcomingEvents(document: EventsDocument, today: IsoDate, days: n
   const names = new Map(document.calendars.map((calendar) => [calendar.id, calendar.name]));
   return document.events
     .filter((event) => {
+      if (event.appOwned) return false; // app-owned events show as their app item, not a separate Google event
       const lastDay = event.allDay ? event.endDate ?? event.date : event.date;
       return event.date <= windowEnd && lastDay >= today;
     })

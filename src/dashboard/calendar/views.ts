@@ -68,11 +68,16 @@ export function itemsForRange(items: Item[], from: IsoDate, to: IsoDate, today: 
   return out.sort(compareByDateTime);
 }
 
-/** Google events overlapping [from, to], honouring the hidden preference and tagging dimmed / highlight. */
-export function eventsForRange(document: EventsDocument, from: IsoDate, to: IsoDate): DisplayEvent[] {
+/**
+ * Google events overlapping [from, to], honouring the hidden preference and tagging dimmed / highlight.
+ * App-owned events (those the app pushed — carrying our viralItemId, or linked in `ownedEventIds`) are left out:
+ * they are already shown as their app item, so including them here would duplicate a pushed deadline/event.
+ */
+export function eventsForRange(document: EventsDocument, from: IsoDate, to: IsoDate, ownedEventIds: Set<string> = new Set()): DisplayEvent[] {
   const byId = new Map(document.calendars.map((calendar) => [calendar.id, calendar]));
   const out: DisplayEvent[] = [];
   for (const event of document.events) {
+    if (event.appOwned || ownedEventIds.has(event.eventId)) continue; // shown as its app item, not twice
     const calendar = byId.get(event.calendarId);
     const pref = document.prefs[event.calendarId];
     if (pref?.hidden) continue;
@@ -100,11 +105,11 @@ function compareByDateTime(a: { date: IsoDate; time: string | null }, b: { date:
   return (a.time ?? "").localeCompare(b.time ?? "");
 }
 
-function cellsFor(dates: IsoDate[], items: Item[], document: EventsDocument, today: IsoDate): DayCell[] {
+function cellsFor(dates: IsoDate[], items: Item[], document: EventsDocument, today: IsoDate, ownedEventIds: Set<string>): DayCell[] {
   const first = dates[0]!;
   const last = dates[dates.length - 1]!;
   const items_ = itemsForRange(items, first, last, today);
-  const events_ = eventsForRange(document, first, last);
+  const events_ = eventsForRange(document, first, last, ownedEventIds);
   return dates.map((date) => ({
     date,
     items: items_.filter((item) => item.date === date),
@@ -113,21 +118,21 @@ function cellsFor(dates: IsoDate[], items: Item[], document: EventsDocument, tod
 }
 
 export interface DayView { mode: "day"; date: IsoDate; day: DayCell; }
-export function dayView(date: IsoDate, items: Item[], document: EventsDocument, today: IsoDate): DayView {
-  return { mode: "day", date, day: cellsFor([date], items, document, today)[0]! };
+export function dayView(date: IsoDate, items: Item[], document: EventsDocument, today: IsoDate, ownedEventIds: Set<string> = new Set()): DayView {
+  return { mode: "day", date, day: cellsFor([date], items, document, today, ownedEventIds)[0]! };
 }
 
 export interface WeekView { mode: "week"; start: IsoDate; end: IsoDate; days: DayCell[]; }
-export function weekView(date: IsoDate, items: Item[], document: EventsDocument, today: IsoDate): WeekView {
+export function weekView(date: IsoDate, items: Item[], document: EventsDocument, today: IsoDate, ownedEventIds: Set<string> = new Set()): WeekView {
   const start = mondayOf(date);
   const dates = Array.from({ length: 7 }, (_, index) => addDays(start, index));
-  return { mode: "week", start, end: dates[6]!, days: cellsFor(dates, items, document, today) };
+  return { mode: "week", start, end: dates[6]!, days: cellsFor(dates, items, document, today, ownedEventIds) };
 }
 
 export interface MonthView { mode: "month"; month: IsoMonth; weeks: DayCell[][]; }
-export function monthView(month: IsoMonth, items: Item[], document: EventsDocument, today: IsoDate): MonthView {
+export function monthView(month: IsoMonth, items: Item[], document: EventsDocument, today: IsoDate, ownedEventIds: Set<string> = new Set()): MonthView {
   const grid = monthGrid(month);
-  const flat = cellsFor(grid.flat(), items, document, today);
+  const flat = cellsFor(grid.flat(), items, document, today, ownedEventIds);
   const byDate = new Map(flat.map((cell) => [cell.date, cell]));
   return { mode: "month", month, weeks: grid.map((week) => week.map((date) => byDate.get(date)!)) };
 }
@@ -141,8 +146,8 @@ export interface TodayStrip {
 }
 
 /** Today's items and Google events, plus overdue open tasks carried over from earlier days. */
-export function todayStrip(today: IsoDate, items: Item[], document: EventsDocument): TodayStrip {
-  const todays = cellsFor([today], items, document, today)[0]!;
+export function todayStrip(today: IsoDate, items: Item[], document: EventsDocument, ownedEventIds: Set<string> = new Set()): TodayStrip {
+  const todays = cellsFor([today], items, document, today, ownedEventIds)[0]!;
   // Overdue open tasks: their soonest occurrence up to yesterday still open.
   const overdue: DisplayItem[] = [];
   const yesterday = addDays(today, -1);
@@ -162,8 +167,8 @@ export interface Overview {
   month: MonthView;
   today: TodayStrip;
 }
-export function overview(date: IsoDate, month: IsoMonth, items: Item[], document: EventsDocument, today: IsoDate): Overview {
-  return { date, week: weekView(date, items, document, today), month: monthView(month, items, document, today), today: todayStrip(today, items, document) };
+export function overview(date: IsoDate, month: IsoMonth, items: Item[], document: EventsDocument, today: IsoDate, ownedEventIds: Set<string> = new Set()): Overview {
+  return { date, week: weekView(date, items, document, today, ownedEventIds), month: monthView(month, items, document, today, ownedEventIds), today: todayStrip(today, items, document, ownedEventIds) };
 }
 
 /** Case-insensitive title search over items (keeps the old Organise search behaviour, pointed at the new store). */

@@ -395,6 +395,28 @@ test("6: a read-only calendar is never a write target, so its items never reach 
   } finally { await rm(h.dir, { recursive: true, force: true }); }
 });
 
+test("6-fix: a colour-only change in Google updates the item, creates no duplicate, and keeps the same event id", async () => {
+  const h = await harness();
+  try {
+    const category = await h.service.createCategory({ name: "Work" });
+    await h.service.setCategoryColour(category.id, "5");
+    const item = await h.service.createItem({ kind: "reminder", title: "Standup", date: "2027-02-10", time: "09:00", categoryId: category.id });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+
+    h.google.editEvent(eventId, { colorId: "11" }); // change ONLY the colour in Google
+    await h.two.reconcile();
+    await h.two.reconcile(); // repeated syncs must not duplicate
+
+    assert.equal((await h.service.listItems()).filter((candidate) => candidate.id === item.id).length, 1, "the same app item, not a duplicate");
+    assert.equal((await h.service.listItems()).length, 1, "no extra app item was created");
+    const links = (await h.links.read()).links;
+    assert.equal(links.length, 1, "still a single link");
+    assert.equal(links[0]!.eventId, eventId, "the link keeps the same Google event id");
+    assert.equal(h.google.calls.insert, 1, "no duplicate Google event was inserted");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
 test("two-way: a timed event created in Google is pulled in as an app item", async () => {
   const h = await harness();
   try {

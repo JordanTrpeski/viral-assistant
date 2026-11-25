@@ -39,7 +39,7 @@ async function freshStore(): Promise<{ store: JsonDocumentStore<EventsDocument>;
 }
 
 function seedEvent(calendarId: string, eventId: string, over: Partial<StoredEvent> = {}): StoredEvent {
-  return { calendarId, eventId, title: "Seed", allDay: false, start: "2027-01-15T09:00:00+01:00", end: null, date: "2027-01-15", time: "09:00", endTime: null, endDate: null, timeZone: ZONE, status: "confirmed", colour: null, ...over };
+  return { calendarId, eventId, title: "Seed", allDay: false, start: "2027-01-15T09:00:00+01:00", end: null, date: "2027-01-15", time: "09:00", endTime: null, endDate: null, timeZone: ZONE, status: "confirmed", colour: null, appOwned: false, ...over };
 }
 
 function newSync(store: JsonDocumentStore<EventsDocument>, source: EventSource): CalendarSync {
