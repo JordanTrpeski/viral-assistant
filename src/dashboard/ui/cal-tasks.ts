@@ -3,7 +3,7 @@
 // deadline with a time is timed; without a time it is all-day on its due date. Deadlines push to Google.
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
-import { deleteControl, loadCategories } from "./cal-common.js";
+import { categoryPicker, deleteControl, loadCategories } from "./cal-common.js";
 
 interface Deadline {
   id: string; title: string; date: string; dueDate: string | null; time: string | null; allDay: boolean;
@@ -18,7 +18,7 @@ export async function renderCalendarTasks(container: HTMLElement, context: AppCo
   ]);
 
   const title = h("input", { type: "text", placeholder: "New deadline", class: "grow" });
-  const category = h("select", {}, h("option", { value: "" }, "No category"), ...categories.map((cat) => h("option", { value: cat.id }, cat.name)));
+  const picker = categoryPicker(categories);
   const due = h("input", { type: "date", title: "Due date" });
   const time = h("input", { type: "time", title: "Time (leave empty for all-day)" });
   const priority = h("select", {}, ...["low", "normal", "high"].map((value) => h("option", { value }, value)));
@@ -31,11 +31,14 @@ export async function renderCalendarTasks(container: HTMLElement, context: AppCo
     if (text === "" || day === "") { context.notify("A deadline needs a title and a due date."); return; }
     const timeValue = (time as HTMLInputElement).value;
     const freq = (recurrence as HTMLSelectElement).value;
+    const where = picker.chosen();
     await save(context, () => api("POST", "/api/calendar/items", {
       kind: "task", title: text, date: day, dueDate: day,
-      categoryId: (category as HTMLSelectElement).value || null,
+      categoryId: where.categoryId, subcategoryId: where.subcategoryId,
       allDay: timeValue === "", time: timeValue === "" ? null : timeValue,
       priority: (priority as HTMLSelectElement).value,
+      // Deadlines carry no lead-time reminders: category default lead times apply to Events only (phase 7).
+      leadTimes: [],
       recurrence: freq === "none" ? null : { freq }
     }));
   };
@@ -58,7 +61,7 @@ export async function renderCalendarTasks(container: HTMLElement, context: AppCo
 
   container.replaceChildren(h("div", { class: "page cal-tasks" },
     h("h2", {}, "Deadlines"),
-    h("div", { class: "panel addbar" }, title, category, due, time, priority, recurrence, h("button", { class: "primary", onclick: add }, "Add")),
+    h("div", { class: "panel addbar" }, title, picker.category, picker.subcategory, due, time, priority, recurrence, h("button", { class: "primary", onclick: add }, "Add")),
     h("div", { class: "panel" }, h("h3", {}, `Open (${open.length})`), ...(open.length ? open.map(row) : [h("p", { class: "muted small" }, "No open deadlines.")])),
     done.length ? h("div", { class: "panel" }, h("h3", {}, `Done (${done.length})`), ...done.map(row)) : h("div", {})));
 }

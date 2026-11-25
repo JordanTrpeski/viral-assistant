@@ -85,7 +85,28 @@ export function deleteControl(context: AppContext, item: { id: string; date: str
   return h("span", { class: "del-recurring" }, scope, h("button", { class: "danger small", title: "Delete", onclick: remove }, "🗑"));
 }
 
-export async function loadCategories(): Promise<{ id: string; name: string }[]> {
-  try { return await api<{ id: string; name: string }[]>("GET", "/api/calendar/categories"); }
-  catch { return []; }
+export interface CategoryWithSubs { id: string; name: string; subcategories: { id: string; name: string }[] }
+
+export async function loadCategories(): Promise<CategoryWithSubs[]> {
+  try {
+    const categories = await api<CategoryWithSubs[]>("GET", "/api/calendar/categories");
+    return categories.map((category) => ({ id: category.id, name: category.name, subcategories: category.subcategories ?? [] }));
+  } catch { return []; }
+}
+
+/**
+ * A category dropdown plus a dependent subcategory dropdown (phase 7): the "new item" flow starts from a category
+ * and then a subcategory. Returns the two elements and a reader for the chosen ids.
+ */
+export function categoryPicker(categories: CategoryWithSubs[]): { category: HTMLSelectElement; subcategory: HTMLSelectElement; chosen: () => { categoryId: string | null; subcategoryId: string | null } } {
+  const category = h("select", {}, h("option", { value: "" }, "No category"), ...categories.map((cat) => h("option", { value: cat.id }, cat.name))) as HTMLSelectElement;
+  const subcategory = h("select", {}, h("option", { value: "" }, "—")) as HTMLSelectElement;
+  const fill = (): void => {
+    const cat = categories.find((candidate) => candidate.id === category.value);
+    subcategory.replaceChildren(h("option", { value: "" }, "No subcategory"), ...(cat?.subcategories ?? []).map((sub) => h("option", { value: sub.id }, sub.name)));
+    subcategory.disabled = !cat || cat.subcategories.length === 0;
+  };
+  category.addEventListener("change", fill);
+  fill();
+  return { category, subcategory, chosen: () => ({ categoryId: category.value || null, subcategoryId: subcategory.value || null }) };
 }

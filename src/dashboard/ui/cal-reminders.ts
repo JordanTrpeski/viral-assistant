@@ -2,7 +2,7 @@
 // add events. Fields: title, category (optional), date, time or all-day, lead time in days. No writes to Google.
 import { api, save, type AppContext } from "./api.js";
 import { h } from "./dom.js";
-import { deleteControl, loadCategories } from "./cal-common.js";
+import { categoryPicker, deleteControl, loadCategories } from "./cal-common.js";
 
 interface Reminder {
   id: string; title: string; date: string; time: string | null; allDay: boolean;
@@ -16,7 +16,7 @@ export async function renderCalendarReminders(container: HTMLElement, context: A
   ]);
 
   const title = h("input", { type: "text", placeholder: "New event", class: "grow" });
-  const category = h("select", {}, h("option", { value: "" }, "No category"), ...categories.map((cat) => h("option", { value: cat.id }, cat.name)));
+  const picker = categoryPicker(categories);
   const date = h("input", { type: "date" });
   const time = h("input", { type: "time", title: "Time (leave empty for all-day)" });
   const lead = h("input", { type: "number", min: "0", placeholder: "lead days", title: "Lead time in days", class: "narrow" });
@@ -27,10 +27,12 @@ export async function renderCalendarReminders(container: HTMLElement, context: A
     if (text === "" || day === "") { context.notify("A reminder needs a title and a date."); return; }
     const timeValue = (time as HTMLInputElement).value;
     const leadValue = (lead as HTMLInputElement).value;
+    const where = picker.chosen();
     await save(context, () => api("POST", "/api/calendar/items", {
       kind: "reminder", title: text, date: day,
-      categoryId: (category as HTMLSelectElement).value || null,
+      categoryId: where.categoryId, subcategoryId: where.subcategoryId,
       allDay: timeValue === "", time: timeValue === "" ? null : timeValue,
+      // Empty lead field => null => the Event inherits its category's default lead times (phase 7).
       leadTimes: leadValue === "" ? null : [Number(leadValue)]
     }));
   };
@@ -45,6 +47,6 @@ export async function renderCalendarReminders(container: HTMLElement, context: A
 
   container.replaceChildren(h("div", { class: "page cal-reminders" },
     h("h2", {}, "Events"),
-    h("div", { class: "panel addbar" }, title, category, date, time, lead, h("button", { class: "primary", onclick: add }, "Add")),
+    h("div", { class: "panel addbar" }, title, picker.category, picker.subcategory, date, time, lead, h("button", { class: "primary", onclick: add }, "Add")),
     h("div", { class: "panel" }, h("h3", {}, `Events (${reminders.length})`), ...(reminders.length ? reminders.map(row) : [h("p", { class: "muted small" }, "No events yet.")]))));
 }
