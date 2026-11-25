@@ -7,7 +7,6 @@ import { ReconnectRequiredError } from "./google.js";
 import { localIsoDate, monthOf, type IsoMonth } from "../shared/dates.js";
 import { requireDate, requireMonth, isObject } from "../validation.js";
 import type { DashboardContext } from "../server.js";
-import { defaultCategoryNames } from "./model.js";
 import { dayView, itemsToCsv, monthView, overview as calendarOverview, searchItems, todayStrip, weekView } from "./views.js";
 
 function today(context: DashboardContext): string {
@@ -22,13 +21,40 @@ function monthParam(context: DashboardContext, query: URLSearchParams): IsoMonth
 export function registerCalendarAppRoutes(router: Router, context: DashboardContext): void {
   const calendar = context.calendar;
 
+  // Categories with per-category/subcategory item counts (phase 7), so the UI knows when a move is required.
+  // Default categories (with subcategories and lead times) are seeded only on a fresh store (no categories yet).
   router.add("GET", "/api/calendar/categories", async () => {
-    let categories = await calendar.listCategories();
-    if (categories.length === 0) {
-      for (const name of defaultCategoryNames) await calendar.createCategory({ name });
-      categories = await calendar.listCategories();
-    }
-    return categories.map((category) => ({ id: category.id, name: category.name, colour: category.colour }));
+    await calendar.seedDefaultCategoriesIfEmpty();
+    const categories = await calendar.listCategories();
+    const items = await calendar.listItems();
+    return categories.map((category) => ({
+      id: category.id, name: category.name, colour: category.colour, defaultLeadTimes: category.defaultLeadTimes,
+      itemCount: items.filter((item) => item.categoryId === category.id).length,
+      subcategories: category.subcategories.map((sub) => ({ id: sub.id, name: sub.name, itemCount: items.filter((item) => item.categoryId === category.id && item.subcategoryId === sub.id).length }))
+    }));
+  });
+
+  router.add("POST", "/api/calendar/categories", ({ body }) => calendar.createCategory(body as never));
+  router.add("PATCH", "/api/calendar/categories/:id", ({ params, body }) => {
+    const patch = isObject(body) ? body : {};
+    if (Array.isArray(patch.defaultLeadTimes)) return calendar.setCategoryLeadTimes(params.id!, patch.defaultLeadTimes as number[]);
+    if (typeof patch.name === "string") return calendar.renameCategory(params.id!, patch.name);
+    throw new ValidationError("provide a name or defaultLeadTimes");
+  });
+  // Delete a category. If it still has items, a `move` target is required (another category/subcategory, or
+  // Unfiled = categoryId null); nothing is deleted until the move is confirmed.
+  router.add("DELETE", "/api/calendar/categories/:id", async ({ params, body }) => {
+    if (isObject(body) && isObject(body.move)) return calendar.moveItemsAndDeleteCategory(params.id!, body.move as { categoryId: string | null; subcategoryId?: string | null });
+    await calendar.deleteCategory(params.id!);
+    return { deleted: params.id };
+  });
+
+  router.add("POST", "/api/calendar/categories/:id/subcategories", ({ params, body }) => calendar.addSubcategory(params.id!, isObject(body) && typeof body.name === "string" ? body.name : ""));
+  router.add("PATCH", "/api/calendar/categories/:id/subcategories/:subId", ({ params, body }) => calendar.renameSubcategory(params.id!, params.subId!, isObject(body) && typeof body.name === "string" ? body.name : ""));
+  router.add("DELETE", "/api/calendar/categories/:id/subcategories/:subId", async ({ params, body }) => {
+    if (isObject(body) && isObject(body.move)) return calendar.moveItemsAndDeleteSubcategory(params.id!, params.subId!, body.move as { categoryId: string | null; subcategoryId?: string | null });
+    await calendar.deleteSubcategory(params.id!, params.subId!);
+    return { deleted: params.subId };
   });
 
   // Per-category Google event colour (phase 5). The colour id must be a key from /api/calendar/google/colours.

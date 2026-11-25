@@ -12,6 +12,7 @@ import { renderCalendarTasks } from "./cal-tasks.js";
 import { renderCalendarReminders } from "./cal-reminders.js";
 import { renderCalendarSearch } from "./cal-search.js";
 import { renderCalendarExport } from "./cal-export.js";
+import { renderCalendarCategories } from "./cal-categories.js";
 import { renderCalendarTrash } from "./cal-trash.js";
 import { renderCalendarSettings } from "./cal-settings.js";
 import { renderOverview } from "./overview.js";
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
   // Display names (phase 5b): a "task" is shown as "Deadline", a "reminder" as "Event". Routes/kinds unchanged.
   { route: "organise-tasks", label: "Deadlines", render: renderCalendarTasks, group: "Organise" },
   { route: "organise-reminders", label: "Events", render: renderCalendarReminders, group: "Organise" },
+  { route: "organise-categories", label: "Categories", render: renderCalendarCategories, group: "Organise" },
   { route: "organise-search", label: "Search", render: renderCalendarSearch, group: "Organise" },
   { route: "organise-export", label: "Export", render: renderCalendarExport, group: "Organise" },
   { route: "organise-trash", label: "Deleted", render: renderCalendarTrash, group: "Organise" },

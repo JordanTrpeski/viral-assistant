@@ -93,6 +93,27 @@ export const defaultTimeZone = "Europe/Ljubljana";
 /** The seven default categories from the decisions file. A fixed dropdown in phase 4; management arrives in phase 7. */
 export const defaultCategoryNames = ["Study", "Work", "Admin", "Home", "Health", "People", "Personal"] as const;
 
+export interface DefaultCategory {
+  name: string;
+  subcategories: string[];
+  /** Default reminder lead times in whole days, applied to Events (phase 7). */
+  defaultLeadTimes: number[];
+}
+
+/**
+ * Phase 7 seed: the seven default categories with their initial subcategories and default lead times. Seeded only
+ * on a fresh store (no categories yet); existing categories are never changed. The user edits these freely.
+ */
+export const defaultCategories: DefaultCategory[] = [
+  { name: "Study", subcategories: ["Exams", "Coursework", "Reading"], defaultLeadTimes: [1] },
+  { name: "Work", subcategories: ["Meetings", "Deadlines", "Admin"], defaultLeadTimes: [1] },
+  { name: "Admin", subcategories: ["Bills", "Appointments", "Renewals"], defaultLeadTimes: [1, 7] },
+  { name: "Home", subcategories: ["Chores", "Maintenance", "Shopping"], defaultLeadTimes: [1] },
+  { name: "Health", subcategories: ["Appointments", "Medication", "Fitness"], defaultLeadTimes: [1] },
+  { name: "People", subcategories: ["Family", "Friends", "Birthdays"], defaultLeadTimes: [1, 7] },
+  { name: "Personal", subcategories: ["Hobbies", "Travel", "Finance"], defaultLeadTimes: [1] }
+];
+
 export interface CalendarDocument {
   schemaVersion: 1;
   categories: Category[];

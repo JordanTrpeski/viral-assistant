@@ -5,7 +5,7 @@ import { ValidationError, NotFoundError } from "../errors.js";
 import { addDays, localIsoDate, type IsoDate } from "../shared/dates.js";
 import { JsonDocumentStore, type StoreFileSystem } from "../store.js";
 import {
-  emptyCalendarDocument, validateCalendarDocument,
+  defaultCategories, emptyCalendarDocument, validateCalendarDocument,
   itemKinds, priorities, recurrenceFreqs,
   type CalendarDocument, type Category, type Item, type ItemKind, type Priority, type Recurrence, type RecurrenceFreq, type Settings, type Subcategory, type TrashEntry
 } from "./model.js";
@@ -124,6 +124,16 @@ export class CalendarService {
     return (await this.store.read()).categories;
   }
 
+  /** Seeds the seven default categories (with subcategories and lead times) only on a fresh store. Returns whether it seeded. */
+  async seedDefaultCategoriesIfEmpty(): Promise<boolean> {
+    await this.purge();
+    if ((await this.store.read()).categories.length > 0) return false; // existing categories are never changed
+    for (const seed of defaultCategories) {
+      await this.createCategory({ name: seed.name, subcategories: seed.subcategories.map((name) => ({ name })), defaultLeadTimes: seed.defaultLeadTimes });
+    }
+    return true;
+  }
+
   async createCategory(input: CategoryInput): Promise<Category> {
     await this.purge();
     const name = requireName(input.name, "name");
@@ -156,6 +166,67 @@ export class CalendarService {
       const category = draft.categories.find((candidate) => candidate.id === categoryId);
       if (!category) throw new NotFoundError("category", categoryId);
       category.name = clean; // Renaming changes nothing on Google (phase 5+).
+      return category;
+    });
+  }
+
+  async renameSubcategory(categoryId: string, subcategoryId: string, name: string): Promise<Subcategory> {
+    await this.purge();
+    const clean = requireName(name, "subcategory name");
+    return this.store.update((draft) => {
+      const category = draft.categories.find((candidate) => candidate.id === categoryId);
+      if (!category) throw new NotFoundError("category", categoryId);
+      const subcategory = category.subcategories.find((candidate) => candidate.id === subcategoryId);
+      if (!subcategory) throw new NotFoundError("subcategory", subcategoryId);
+      subcategory.name = clean;
+      return subcategory;
+    });
+  }
+
+  /** Deletes a subcategory. Blocked while items use it — the caller must move them first (see move-before-delete). */
+  async deleteSubcategory(categoryId: string, subcategoryId: string): Promise<void> {
+    await this.purge();
+    await this.store.update((draft) => {
+      const category = draft.categories.find((candidate) => candidate.id === categoryId);
+      if (!category) throw new NotFoundError("category", categoryId);
+      if (!category.subcategories.some((candidate) => candidate.id === subcategoryId)) throw new NotFoundError("subcategory", subcategoryId);
+      const count = draft.items.filter((item) => item.categoryId === categoryId && item.subcategoryId === subcategoryId).length;
+      if (count > 0) throw new ValidationError(`Cannot delete the subcategory: ${count} item(s) use it. Move them first.`);
+      category.subcategories = category.subcategories.filter((candidate) => candidate.id !== subcategoryId);
+    });
+  }
+
+  /** Moves items out of a subcategory to a target (category/subcategory, or Unfiled = null), then deletes it. Links kept. */
+  async moveItemsAndDeleteSubcategory(categoryId: string, subcategoryId: string, to: { categoryId: string | null; subcategoryId?: string | null }): Promise<{ moved: number }> {
+    await this.purge();
+    return this.store.update((draft) => {
+      const category = draft.categories.find((candidate) => candidate.id === categoryId);
+      if (!category) throw new NotFoundError("category", categoryId);
+      if (!category.subcategories.some((candidate) => candidate.id === subcategoryId)) throw new NotFoundError("subcategory", subcategoryId);
+      const target = to.categoryId === null ? null : draft.categories.find((candidate) => candidate.id === to.categoryId);
+      if (to.categoryId !== null && !target) throw new NotFoundError("category", to.categoryId);
+      const subId = resolveSubcategory(target ?? null, to.subcategoryId ?? null);
+      let moved = 0;
+      for (const item of draft.items) {
+        if (item.categoryId !== categoryId || item.subcategoryId !== subcategoryId) continue;
+        item.categoryId = to.categoryId;
+        item.subcategoryId = subId;
+        item.updated = this.now();
+        moved += 1;
+      }
+      category.subcategories = category.subcategories.filter((candidate) => candidate.id !== subcategoryId);
+      return { moved };
+    });
+  }
+
+  /** Sets a category's default reminder lead times (whole days). Applied to Events; Deadlines carry none. */
+  async setCategoryLeadTimes(categoryId: string, leadTimes: number[]): Promise<Category> {
+    await this.purge();
+    const clean = requireWholeDays(leadTimes, "defaultLeadTimes");
+    return this.store.update((draft) => {
+      const category = draft.categories.find((candidate) => candidate.id === categoryId);
+      if (!category) throw new NotFoundError("category", categoryId);
+      category.defaultLeadTimes = clean;
       return category;
     });
   }
