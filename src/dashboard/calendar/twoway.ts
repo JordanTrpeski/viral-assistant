@@ -175,8 +175,23 @@ export class TwoWaySync {
       return next.updated;
     };
 
+    // 0. Google-side deletes: a linked target event cancelled in Google moves the app item to the Deleted list
+    //    (reason app, not Google-side) rather than vanishing. Read-only calendars are never linked, so only the
+    //    writable target is affected. These items are then skipped below.
+    const removedByGoogle = new Set<string>();
+    for (const link of [...links]) {
+      const event = rawByEvent.get(link.eventId);
+      if (!event || event.status !== "cancelled" || !itemById.has(link.itemId)) continue;
+      try { await this.calendar.deleteItem(link.itemId); } catch { /* already gone */ }
+      links.splice(links.indexOf(link), 1);
+      itemById.delete(link.itemId);
+      removedByGoogle.add(link.itemId);
+      trashedFromGoogle += 1;
+    }
+
     // 1. Pushable items: push new, update changed, resolve conflicts.
     for (const item of items.filter(isPushable)) {
+      if (removedByGoogle.has(item.id)) continue;
       try {
         const link = linkByItem.get(item.id);
         if (!link) {
@@ -202,10 +217,15 @@ export class TwoWaySync {
           if (item.updated >= (googleUpdated ?? "")) { // app newer → push, Google's version loses
             const result = await this.applyWrite(() => this.source.patchEvent(target.id, link.eventId, bodyFor(item)));
             newConflicts.push({ at: now.toISOString(), itemId: item.id, loser: "google", data: event });
+            // The losing (Google) version also goes to the Deleted list (reason conflict) so it can be restored.
+            const fields = parseEventForPull(event, zone);
+            const loser = fields ? { ...structuredClone(item), title: fields.title, date: fields.date, time: fields.time, allDay: fields.allDay, timeZone: fields.timeZone } : structuredClone(item);
+            await this.calendar.trashItem(loser, "conflict");
             link.googleUpdated = updatedOf(result.event); link.appUpdated = item.updated;
             updated += 1;
           } else { // Google newer → pull, the app version loses
             newConflicts.push({ at: now.toISOString(), itemId: item.id, loser: "app", data: structuredClone(item) });
+            await this.calendar.trashItem(structuredClone(item), "conflict"); // the losing app version, restorable
             link.appUpdated = await applyPull(item.id, event); link.googleUpdated = googleUpdated;
             pulled += 1;
           }

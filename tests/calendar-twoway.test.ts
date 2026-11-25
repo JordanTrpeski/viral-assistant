@@ -204,6 +204,7 @@ class FakeGoogle implements GoogleWriter {
 interface Harness {
   dir: string;
   service: CalendarService;
+  events: JsonDocumentStore<EventsDocument>;
   links: JsonDocumentStore<LinksDocument>;
   conflicts: JsonDocumentStore<ConflictsDocument>;
   google: FakeGoogle;
@@ -228,7 +229,7 @@ async function harness(): Promise<Harness> {
   const conflicts = new JsonDocumentStore<ConflictsDocument>(join(dir, "conflicts.json"), validateConflictsDocument, emptyConflictsDocument);
   const google = new FakeGoogle();
   const two = new TwoWaySync(google, service, events, links, conflicts, { clock, zone: () => ZONE });
-  return { dir, service, links, conflicts, google, two, setNow: (date) => { now = new Date(date); } };
+  return { dir, service, events, links, conflicts, google, two, setNow: (date) => { now = new Date(date); } };
 }
 
 test("two-way: a timed item is pushed to the chosen calendar, then updated (not duplicated)", async () => {
@@ -344,6 +345,53 @@ test("6: restoring a deleted deadline brings it back and leaves its Google event
     assert.ok(h.google.events.has(eventId), "the event is still there");
     const link = (await h.links.read()).links.find((candidate) => candidate.itemId === item.id);
     assert.ok(link && !link.pendingDelete, "the link is live again after restore");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
+test("6: a Google-side delete on the target moves the app item to the Deleted list (reason app), not removed", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Dropped", date: "2027-02-10", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+
+    h.google.editEvent(eventId, { status: "cancelled" }); // Google deleted it (shows as cancelled)
+    const result = await h.two.reconcile();
+    assert.equal(result.trashedFromGoogle, 1);
+    assert.equal((await h.service.listItems()).length, 0, "the item left the live list");
+    const trash = await h.service.listTrash();
+    assert.deepEqual([trash.length, trash[0]!.reason], [1, "app"]);
+    assert.equal((await h.links.read()).links.length, 0, "the link is removed");
+    assert.equal(h.google.calls.delete, 0, "we never re-delete an already-deleted Google event");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
+test("6: a conflict loser is copied to the Deleted list (reason conflict); conflicts.json stays the record", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Call", date: "2027-02-10", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+    h.google.editEvent(eventId, { summary: "Call (Google)" });
+    h.setNow("2030-01-01T00:00:00.000Z");
+    await h.service.updateItem(item.id, { title: "Call mum" });
+
+    const result = await h.two.reconcile();
+    assert.equal(result.conflicts, 1);
+    assert.equal((await h.service.listTrash()).filter((entry) => entry.reason === "conflict").length, 1, "the loser is restorable");
+    assert.equal((await h.conflicts.read()).conflicts.length, 1, "conflicts.json keeps the record too");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
+test("6: a read-only calendar is never a write target, so its items never reach trash or Google", async () => {
+  const h = await harness();
+  try {
+    await h.events.update((draft) => { draft.writeCalendarId = "ro"; });
+    await h.service.createItem({ kind: "task", title: "X", date: "2027-02-10", time: "09:00" });
+    const result = await h.two.reconcile();
+    assert.equal(result.target, null, "a read-only calendar is refused as the target");
+    assert.equal(h.google.calls.insert + h.google.calls.delete, 0, "nothing is written to or deleted from Google");
+    assert.equal((await h.service.listTrash()).length, 0, "nothing is trashed");
   } finally { await rm(h.dir, { recursive: true, force: true }); }
 });
 
