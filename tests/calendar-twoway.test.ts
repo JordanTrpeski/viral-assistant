@@ -114,6 +114,27 @@ test("5b: completing a deadline pushes the ✓ Done title on the next sync", asy
   } finally { await rm(h.dir, { recursive: true, force: true }); }
 });
 
+test("5b-fix: un-ticking a deadline sets it open and drops the ✓ prefix on the next push", async () => {
+  const h = await harness();
+  try {
+    const item = await h.service.createItem({ kind: "task", title: "Pay tax", date: "2027-02-10", time: "09:00" });
+    await h.two.reconcile();
+    const eventId = (await h.links.read()).links[0]!.eventId;
+    const summary = (): string => (h.google.events.get(eventId) as { summary: string }).summary;
+
+    h.setNow("2027-01-02T00:00:00.000Z");
+    await h.service.completeItem(item.id);
+    await h.two.reconcile();
+    assert.equal(summary(), "✓ Done: Pay tax");
+
+    h.setNow("2027-01-03T00:00:00.000Z");
+    await h.service.reopenItem(item.id);
+    assert.equal((await h.service.getItem(item.id)).status, "open", "un-ticking reopens the deadline");
+    await h.two.reconcile();
+    assert.equal(summary(), "Pay tax", "the next push drops the prefix");
+  } finally { await rm(h.dir, { recursive: true, force: true }); }
+});
+
 // ---- reconciler over a simulated calendar -------------------------------------------------------------------
 
 class FakeGoogle implements GoogleWriter {

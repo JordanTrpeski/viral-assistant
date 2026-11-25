@@ -306,6 +306,20 @@ export class CalendarService {
     this.rememberUndo("complete", before);
   }
 
+  /** Un-ticks a completed deadline: status back to open and its done-log cleared. Works whatever the due date. */
+  async reopenItem(id: string): Promise<void> {
+    await this.purge();
+    const before = await this.store.read();
+    const timestamp = this.now();
+    await this.store.update((draft) => {
+      const item = draft.items.find((candidate) => candidate.id === id);
+      if (!item) throw new NotFoundError("item", id);
+      if (!item.recurrence) { item.status = "open"; item.updated = timestamp; }
+      draft.doneLog = draft.doneLog.filter((entry) => entry.itemId !== id);
+    });
+    this.rememberUndo("complete", before);
+  }
+
   async deleteItem(id: string, options: { scope?: DeleteScope; occurrenceDate?: IsoDate } = {}): Promise<void> {
     await this.purge();
     const before = await this.store.read();

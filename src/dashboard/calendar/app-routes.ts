@@ -82,6 +82,10 @@ export function registerCalendarAppRoutes(router: Router, context: DashboardCont
     await calendar.completeItem(params.id!, occurrence);
     return calendar.getItem(params.id!).catch(() => ({ id: params.id, completed: true }));
   }, 200);
+  router.add("POST", "/api/calendar/items/:id/reopen", async ({ params }) => {
+    await calendar.reopenItem(params.id!);
+    return calendar.getItem(params.id!).catch(() => ({ id: params.id, reopened: true }));
+  }, 200);
   router.add("DELETE", "/api/calendar/items/:id", async ({ params, query }) => {
     const scope = query.get("scope");
     await calendar.deleteItem(params.id!, scope === "occurrence" || scope === "future" || scope === "series" ? { scope } : {});

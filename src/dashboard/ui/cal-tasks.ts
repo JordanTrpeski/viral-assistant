@@ -43,8 +43,12 @@ export async function renderCalendarTasks(container: HTMLElement, context: AppCo
   const open = deadlines.filter((deadline) => deadline.status === "open");
   const done = deadlines.filter((deadline) => deadline.status === "done");
 
+  // The tick control toggles: ✓ un-ticks a done deadline, ○ ticks an open one. Never disabled, and not gated by
+  // the due date — overdue, today and future deadlines all tick the same way.
+  const toggle = (deadline: Deadline): Promise<void> => save(context, () =>
+    api("POST", `/api/calendar/items/${deadline.id}/${deadline.status === "done" ? "reopen" : "complete"}`));
   const row = (deadline: Deadline): HTMLElement => h("div", { class: `cal-row item${deadline.status === "done" ? " done" : ""}` },
-    h("button", { class: "check", title: "Complete", disabled: deadline.status === "done", onclick: () => save(context, () => api("POST", `/api/calendar/items/${deadline.id}/complete`)) }, deadline.status === "done" ? "✓" : "○"),
+    h("button", { class: "check", title: deadline.status === "done" ? "Un-tick" : "Complete", onclick: () => toggle(deadline) }, deadline.status === "done" ? "✓" : "○"),
     h("span", { class: "cal-title" }, deadline.title),
     h("span", { class: "cal-when" }, `due ${deadline.dueDate ?? deadline.date}${deadline.allDay ? "" : ` ${deadline.time ?? ""}`}`),
     h("span", { class: `pri ${deadline.priority}` }, deadline.priority),
